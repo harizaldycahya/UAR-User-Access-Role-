@@ -1,0 +1,109 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="h-screen bg-black">
+    <div class="h-full flex p-[1rem] gap-[1rem]">
+        <!-- Sidebar -->
+        <div class="sidebar w-[300px] h-full rounded-lg bg-slate-100 shadow-lg p-5 flex flex-col">
+            
+            <!-- Top section -->
+            <div class="top">
+                <div class="w-full h-[10rem] mb-[3rem] bg-black"></div>
+            </div>
+
+            <!-- Center section (scrollable) -->
+            <div class="center flex-1 overflow-y-auto mb-[3rem] ">
+                <div class="w-full h-[3rem] my-[1rem] bg-black"></div>
+                <div class="w-full h-[3rem] my-[1rem] bg-black"></div>
+                <div class="w-full h-[3rem] my-[1rem] bg-black"></div>
+                <div class="w-full h-[3rem] my-[1rem] bg-black"></div>
+            </div>
+
+            <!-- Bottom section -->
+            <div class="bottom">
+                <div class="w-full h-[3rem] my-[1rem] bg-black"></div>
+                <div class="w-full h-[3rem] my-[1rem] bg-black"></div>
+            </div>
+
+        </div>
+
+
+
+        <!-- Main Content -->
+        <div class="flex-1 h-full rounded-lg flex flex-col">
+            
+            <!-- Navbar -->
+            <div class="navbar flex justify-between items-center w-full rounded-lg mb-[1rem] bg-slate-100 shadow-lg px-[3rem] py-[1rem]">
+                <!-- Left side -->
+                <div class="w-[3rem] h-[3rem] bg-black"></div>
+
+                <!-- Right side -->
+                <div class="flex gap-[1rem]">
+                    <div class="w-[3rem] h-[3rem] bg-black"></div>
+                    <div class="w-[12rem] h-[3rem] bg-black"></div>
+                </div>
+                
+            </div>
+
+
+            <div class="content w-full flex-1 rounded-lg bg-slate-100 shadow-lg p-[3rem] flex flex-col overflow-hidden">
+
+                <!-- Buttons -->
+                <div style="margin-top:20px;">
+                    <a href="#" style="
+                        display:inline-block; 
+                        padding:14px 28px; 
+                        background:#0050c8; 
+                        color:white; 
+                        border-radius:10px; 
+                        text-decoration:none; 
+                        font-size:16px; 
+                        margin-right:15px;
+                        box-shadow:0 4px 10px rgba(0,0,0,0.15);
+                        font-weight: bold;
+                    ">
+                        Get Template
+                    </a>
+
+                    <a href="#" style="
+                        display:inline-block; 
+                        padding:14px 28px; 
+                        background:white; 
+                        color:#0050c8; 
+                        border-radius:10px; 
+                        text-decoration:none; 
+                        font-size:16px; 
+                        border:1px solid #c9d9f5;
+                        box-shadow:0 4px 10px rgba(0,0,0,0.08);
+                        font-weight: bold;
+                    ">
+                        See Features
+                    </a>
+                </div>
+                <br>
+                
+                <!-- Badge -->
+                <div style="
+                    display:inline-block; 
+                    background:#e5f0ff; 
+                    color:#0050c8; 
+                    padding:6px 14px; 
+                    border-radius:20px; 
+                    font-size:14px; 
+                    margin-bottom:25px;
+                    box-shadow:0 2px 4px rgba(0,0,0,0.1);
+                ">
+                    🌿 30% fewer reporting errors
+                </div>
+
+            </div>
+
+
+        </div>
+    </div>
+</body>
+</html>

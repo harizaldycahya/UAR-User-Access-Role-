@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMITRA - ESG Progress</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 300px;
+            background-color: #fff;
+            border-right: 1px solid #e0e0e0;
+            padding: 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 40px;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            background-color: #00a651;
+            border-radius: 4px;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 8px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            transition: background-color 0.2s;
+        }
+
+        .nav-link:hover {
+            background-color: #f0f0f0;
+        }
+
+        .nav-link.active {
+            background-color: #e8f5e9;
+            color: #00a651;
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            background-color: #00a651;
+            border-radius: 4px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Navbar */
+        .navbar {
+            background-color: #fff;
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .menu-icon {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            width: 300px;
+        }
+
+        .search-box input {
+            border: none;
+            background: none;
+            outline: none;
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .notification-icon {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 8px;
+            height: 8px;
+            background-color: #ff4444;
+            border-radius: 50%;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .user-info {
+            text-align: left;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Content Area */
+        .content {
+            padding: 32px;
+            overflow-y: auto;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 32px;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .card-menu {
+            cursor: pointer;
+        }
+
+        .metric {
+            margin-bottom: 16px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .progress-circle {
+            width: 120px;
+            height: 120px;
+            margin: 20px auto;
+            position: relative;
+        }
+
+        .circle-bg {
+            fill: none;
+            stroke: #e0e0e0;
+            stroke-width: 10;
+        }
+
+        .circle-progress {
+            fill: none;
+            stroke: #00a651;
+            stroke-width: 10;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: center;
+        }
+
+        .score-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .chart-area {
+            height: 200px;
+            background: linear-gradient(180deg, rgba(0,166,81,0.3) 0%, rgba(0,166,81,0.1) 100%);
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .improvement-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: #e8f5e9;
+            color: #00a651;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            padding: 10px 20px;
+            background-color: #f0f0f0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background-color: #e0e0e0;
+        }
+
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 60px;
+            margin: 20px 0;
+        }
+
+        .bar {
+            flex: 1;
+            background-color: #00a651;
+            border-radius: 2px;
+        }
+
+        .large-card {
+            grid-column: span 2;
+        }
+
+        @media (max-width: 768px) {
+            .large-card {
+                grid-column: span 1;
+            }
+            
+            .sidebar {
+                width: 80px;
+            }
+            
+            .nav-link span {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon"></div>
+                <span>KETROSDEN TRIASMITRA</span>
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link active">
+                            <div class="nav-icon"></div>
+                            <span>Applications</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <div class="nav-icon"></div>
+                            <span>Request Access</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <div class="nav-icon"></div>
+                            <span>Request Progress</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <div class="nav-icon"></div>
+                            <span>Reports</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <div class="nav-icon"></div>
+                            <span>Goals</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" style="margin-top: 40px;">
+                        <a href="#" class="nav-link">
+                            <div class="nav-icon"></div>
+                            <span>Profile</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <div class="nav-icon"></div>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Navbar -->
+            <nav class="navbar">
+                <div class="nav-left">
+                    <div class="menu-icon">☰</div>
+                    <div class="search-box">
+                        <span>🔍</span>
+                        <input type="text" placeholder="Search">
+                    </div>
+                </div>
+                <div class="nav-right">
+                    <div class="notification-icon">
+                        🔔
+                        <div class="notification-badge"></div>
+                    </div>
+                    <div class="user-profile">
+                        <div class="user-avatar"></div>
+                        <div class="user-info">
+                            <div class="user-name">Moni Roy</div>
+                            <div class="user-role">Admin</div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Content -->
+            <main class="content">
+                <h1 class="page-title">Welcome Harizaldy Cahya Pratama </h1>
+                <p>Here application that is accessable for you</p>
+                <div class="cards-grid">
+                    <!-- Impact Overview Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Impact Overview</h3>
+                            <span class="card-menu">⋯</span>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Emissions Reduced</div>
+                            <div class="metric-value">2.4 tons CO₂e</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Projects Tracked</div>
+                            <div class="metric-value">185</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Teams Involved</div>
+                            <div class="metric-value">28</div>
+                        </div>
+                        <div class="progress-circle">
+                            <svg width="120" height="120">
+                                <circle class="circle-bg" cx="60" cy="60" r="50"></circle>
+                                <circle class="circle-progress" cx="60" cy="60" r="50" 
+                                        stroke-dasharray="314" stroke-dashoffset="31.4"></circle>
+                            </svg>
+                            <div class="score-text">9.3</div>
+                        </div>
+                        <div style="text-align: center; color: #666; font-size: 12px;">AI score</div>
+                    </div>
+
+                    <!-- Emissions Trend Card -->
+                    <div class="card large-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Emissions Trend</h3>
+                            <span class="improvement-badge">(+12%) improvement since January</span>
+                        </div>
+                        <div class="chart-area"></div>
+                    </div>
+
+                    <!-- Carbon Overview Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Carbon Overview</h3>
+                            <span class="card-menu">⋯</span>
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-bottom: 20px;">Total emissions this month</div>
+                        <div class="progress-circle">
+                            <svg width="120" height="120">
+                                <circle class="circle-bg" cx="60" cy="60" r="50"></circle>
+                                <circle class="circle-progress" cx="60" cy="60" r="50" 
+                                        stroke-dasharray="314" stroke-dashoffset="69"></circle>
+                            </svg>
+                            <div class="score-text">78%</div>
+                        </div>
+                        <div style="text-align: center; color: #666; font-size: 12px; margin-top: 8px;">real-time insights</div>
+                    </div>
+
+                    <!-- New ESG Data Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">New ESG Data</h3>
+                            <span class="card-menu">⋯</span>
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-bottom: 20px;">Total entries tracked across your reports</div>
+                        <div class="metric">
+                            <div class="metric-value">4,826 <span style="font-size: 16px; color: #666;">↑1852</span></div>
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-bottom: 16px;">+28% increase in tracked ESG metrics this month</div>
+                        <div style="height: 80px; background-color: #00a651; border-radius: 8px;"></div>
+                    </div>
+
+                    <!-- ESG Analyzer Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">ESG Analyzer</h3>
+                            <button class="btn-primary">Run AI</button>
+                        </div>
+                        <div style="margin: 20px 0;">
+                            <div style="font-size: 14px; margin-bottom: 8px;">Your <strong>ESG score</strong> is <strong>80%</strong> 📈</div>
+                            <div style="font-size: 12px; color: #666; margin-bottom: 16px;">This score is considered to be Strong</div>
+                        </div>
+                        <div class="bar-chart">
+                            <div class="bar" style="height: 80%;"></div>
+                            <div class="bar" style="height: 90%;"></div>
+                            <div class="bar" style="height: 70%;"></div>
+                            <div class="bar" style="height: 85%;"></div>
+                            <div class="bar" style="height: 95%;"></div>
+                            <div class="bar" style="height: 75%;"></div>
+                            <div class="bar" style="height: 88%;"></div>
+                            <div class="bar" style="height: 82%;"></div>
+                            <div class="bar" style="height: 78%;"></div>
+                            <div class="bar" style="height: 92%;"></div>
+                            <div class="bar" style="height: 85%;"></div>
+                            <div class="bar" style="height: 80%;"></div>
+                        </div>
+                        <div style="font-size: 12px; color: #666;">Based on latest ESG reports<br>Last updated: July 2025</div>
+                    </div>
+                </div>
+                <h1 class="page-title">Unavailable Applications for Harizaldy Cahya Pratama</h1>
+
+                <div class="cards-grid">
+                    <!-- Impact Overview Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Impact Overview</h3>
+                            <span class="card-menu">⋯</span>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Emissions Reduced</div>
+                            <div class="metric-value">2.4 tons CO₂e</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Projects Tracked</div>
+                            <div class="metric-value">185</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Teams Involved</div>
+                            <div class="metric-value">28</div>
+                        </div>
+                        <div class="progress-circle">
+                            <svg width="120" height="120">
+                                <circle class="circle-bg" cx="60" cy="60" r="50"></circle>
+                                <circle class="circle-progress" cx="60" cy="60" r="50" 
+                                        stroke-dasharray="314" stroke-dashoffset="31.4"></circle>
+                            </svg>
+                            <div class="score-text">9.3</div>
+                        </div>
+                        <div style="text-align: center; color: #666; font-size: 12px;">AI score</div>
+                    </div>
+
+                    <!-- Emissions Trend Card -->
+                    <div class="card large-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Emissions Trend</h3>
+                            <span class="improvement-badge">(+12%) improvement since January</span>
+                        </div>
+                        <div class="chart-area"></div>
+                    </div>
+
+                    <!-- Carbon Overview Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Carbon Overview</h3>
+                            <span class="card-menu">⋯</span>
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-bottom: 20px;">Total emissions this month</div>
+                        <div class="progress-circle">
+                            <svg width="120" height="120">
+                                <circle class="circle-bg" cx="60" cy="60" r="50"></circle>
+                                <circle class="circle-progress" cx="60" cy="60" r="50" 
+                                        stroke-dasharray="314" stroke-dashoffset="69"></circle>
+                            </svg>
+                            <div class="score-text">78%</div>
+                        </div>
+                        <div style="text-align: center; color: #666; font-size: 12px; margin-top: 8px;">real-time insights</div>
+                    </div>
+
+                    <!-- New ESG Data Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">New ESG Data</h3>
+                            <span class="card-menu">⋯</span>
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-bottom: 20px;">Total entries tracked across your reports</div>
+                        <div class="metric">
+                            <div class="metric-value">4,826 <span style="font-size: 16px; color: #666;">↑1852</span></div>
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-bottom: 16px;">+28% increase in tracked ESG metrics this month</div>
+                        <div style="height: 80px; background-color: #00a651; border-radius: 8px;"></div>
+                    </div>
+
+                    <!-- ESG Analyzer Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">ESG Analyzer</h3>
+                            <button class="btn-primary">Run AI</button>
+                        </div>
+                        <div style="margin: 20px 0;">
+                            <div style="font-size: 14px; margin-bottom: 8px;">Your <strong>ESG score</strong> is <strong>80%</strong> 📈</div>
+                            <div style="font-size: 12px; color: #666; margin-bottom: 16px;">This score is considered to be Strong</div>
+                        </div>
+                        <div class="bar-chart">
+                            <div class="bar" style="height: 80%;"></div>
+                            <div class="bar" style="height: 90%;"></div>
+                            <div class="bar" style="height: 70%;"></div>
+                            <div class="bar" style="height: 85%;"></div>
+                            <div class="bar" style="height: 95%;"></div>
+                            <div class="bar" style="height: 75%;"></div>
+                            <div class="bar" style="height: 88%;"></div>
+                            <div class="bar" style="height: 82%;"></div>
+                            <div class="bar" style="height: 78%;"></div>
+                            <div class="bar" style="height: 92%;"></div>
+                            <div class="bar" style="height: 85%;"></div>
+                            <div class="bar" style="height: 80%;"></div>
+                        </div>
+                        <div style="font-size: 12px; color: #666;">Based on latest ESG reports<br>Last updated: July 2025</div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
