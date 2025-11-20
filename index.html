@@ -1,29 +1,17 @@
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @import "tailwindcss";
+        @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+    </style>
+
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-
-
     <style>
-        .background {
-            background: linear-gradient(135deg, #001BB7, #000A44);
-            color: black;
-        }
-
-        .text {
-            display: inline-block; /* Important */
-            background: linear-gradient(60deg, #001BB7, #000A44);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            -webkit-text-fill-color: transparent;
-        }
-
-        
         @keyframes shine {
             0% {
                 transform: translate(-50%, -50%) rotate(25deg);
@@ -79,7 +67,7 @@
 
         <!-- Sidebar -->
         <div 
-            class="sidebar w-[20rem] h-full rounded-lg bg-slate-100 shadow-lg px-5 py-10 flex flex-col"
+            class="sidebar w-[20rem] h-full rounded-lg bg-slate-100 dark:bg-slate-900 shadow-lg px-5 py-10 flex flex-col"
             x-show="sidebar"
             x-transition:enter="transition-all duration-300 ease-out"
             x-transition:enter-start="opacity-0 -ml-[20rem]"
@@ -89,21 +77,27 @@
             x-transition:leave-end="opacity-0 -ml-[20rem]"
             >
             
-            <!-- Top section -->
             <div class="top flex items-center gap-3 mb-[3rem]">
-
-                <div class="h-[5rem]">
-                    LOGO
+                <div class="w-full flex items-center gap-3 my-5 rounded-lg cursor-pointer transition-colors">
+                    <div class="bg-white dark:bg-indigo-900 rounded p-3">
+                        <img src="assets/logo.png" class="w-[4rem] h-auto object-contain" alt="">
+                    </div>
+                    <div class="flex flex-col justify-center ml-2 p-1">
+                        <h5 class="font-bold text-xl dark:text-white text-blue-900">TRIASMITRA</h5>
+                        <p class="font-bold dark:text-white text-amber-600">submarine deployer</p>
+                    </div>
                 </div>
+
             </div>
+
             
             <!-- Center section (scrollable) -->
             <div class="center flex-1 overflow-y-auto mb-[3rem]">
                 <!-- Applications -->
-                <div class="w-full flex items-center gap-3 p-3 my-5 bg-white rounded-lg cursor-pointer transition-colors shadow-lg">
-                    <div class="w-8 h-8 background rounded flex items-center justify-center flex-shrink-0">
+                <div class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
+                    <div class="w-8 h-8 bg-indigo-900 dark:bg-white rounded flex items-center justify-center flex-shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"
-                            class="w-5 h-5 text-white" fill="none" stroke="white" stroke-width="2"
+                            class="w-5 h-5 text-white dark:text-black" fill="none" stroke="black" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round">
                             <rect x="3" y="3" width="7" height="7" />
                             <rect x="14" y="3" width="7" height="7" />
@@ -111,13 +105,13 @@
                             <rect x="3" y="14" width="7" height="7" />
                         </svg>
                     </div>
-                    <span class="font-medium">Applications</span>
+                    <span class="font-medium text-black dark:text-white">Dashboard</span>
                 </div>
-                <a href="request_access.html">
-                    <div class="w-full flex items-center gap-3 p-3 my-5 rounded-lg cursor-pointer transition-colors">
-                        <div class="w-8 h-8 background rounded flex items-center justify-center flex-shrink-0">
+                <a href="index.html">
+                    <div class="w-full flex items-center gap-3 p-3 my-2 bg-white dark:bg-indigo-900 rounded-lg cursor-pointer transition-colors shadow-lg">
+                        <div class="w-8 h-8 bg-indigo-900 dark:bg-white rounded flex items-center justify-center flex-shrink-0">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"
-                                class="w-5 h-5 text-white" fill="none" stroke="white" stroke-width="2"
+                                class="w-5 h-5 text-white dark:text-black" fill="none" stroke="black" stroke-width="2"
                                 stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="3" width="7" height="7" />
                                 <rect x="14" y="3" width="7" height="7" />
@@ -125,26 +119,35 @@
                                 <rect x="3" y="14" width="7" height="7" />
                             </svg>
                         </div>
-                        <span class="font-medium">Request Access</span>
+                        <span class="font-medium text-black dark:text-white">Portal</span>
                     </div>
                 </a>
-                <div class="w-full flex items-center gap-3 p-3 my-5 rounded-lg cursor-pointer transition-colors">
-                    <div class="w-8 h-8 background rounded flex items-center justify-center flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"
-                            class="w-5 h-5 text-white" fill="none" stroke="white" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="7" height="7" />
-                            <rect x="14" y="3" width="7" height="7" />
-                            <rect x="14" y="14" width="7" height="7" />
-                            <rect x="3" y="14" width="7" height="7" />
-                        </svg>
-                    </div>
-                    <span class="font-medium">Applications</span>
+
+
+
+                <div class="w-full flex items-center gap-3 p-3 mt-8 rounded-lg cursor-pointer transition-colors shadow-lg">
+                    <span class="font-bold text-black dark:text-white"> <small>APPLICATION TICKET</small></span>
                 </div>
-                <div class="w-full flex items-center gap-3 p-3 my-5 rounded-lg cursor-pointer transition-colors">
-                    <div class="w-8 h-8 background rounded flex items-center justify-center flex-shrink-0">
+
+                <a href="create_ticket.html">
+                    <div class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
+                        <div class="w-8 h-8 bg-indigo-900 dark:bg-white rounded flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"
+                                class="w-5 h-5 text-white dark:text-black" fill="none" stroke="black" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                        </div>
+                        <span class="font-medium text-black dark:text-white">Create New Ticket</span>
+                    </div>
+                </a>
+                <div class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
+                    <div class="w-8 h-8 bg-indigo-900 dark:bg-white rounded flex items-center justify-center flex-shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"
-                            class="w-5 h-5 text-white" fill="none" stroke="white" stroke-width="2"
+                            class="w-5 h-5 text-white dark:text-black" fill="none" stroke="black" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round">
                             <rect x="3" y="3" width="7" height="7" />
                             <rect x="14" y="3" width="7" height="7" />
@@ -152,13 +155,56 @@
                             <rect x="3" y="14" width="7" height="7" />
                         </svg>
                     </div>
-                    <span class="font-medium">Applications</span>
+                    <span class="font-medium text-black dark:text-white">My Ticket</span>
+                </div>
+
+                <div class="w-full flex items-center gap-3 p-3 mt-8 rounded-lg cursor-pointer transition-colors shadow-lg">
+                    <span class="font-bold text-black dark:text-white"> <small>TICKET APPROVAL</small></span>
+                </div>
+                <div class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
+                    <div class="w-8 h-8 bg-indigo-900 dark:bg-white rounded flex items-center justify-center flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"
+                            class="w-5 h-5 text-white dark:text-black" fill="none" stroke="black" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7" />
+                            <rect x="14" y="3" width="7" height="7" />
+                            <rect x="14" y="14" width="7" height="7" />
+                            <rect x="3" y="14" width="7" height="7" />
+                        </svg>
+                    </div>
+                    <span class="font-medium text-black dark:text-white">Ticket Pending</span>
+                </div>
+                <div class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
+                    <div class="w-8 h-8 bg-indigo-900 dark:bg-white rounded flex items-center justify-center flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"
+                            class="w-5 h-5 text-white dark:text-black" fill="none" stroke="black" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7" />
+                            <rect x="14" y="3" width="7" height="7" />
+                            <rect x="14" y="14" width="7" height="7" />
+                            <rect x="3" y="14" width="7" height="7" />
+                        </svg>
+                    </div>
+                    <span class="font-medium text-black dark:text-white">History Approval</span>
                 </div>
             </div>
 
             <!-- Bottom section -->
             <div class="bottom">
-                <div class="w-full flex items-center gap-3 p-3 my-5 rounded-lg cursor-pointer transition-colors">
+                <div class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
+                    <div class="w-8 h-8 bg-indigo-900 dark:bg-white rounded flex items-center justify-center flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"
+                            class="w-5 h-5 text-white dark:text-black" fill="none" stroke="black" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7" />
+                            <rect x="14" y="3" width="7" height="7" />
+                            <rect x="14" y="14" width="7" height="7" />
+                            <rect x="3" y="14" width="7" height="7" />
+                        </svg>
+                    </div>
+                    <span class="font-medium text-black dark:text-white">Profile</span>
+                </div>
+                <!-- <div class="w-full flex items-center gap-3 p-3 my-5 rounded-lg cursor-pointer transition-colors">
                     <div class="w-8 h-8 background rounded flex items-center justify-center flex-shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"
                             class="w-5 h-5 text-white" fill="none" stroke="white" stroke-width="2"
@@ -170,20 +216,7 @@
                         </svg>
                     </div>
                     <span class="font-medium">Applications</span>
-                </div>
-                <div class="w-full flex items-center gap-3 p-3 my-5 rounded-lg cursor-pointer transition-colors">
-                    <div class="w-8 h-8 background rounded flex items-center justify-center flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"
-                            class="w-5 h-5 text-white" fill="none" stroke="white" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="7" height="7" />
-                            <rect x="14" y="3" width="7" height="7" />
-                            <rect x="14" y="14" width="7" height="7" />
-                            <rect x="3" y="14" width="7" height="7" />
-                        </svg>
-                    </div>
-                    <span class="font-medium">Applications</span>
-                </div>
+                </div> -->
             </div>
         </div>
 
@@ -246,7 +279,7 @@
 
                 <div class="mb-5">
                     <h1 class="font-bold text-5xl mb-5 text">
-                        Applications
+                        Applications Portal
                     </h1>
 
                     <p>
