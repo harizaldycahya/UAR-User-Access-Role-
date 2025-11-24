@@ -249,78 +249,139 @@
             </div>
 
 
-            <div class="content w-full flex-1 rounded-lg bg-slate-100 dark:bg-slate-900 shadow-lg p-[3rem] flex flex-col overflow-hidden bg-indigo-900">
+            <div class="content w-full flex-1 rounded-lg bg-slate-100 dark:bg-slate-900 shadow-lg p-[3rem] flex flex-col overflow-hidden">
 
                 <div class="mb-5 text-black dark:text-white">
                     <h1 class="font-bold text-5xl mb-5 ">
-                        MY Ticket
+                        Request Number # UAR-1234556
                     </h1>
-
-                    <p>
-                        Browse your ticket history, check updates, and monitor the status of each request.
-                    </p>
+                    <span class="px-3 py-1 rounded-lg bg-yellow-500 text-white text-sm font-semibold">
+                        Waiting Approval
+                    </span>
                 </div>
 
                 <div class="my-5"></div>
                 <br>
                 <div class="flex-1 overflow-y-auto">
-                    <!-- Responsive Table -->
-                    <div class="overflow-x-auto rounded-lg shadow-lg">
-                        <table class="w-full bg-white dark:bg-slate-800 border border-black dark:border-slate-700">
-                            <thead>
-                                <tr class="bg-indigo-900 dark:bg-indigo-950 text-white">
-                                    <th class="px-6 py-4 text-left text-sm font-semibold border border-white dark:border-slate-700">Ticket ID</th>
-                                    <th class="px-6 py-4 text-left text-sm font-semibold border border-white dark:border-slate-700">Application</th>
-                                    <th class="px-6 py-4 text-left text-sm font-semibold border border-white dark:border-slate-700">Category</th>
-                                    <th class="px-6 py-4 text-left text-sm font-semibold border border-white dark:border-slate-700">Status</th>
-                                    <th class="px-6 py-4 text-left text-sm font-semibold border border-white dark:border-slate-700">Created Date</th>
-                                </tr>
-                            </thead>
+                    <!-- Approval Progress Bar -->
+                    <div class="w-full " x-data="{ 
+                        currentStep: 2,
+                        steps: [
+                            { id: 1, name: 'Submitted', role: 'Requester', date: '2024-11-20 10:30', status: 'completed' },
+                            { id: 2, name: 'Manager Review', role: 'Atasan 1', date: '2024-11-21 14:15', status: 'current' },
+                            { id: 3, name: 'Department Head', role: 'Admin HRD', date: null, status: 'pending' },
+                            { id: 4, name: 'IT Approval', role: 'Application Owner', date: null, status: 'pending' }
+                        ]
+                    }">
+                        
+                        <!-- Progress Steps -->
+                        <div class="relative">
+                            <!-- Progress Line Background -->
+                            <div class="absolute top-8 left-0 right-0 h-1 bg-slate-300 dark:bg-slate-700" 
+                                style="margin-left: 2rem; margin-right: 2rem;"></div>
+                            
+                            <!-- Progress Line Fill -->
+                            <div class="absolute top-8 left-0 h-1 bg-indigo-600 transition-all duration-500" 
+                                style="margin-left: 2rem;"
+                                :style="`width: calc(${((currentStep - 1) / (steps.length - 1)) * 100}% - 4rem + ${((currentStep - 1) / (steps.length - 1)) * 4}rem)`">
+                            </div>
 
-                            <tbody>
+                            <!-- Steps Container -->
+                            <div class="relative flex justify-between">
+                                <template x-for="(step, index) in steps" :key="step.id">
+                                    <div class="flex flex-col items-center" style="flex: 1;">
+                                        <!-- Step Circle -->
+                                        <div class="relative z-10 flex items-center justify-center w-16 h-16 rounded-full border-4 transition-all duration-300"
+                                            :class="{
+                                                'bg-indigo-600 border-indigo-600': step.status === 'completed',
+                                                'bg-white dark:bg-slate-900 border-indigo-600 ring-4 ring-indigo-200': step.status === 'current',
+                                                'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700': step.status === 'pending'
+                                            }">
+                                            
+                                            <!-- Completed Check Icon -->
+                                            <svg x-show="step.status === 'completed'" 
+                                                xmlns="http://www.w3.org/2000/svg" 
+                                                class="w-8 h-8 text-white" 
+                                                fill="none" viewBox="0 0 24 24" 
+                                                stroke="currentColor" stroke-width="3">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            
+                                            <!-- Current Step Number -->
+                                            <span x-show="step.status === 'current'" 
+                                                class="text-2xl font-bold text-indigo-600" 
+                                                x-text="step.id"></span>
+                                            
+                                            <!-- Pending Step Number -->
+                                            <span x-show="step.status === 'pending'" 
+                                                class="text-2xl font-bold text-slate-400 dark:text-slate-600" 
+                                                x-text="step.id"></span>
+                                        </div>
 
-                                <!-- Row 1 -->
-                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                    <td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white border border-black dark:border-slate-700">
-                                        <a href="detail_ticket.html" class="text-blue-600 dark:text-blue-300 underline">
-                                            UAR-12345671
-                                        </a>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">HRIS – Human Resource Management System</td>
-                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">Application Access</td>
-                                    <td class="px-6 py-4 border border-black dark:border-slate-700">
-                                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">In Progress</span>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">11/21/2025</td>
-                                </tr>
-                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                    <td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white border border-black dark:border-slate-700">
-                                        <a href="" class="text-blue-600 dark:text-blue-300 underline">
-                                            UAR-12345672
-                                        </a>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">AMS – Assets Management System</td>
-                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">Application Access</td>
-                                    <td class="px-6 py-4 border border-black dark:border-slate-700">
-                                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">In Progress</span>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">11/21/2025</td>
-                                </tr>
-                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                    <td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white border border-black dark:border-slate-700">
-                                        <a href="" class="text-blue-600 dark:text-blue-300 underline">
-                                            UAR-12345673
-                                        </a>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">AAS – Advance Administration System</td>
-                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">Application Access</td>
-                                    <td class="px-6 py-4 border border-black dark:border-slate-700">
-                                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">In Progress</span>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">11/21/2025</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                        <!-- Step Info -->
+                                        <div class="mt-4 text-center">
+                                            <p class="font-semibold text-sm"
+                                                :class="{
+                                                    'text-indigo-600': step.status === 'completed' || step.status === 'current',
+                                                    'text-slate-400 dark:text-slate-600': step.status === 'pending'
+                                                }"
+                                                x-text="step.name"></p>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" x-text="step.role"></p>
+                                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" x-text="step.date || 'Pending'"></p>
+                                        </div>
+
+                                        <!-- Animated particles for current step -->
+                                        <template x-if="step.status === 'current'">
+                                            <div class="absolute top-0 pointer-events-none">
+                                                <div class="particle"></div>
+                                                <div class="particle"></div>
+                                                <div class="particle"></div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Additional Details Section -->
+                        <div class="mt-12 p-6 bg-white dark:bg-slate-800 rounded-lg shadow-md">
+                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Current Status Details</h2>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">Current Approver</p>
+                                    <p class="font-semibold text-slate-800 dark:text-white">John Smith - Line Manager</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">Pending Since</p>
+                                    <p class="font-semibold text-slate-800 dark:text-white">2024-11-21 14:15</p>
+                                </div>
+                                
+                                <div>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">Request Type</p>
+                                    <p class="font-semibold text-slate-800 dark:text-white">Server Deployment</p>
+                                </div>
+                            </div>
+                            <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded border-l-4 border-blue-500">
+                                <p class="text-sm text-blue-800 dark:text-blue-300">
+                                    <strong>Note:</strong> Your request is currently being reviewed by your line manager. You will be notified once a decision is made.
+                                </p>
+                            </div>
+
+                            <hr class="my-5">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">Application Name</p>
+                                    <p class="font-semibold text-slate-800 dark:text-white">AMS - Assets Management System</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">Current Role</p>
+                                    <p class="font-semibold text-slate-800 dark:text-white">MS Admin</p>
+                                </div>
+                                
+                            </div>
+
+                        </div>
 
                     </div>
                 </div>
