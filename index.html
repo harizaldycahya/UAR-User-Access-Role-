@@ -196,39 +196,43 @@
                     <span class="font-bold text-white"><small>TICKET APPROVAL</small></span>
                 </div>
 
-                <div
-                    class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
-                    <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
-                            fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="7" height="7" />
-                            <rect x="14" y="3" width="7" height="7" />
-                            <rect x="14" y="14" width="7" height="7" />
-                            <rect x="3" y="14" width="7" height="7" />
-                        </svg>
+                <a href="ticket_pending.html">
+                    <div
+                        class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
+                        <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
+                                fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                        </div>
+                        <span class="font-medium text-white">Ticket Pending</span>
                     </div>
-                    <span class="font-medium text-white">Ticket Pending</span>
-                </div>
+                </a>
 
-                <div
-                    class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
-                    <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
-                            fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="7" height="7" />
-                            <rect x="14" y="3" width="7" height="7" />
-                            <rect x="14" y="14" width="7" height="7" />
-                            <rect x="3" y="14" width="7" height="7" />
-                        </svg>
+                <a href="history_approval.html">
+                    <div
+                        class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
+                        <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
+                                fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                        </div>
+                        <span class="font-medium text-white">History Approval</span>
                     </div>
-                    <span class="font-medium text-white">History Approval</span>
-                </div>
+                </a>
             </div>
 
             <!-- Bottom section -->
             <div class="bottom">
                 <div
-                    class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
+                    class="w-full flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors shadow-lg">
                     <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
                             fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -246,11 +250,9 @@
 
         <!-- Main Content -->
         <div class="flex-1 h-full rounded-lg flex flex-col ">
-
             <!-- Navbar -->
             <div
                 class="navbar flex justify-between items-center w-full rounded-lg mb-[.5rem] bg-slate-100 dark:bg-slate-900 shadow-lg px-[3rem] py-[.5rem] text-black dark:text-white">
-
                 <!-- Left side: Hamburger Icon -->
                 <div class="w-[3rem] h-[3rem] flex items-center justify-center cursor-pointer"
                     @click="sidebar = !sidebar">

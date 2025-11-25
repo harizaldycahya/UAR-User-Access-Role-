@@ -10,6 +10,7 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
         @keyframes shine {
@@ -63,7 +64,121 @@
     </style>
 </head>
 <body class="h-screen bg-white dark:bg-indigo-900">
-    <div class="h-full flex p-[.5rem] gap-[.5rem] " x-data="{ sidebar: true }">
+    <div class="h-full flex p-[.5rem] gap-[.5rem] " x-data="{ 
+        sidebar: true,
+        openModal(ticketId, appName, category, date) {
+            Swal.fire({
+                title: '<strong>Ticket Details</strong>',
+                html: `
+                    <div class='text-left space-y-4'>
+                        <div class='bg-indigo-50 p-4 rounded-lg border-l-4 border-indigo-500'>
+                            <p class='text-xs text-gray-500 mb-1'>Ticket ID</p>
+                            <p class='text-lg font-bold text-indigo-600'>${ticketId}</p>
+                        </div>
+                        
+                        <div class='bg-gray-50 p-4 rounded-lg'>
+                            <p class='text-xs text-gray-500 mb-1'>Application</p>
+                            <p class='text-sm font-medium text-gray-800'>${appName}</p>
+                        </div>
+                        
+                        <div class='grid grid-cols-2 gap-3'>
+                            <div class='bg-gray-50 p-3 rounded-lg'>
+                                <p class='text-xs text-gray-500 mb-1'>Category</p>
+                                <p class='text-sm font-medium text-gray-800'>${category}</p>
+                            </div>
+                            
+                            <div class='bg-gray-50 p-3 rounded-lg'>
+                                <p class='text-xs text-gray-500 mb-1'>Date</p>
+                                <p class='text-sm font-medium text-gray-800'>${date}</p>
+                            </div>
+                        </div>
+                        
+                        <div class='bg-yellow-50 p-3 rounded-lg border-l-4 border-yellow-500'>
+                            <p class='text-xs text-gray-500 mb-1'>Status</p>
+                            <span class='inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800'>Pending Approval</span>
+                        </div>
+                    </div>
+                `,
+                width: '600px',
+                showCancelButton: true,
+                showDenyButton: true,
+                confirmButtonText: '<i class=\'fa fa-check\'></i> Approve',
+                denyButtonText: '<i class=\'fa fa-times\'></i> Reject',
+                cancelButtonText: 'Close',
+                confirmButtonColor: '#16a34a',
+                denyButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                customClass: {
+                    popup: 'rounded-xl',
+                    title: 'text-2xl',
+                    htmlContainer: 'text-left'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.approveTicket(ticketId);
+                } else if (result.isDenied) {
+                    this.rejectTicket(ticketId);
+                }
+            });
+        },
+        approveTicket(ticketId) {
+            Swal.fire({
+                title: 'Approve Ticket?',
+                html: `Are you sure you want to approve ticket <strong>${ticketId}</strong>?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#16a34a',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, Approve',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Approved!',
+                        html: `Ticket <strong>${ticketId}</strong> has been approved successfully.`,
+                        icon: 'success',
+                        confirmButtonColor: '#4f46e5',
+                        timer: 2000,
+                        timerProgressBar: true
+                    });
+                    // Di sini nanti bisa tambahkan logika untuk update status tiket
+                }
+            });
+        },
+        rejectTicket(ticketId) {
+            Swal.fire({
+                title: 'Reject Ticket?',
+                html: `Please provide a reason for rejecting ticket <strong>${ticketId}</strong>`,
+                icon: 'warning',
+                input: 'textarea',
+                inputPlaceholder: 'Enter rejection reason...',
+                inputAttributes: {
+                    'aria-label': 'Enter rejection reason'
+                },
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Reject Ticket',
+                cancelButtonText: 'Cancel',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'You need to provide a reason!'
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Rejected!',
+                        html: `Ticket <strong>${ticketId}</strong> has been rejected.<br><br><strong>Reason:</strong> ${result.value}`,
+                        icon: 'error',
+                        confirmButtonColor: '#4f46e5',
+                        timerProgressBar: true
+                    });
+                    // Di sini nanti bisa tambahkan logika untuk update status tiket
+                }
+            });
+        }
+    }">
 
         <!-- Sidebar -->
         <div class="sidebar w-[20rem] h-full rounded-lg bg-slate-900 shadow-lg px-5 py-10 flex flex-col"
@@ -127,7 +242,7 @@
 
                 <a href="myticket.html">
                     <div
-                        class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg bg-indigo-900">
+                        class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
                         <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
                                 fill="none" stroke="black" stroke-width="2" stroke-linecap="round"
@@ -149,7 +264,7 @@
 
                 <a href="ticket_pending.html">
                     <div
-                        class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
+                        class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg bg-indigo-900">
                         <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
                                 fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -253,140 +368,84 @@
             </div>
 
 
-            <div class="content w-full flex-1 rounded-lg bg-slate-100 dark:bg-slate-900 shadow-lg p-[3rem] flex flex-col overflow-hidden">
+            <div class="content w-full flex-1 rounded-lg bg-slate-100 dark:bg-slate-900 shadow-lg p-[3rem] flex flex-col overflow-hidden bg-indigo-900">
 
                 <div class="mb-5 text-black dark:text-white">
                     <h1 class="font-bold text-5xl mb-5 ">
-                        Request Number # UAR-1234556
+                        Ticket Pending
                     </h1>
-                    <span class="px-3 py-1 rounded-lg bg-yellow-500 text-white text-sm font-semibold">
-                        Waiting Approval
-                    </span>
+
+                    <p>
+                        Review and approve or reject pending ticket requests. Click on the ticket ID to view details and take action.
+                    </p>
                 </div>
 
                 <div class="my-5"></div>
                 <br>
                 <div class="flex-1 overflow-y-auto">
-                    <!-- Approval Progress Bar -->
-                    <div class="w-full " x-data="{ 
-                        currentStep: 2,
-                        steps: [
-                            { id: 1, name: 'Submitted', role: 'Requester', date: '2024-11-20 10:30', status: 'completed' },
-                            { id: 2, name: 'Manager Review', role: 'Atasan 1', date: '2024-11-21 14:15', status: 'current' },
-                            { id: 3, name: 'Department Head', role: 'Admin HRD', date: null, status: 'pending' },
-                            { id: 4, name: 'IT Approval', role: 'Application Owner', date: null, status: 'pending' }
-                        ]
-                    }">
-                        
-                        <!-- Progress Steps -->
-                        <div class="relative">
-                            <!-- Progress Line Background -->
-                            <div class="absolute top-8 left-0 right-0 h-1 bg-slate-300 dark:bg-slate-700" 
-                                style="margin-left: 2rem; margin-right: 2rem;"></div>
-                            
-                            <!-- Progress Line Fill -->
-                            <div class="absolute top-8 left-0 h-1 bg-indigo-600 transition-all duration-500" 
-                                style="margin-left: 2rem;"
-                                :style="`width: calc(${((currentStep - 1) / (steps.length - 1)) * 100}% - 4rem + ${((currentStep - 1) / (steps.length - 1)) * 4}rem)`">
-                            </div>
+                    <!-- Responsive Table -->
+                    <div class="overflow-x-auto rounded-lg shadow-lg">
+                        <table class="w-full bg-white dark:bg-slate-800 border border-black dark:border-slate-700">
+                            <thead>
+                                <tr class="bg-indigo-900 dark:bg-indigo-950 text-white">
+                                    <th class="px-6 py-4 text-left text-sm font-semibold border border-white dark:border-slate-700">Ticket ID</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold border border-white dark:border-slate-700">Application</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold border border-white dark:border-slate-700">Category</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold border border-white dark:border-slate-700">Status</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold border border-white dark:border-slate-700">Request Date</th>
+                                </tr>
+                            </thead>
 
-                            <!-- Steps Container -->
-                            <div class="relative flex justify-between">
-                                <template x-for="(step, index) in steps" :key="step.id">
-                                    <div class="flex flex-col items-center" style="flex: 1;">
-                                        <!-- Step Circle -->
-                                        <div class="relative z-10 flex items-center justify-center w-16 h-16 rounded-full border-4 transition-all duration-300"
-                                            :class="{
-                                                'bg-indigo-600 border-indigo-600': step.status === 'completed',
-                                                'bg-white dark:bg-slate-900 border-indigo-600 ring-4 ring-indigo-200': step.status === 'current',
-                                                'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700': step.status === 'pending'
-                                            }">
-                                            
-                                            <!-- Completed Check Icon -->
-                                            <svg x-show="step.status === 'completed'" 
-                                                xmlns="http://www.w3.org/2000/svg" 
-                                                class="w-8 h-8 text-white" 
-                                                fill="none" viewBox="0 0 24 24" 
-                                                stroke="currentColor" stroke-width="3">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            
-                                            <!-- Current Step Number -->
-                                            <span x-show="step.status === 'current'" 
-                                                class="text-2xl font-bold text-indigo-600" 
-                                                x-text="step.id"></span>
-                                            
-                                            <!-- Pending Step Number -->
-                                            <span x-show="step.status === 'pending'" 
-                                                class="text-2xl font-bold text-slate-400 dark:text-slate-600" 
-                                                x-text="step.id"></span>
-                                        </div>
+                            <tbody>
 
-                                        <!-- Step Info -->
-                                        <div class="mt-4 text-center">
-                                            <p class="font-semibold text-sm"
-                                                :class="{
-                                                    'text-indigo-600': step.status === 'completed' || step.status === 'current',
-                                                    'text-slate-400 dark:text-slate-600': step.status === 'pending'
-                                                }"
-                                                x-text="step.name"></p>
-                                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" x-text="step.role"></p>
-                                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" x-text="step.date || 'Pending'"></p>
-                                        </div>
-
-                                        <!-- Animated particles for current step -->
-                                        <template x-if="step.status === 'current'">
-                                            <div class="absolute top-0 pointer-events-none">
-                                                <div class="particle"></div>
-                                                <div class="particle"></div>
-                                                <div class="particle"></div>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-
-                        <!-- Additional Details Section -->
-                        <div class="mt-12 p-6 bg-white dark:bg-slate-800 rounded-lg shadow-md">
-                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Current Status Details</h2>
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="text-sm text-slate-500 dark:text-slate-400">Current Approver</p>
-                                    <p class="font-semibold text-slate-800 dark:text-white">John Smith - Line Manager</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-slate-500 dark:text-slate-400">Pending Since</p>
-                                    <p class="font-semibold text-slate-800 dark:text-white">2024-11-21 14:15</p>
-                                </div>
-                                
-                                <div>
-                                    <p class="text-sm text-slate-500 dark:text-slate-400">Request Type</p>
-                                    <p class="font-semibold text-slate-800 dark:text-white">Server Deployment</p>
-                                </div>
-                            </div>
-                            <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded border-l-4 border-blue-500">
-                                <p class="text-sm text-blue-800 dark:text-blue-300">
-                                    <strong>Note:</strong> Your request is currently being reviewed by your line manager. You will be notified once a decision is made.
-                                </p>
-                            </div>
-
-                            <hr class="my-5">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="text-sm text-slate-500 dark:text-slate-400">Application Name</p>
-                                    <p class="font-semibold text-slate-800 dark:text-white">AMS - Assets Management System</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-slate-500 dark:text-slate-400">Current Role</p>
-                                    <p class="font-semibold text-slate-800 dark:text-white">MS Admin</p>
-                                </div>
-                                
-                            </div>
-
-                        </div>
-
+                                <!-- Row 1 -->
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                    <td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white border border-black dark:border-slate-700">
+                                        <a @click.prevent="openModal('UAR-12345671', 'HRIS – Human Resource Management System', 'Application Access', '11/21/2025')" 
+                                           href="#" 
+                                           class="text-blue-600 dark:text-blue-300 underline cursor-pointer hover:text-blue-800">
+                                            UAR-12345671
+                                        </a>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">HRIS – Human Resource Management System</td>
+                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">Application Access</td>
+                                    <td class="px-6 py-4 border border-black dark:border-slate-700">
+                                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Pending</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">11/21/2025</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                    <td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white border border-black dark:border-slate-700">
+                                        <a @click.prevent="openModal('UAR-12345672', 'AMS – Assets Management System', 'Application Access', '11/21/2025')" 
+                                           href="#" 
+                                           class="text-blue-600 dark:text-blue-300 underline cursor-pointer hover:text-blue-800">
+                                            UAR-12345672
+                                        </a>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">AMS – Assets Management System</td>
+                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">Application Access</td>
+                                    <td class="px-6 py-4 border border-black dark:border-slate-700">
+                                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Pending</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">11/21/2025</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                    <td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white border border-black dark:border-slate-700">
+                                        <a @click.prevent="openModal('UAR-12345673', 'AAS – Advance Administration System', 'Application Access', '11/21/2025')" 
+                                           href="#" 
+                                           class="text-blue-600 dark:text-blue-300 underline cursor-pointer hover:text-blue-800">
+                                            UAR-12345673
+                                        </a>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">AAS – Advance Administration System</td>
+                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">Application Access</td>
+                                    <td class="px-6 py-4 border border-black dark:border-slate-700">
+                                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Pending</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 border border-black dark:border-slate-700">11/21/2025</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
