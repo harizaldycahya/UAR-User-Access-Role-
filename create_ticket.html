@@ -198,7 +198,6 @@
             </div>
         </div>
 
-
         <!-- Main Content -->
         <div class="flex-1 h-full rounded-lg flex flex-col ">
             
@@ -207,7 +206,7 @@
                 
                 <!-- Left side: Hamburger Icon -->
                 <div 
-                    class="w-[3rem] h-[3rem] flex items-center justify-center cursor-pointer"
+                    class="w-[3rem] h-[3rem] flex items-center justify-center cursor-pointer text-black dark:text-white"
                     @click="sidebar = !sidebar"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" 
@@ -236,23 +235,45 @@
                         <span class="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
                     </div>
 
-                    <!-- Profile -->
-                    <div class="flex items-center gap-3 cursor-pointer select-none">
-                        <img 
-                            src="https://randomuser.me/api/portraits/men/32.jpg" 
-                            alt="profile"
-                            class="w-10 h-10 rounded-full object-cover shadow-sm"
-                        >
-                        <span class="font-semibold text-slate-700 text-sm">
-                            Mariadi Pudidi
-                        </span>
+                    <!-- Profile Dropdown -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="flex items-center gap-3 cursor-pointer select-none">
+                            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Profile"
+                                class="w-10 h-10 rounded-full object-cover shadow-sm">
+                            <span class="font-semibold text-black dark:text-white">
+                                Mariadi Pudidi
+                            </span>
+
+                            <!-- Chevron Down Icon -->
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-300 transition-transform duration-200"
+                                fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        <!-- Dropdown Menu -->
+                        <div x-show="open"
+                            @click.outside="open = false"
+                            x-transition
+                            class="absolute right-0 mt-2 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+                            
+                            <a href="/profile.html"
+                            class="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-indigo-100 dark:hover:bg-slate-700">
+                                Profile
+                            </a>
+
+                            <button onclick="window.location.href='/login.html'" 
+                                class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-slate-700">
+                                Logout
+                            </button>
+                        </div>
                     </div>
 
                 </div>
 
             </div>
-
-
+            
             <div class="content w-full flex-1 rounded-lg bg-slate-100 dark:bg-slate-900 shadow-lg p-[3rem] flex flex-col overflow-hidden">
 
                 <div class="mb-5 text-black dark:text-white">
@@ -273,10 +294,18 @@
                     formData: {
                         ticketType: '',
                         title: '',
-                        description: ''
+                        description: '',
+                        currentRole: 'MS Admin',
+                        requestedRole: '',
+                        accessOptions: [
+                            { name: 'View Dashboard', checked: false },
+                            { name: 'Download Report', checked: false },
+                            { name: 'Manage Data', checked: false },
+                            { name: 'Admin Panel', checked: false },
+                        ]
                     },
                     nextStep() {
-                        if (this.step < 3) this.step++;
+                        if (this.step < 4) this.step++;
                     },
                     prevStep() {
                         if (this.step > 1) this.step--;
@@ -296,8 +325,8 @@
                     <!-- Progress Steps -->
                     <div class="mb-8">
                         <div class="flex items-center justify-between max-w-[80%]">
-                            <template x-for="i in 3" :key="i">
-                                <div class="flex items-center" :class="{ 'flex-1': i < 3 }">
+                            <template x-for="i in 4" :key="i">
+                                <div class="flex items-center" :class="{ 'flex-1': i < 4 }">
                                     <div class="flex flex-col items-center">
                                         <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all duration-300"
                                             :class="step >= i ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-300 text-slate-600'">
@@ -305,11 +334,10 @@
                                         </div>
 
                                         <span class="text-xs mt-2 font-medium text-slate-600"
-                                            x-text="i === 1 ? 'Type' : i === 2 ? 'Details' : 'Review'">
-                                        </span>
+                                            x-text="i === 1 ? 'Type' : i === 2 ? 'Details' : i === 3 ? 'Access' : 'Review'"></span>
                                     </div>
 
-                                    <div x-show="i < 3"
+                                    <div x-show="i < 4"
                                         class="flex-1 h-1 mx-4 rounded transition-all duration-300"
                                         :class="step > i ? 'bg-indigo-600' : 'bg-slate-300'">
                                     </div>
@@ -321,7 +349,7 @@
                     <!-- Form Content -->
                     <div class="max-w-[80%] bg-white rounded-xl shadow-md p-8">
 
-                        <!-- Step 1 -->
+                        <!-- Step 1 - Type -->
                         <div x-show="step === 1"
                             x-transition:enter="transition ease-out duration-300"
                             x-transition:enter-start="opacity-0 transform translate-x-8"
@@ -356,7 +384,7 @@
                             </div>
                         </div>
 
-                        <!-- Step 2 -->
+                        <!-- Step 2 - Details -->
                         <div x-show="step === 2"
                             x-transition:enter="transition ease-out duration-300"
                             x-transition:enter-start="opacity-0 transform translate-x-8"
@@ -364,33 +392,25 @@
 
                             <h2 class="text-2xl font-bold text-slate-800 mb-6">Ticket Details</h2>
 
-                            <!-- IF TYPE = open_access -->
                             <div x-show="formData.ticketType === 'open_access'" class="space-y-5">
-
                                 <div>
                                     <label class="block text-sm font-semibold text-slate-700 mb-2">
                                         Application Name
                                     </label>
 
                                     <select x-model="formData.title"
-                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg 
-                                            focus:ring-2 focus:ring-indigo-500 focus:border-transparent 
-                                            outline-none transition">
-
+                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                                         <option value="">Select an application</option>
-
                                         <option value="HRIS">HRIS – Human Resource Management System</option>
                                         <option value="AMS">AMS – Assets Management System</option>
                                         <option value="AAS">AAS – Advance Administration System</option>
                                         <option value="SHOCART">SHOCART – Shopping Cart</option>
                                         <option value="HELPDESK">HELPDESK – Helpdesk</option>
                                         <option value="CMS">CMS – Core Management System</option>
-
                                         <option value="IMS">IMS – Inventory Management System</option>
                                         <option value="DAS">DAS – Digital Archiving System</option>
                                         <option value="CAMPERS">CAMPERS – Cable Monitoring Performance System</option>
                                         <option value="QMS">QMS – Quality Management System</option>
-
                                     </select>
                                 </div>
 
@@ -399,61 +419,43 @@
                                         Justification for Access
                                     </label>
                                     <textarea x-model="formData.description" rows="5"
-                                        placeholder="Provide a detailed justification"
-                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 
-                                            focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none"></textarea>
+                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-none"
+                                        placeholder="Provide a detailed justification"></textarea>
                                 </div>
-
                             </div>
 
-                            <!-- IF TYPE = change_role -->
+                            <!-- TYPE = Change Role -->
                             <div x-show="formData.ticketType === 'change_role'" class="space-y-5">
 
                                 <div>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                                        Application Name
-                                    </label>
-
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Application Name</label>
                                     <select x-model="formData.title"
-                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg 
-                                            focus:ring-2 focus:ring-indigo-500 focus:border-transparent 
-                                            outline-none transition">
-
+                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                                         <option value="">Select an application</option>
-
                                         <option value="HRIS">HRIS – Human Resource Management System</option>
                                         <option value="AMS">AMS – Assets Management System</option>
                                         <option value="AAS">AAS – Advance Administration System</option>
                                         <option value="SHOCART">SHOCART – Shopping Cart</option>
                                         <option value="HELPDESK">HELPDESK – Helpdesk</option>
                                         <option value="CMS">CMS – Core Management System</option>
-
                                         <option value="IMS">IMS – Inventory Management System</option>
                                         <option value="DAS">DAS – Digital Archiving System</option>
                                         <option value="CAMPERS">CAMPERS – Cable Monitoring Performance System</option>
                                         <option value="QMS">QMS – Quality Management System</option>
-
                                     </select>
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                                        Current Role
-                                    </label>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Current Role</label>
                                     <input disabled type="text" x-model="formData.currentRole"
-                                        placeholder="MS Admin"
-                                        class=" w-full px-4 py-3 border border-slate-300 rounded-lg 
-                                            focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg bg-slate-100">
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                                        Requested Role
-                                    </label>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Requested Role</label>
                                     <input type="text" x-model="formData.requestedRole"
-                                        placeholder="Enter the requested role"
-                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg 
-                                            focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                        placeholder="Enter requested role">
                                 </div>
 
                                 <div>
@@ -461,17 +463,46 @@
                                         Reason for Role Change
                                     </label>
                                     <textarea x-model="formData.description" rows="5"
-                                        placeholder="Explain why this role change is needed"
-                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg 
-                                            focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none"></textarea>
+                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-none"
+                                        placeholder="Explain why this role change is needed"></textarea>
                                 </div>
 
                             </div>
 
                         </div>
 
-                        <!-- Step 3 – Review -->
+                        <!-- Step 3 - Access -->
                         <div x-show="step === 3"
+                            x-transition:enter="transition ease-out duration-300"
+                            x-transition:enter-start="opacity-0 transform translate-x-8"
+                            x-transition:enter-end="opacity-100 transform translate-x-0">
+
+                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Select Access</h2>
+
+                            <table class="w-full table-auto border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-100">
+                                        <th class="border px-4 py-2 text-left text-sm font-semibold text-slate-600">Access Name</th>
+                                        <th class="border px-4 py-2 text-center text-sm font-semibold text-slate-600">Enable</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="(item, index) in formData.accessOptions" :key="index">
+                                        <tr>
+                                            <td class="border px-4 py-3 text-sm text-slate-700"
+                                                x-text="item.name"></td>
+                                            <td class="border px-4 py-3 text-center">
+                                                <input type="checkbox" x-model="item.checked"
+                                                    class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500">
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Step 4 - Review -->
+                        <div x-show="step === 4"
                             x-transition:enter="transition ease-out duration-300"
                             x-transition:enter-start="opacity-0 transform translate-x-8"
                             x-transition:enter-end="opacity-100 transform translate-x-0">
@@ -484,35 +515,6 @@
 
                             <div class="space-y-6">
 
-                                <!-- User Info -->
-                                <div class="p-5 border rounded-lg bg-slate-50">
-                                    <h3 class="font-semibold text-slate-800 mb-2">User Information</h3>
-
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <p class="text-xs text-slate-500">Employee Name</p>
-                                            <p class="font-medium text-slate-700">Mariadi Pudidi</p>
-                                        </div>
-
-                                        <div>
-                                            <p class="text-xs text-slate-500">NIK</p>
-                                            <p class="font-medium text-slate-700">KT-12345678</p>
-                                        </div>
-                                    </div>
-
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
-                                        <div>
-                                            <p class="text-xs text-slate-500">Department</p>
-                                            <p class="font-medium text-slate-700">IT</p>
-                                        </div>
-
-                                        <div>
-                                            <p class="text-xs text-slate-500">Job Title</p>
-                                            <p class="font-medium text-slate-700">UI/UX Design</p>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <!-- Ticket Type -->
                                 <div class="p-5 border rounded-lg bg-slate-50">
                                     <h3 class="font-semibold text-slate-800 mb-2">Ticket Type</h3>
@@ -520,91 +522,60 @@
                                     x-text="formData.ticketType.replace('_', ' ') || '-'"></p>
                                 </div>
 
-                                <!-- Application Details -->
+                                <!-- App Details -->
                                 <div class="p-5 border rounded-lg bg-slate-50">
                                     <h3 class="font-semibold text-slate-800 mb-2">Application Details</h3>
+                                    <p class="text-sm">
+                                        Application: <span class="font-medium" x-text="formData.title || '-'"></span>
+                                    </p>
+                                    <p class="text-sm mt-1">
+                                        Description: <span class="font-medium" x-text="formData.description || '-'"></span>
+                                    </p>
+                                </div>
 
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Access List -->
+                                <div class="p-5 border rounded-lg bg-slate-50">
+                                    <h3 class="font-semibold text-slate-800 mb-2">Requested Access</h3>
 
-                                        <div>
-                                            <p class="text-xs text-slate-500">Application Name</p>
-                                            <p class="font-medium text-slate-700"
-                                            x-text="formData.title || '-'"></p>
-                                        </div>
-
-                                        <!-- IF TYPE = open_access -->
-                                        <template x-if="formData.ticketType === 'open_access'">
-                                            <div>
-                                                <p class="text-xs text-slate-500">Justification</p>
-                                                <p class="font-medium text-slate-700"
-                                                x-text="formData.description || '-'"></p>
-                                            </div>
-                                        </template>
-
-                                        <!-- IF TYPE = change_role -->
-                                        <template x-if="formData.ticketType === 'change_role'">
-                                            <div>
-                                                <p class="text-xs text-slate-500">Reason for Role Change</p>
-                                                <p class="font-medium text-slate-700"
-                                                x-text="formData.description || '-'"></p>
-                                            </div>
-                                        </template>
-
-                                    </div>
-
-                                    <!-- Extra fields for role-change -->
-                                    <template x-if="formData.ticketType === 'change_role'">
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-
-                                            <div>
-                                                <p class="text-xs text-slate-500">Current Role</p>
-                                                <p class="font-medium text-slate-700"
-                                                x-text="formData.currentRole || '-'"></p>
-                                            </div>
-
-                                            <div>
-                                                <p class="text-xs text-slate-500">Requested Role</p>
-                                                <p class="font-medium text-slate-700"
-                                                x-text="formData.requestedRole || '-'"></p>
-                                            </div>
-
-                                        </div>
+                                    <template x-if="formData.accessOptions.filter(x => x.checked).length > 0">
+                                        <ul class="list-disc pl-6 space-y-1">
+                                            <template x-for="(item, i) in formData.accessOptions.filter(x => x.checked)" :key="i">
+                                                <li class="text-sm text-slate-700" x-text="item.name"></li>
+                                            </template>
+                                        </ul>
                                     </template>
 
+                                    <p x-show="formData.accessOptions.filter(x => x.checked).length === 0"
+                                        class="text-sm text-slate-600 italic">
+                                        No access selected.
+                                    </p>
                                 </div>
 
                             </div>
 
                         </div>
 
-
                         <!-- Navigation Buttons -->
                         <div class="flex justify-between mt-8 pt-6 border-t border-slate-200">
                             <button @click="prevStep()" x-show="step > 1"
-                                    class="px-6 py-3 bg-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-300 transition-colors">
+                                class="px-6 py-3 bg-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-300 transition-colors">
                                 ← Previous
                             </button>
 
                             <div x-show="step === 1"></div>
 
-                            <button @click="nextStep()" x-show="step < 3"
-                                    class="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors shadow-md">
+                            <button @click="nextStep()" x-show="step < 4"
+                                class="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors shadow-md">
                                 Next →
                             </button>
 
-                            <a href="myticket.html">
-
-                            </a>
-                            <button @click="submitForm()" x-show="step === 3"
-                                    class="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors shadow-md">
+                            <button @click="submitForm()" x-show="step === 4"
+                                class="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors shadow-md">
                                 Submit Ticket ✓
                             </button>
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
         </div>
 

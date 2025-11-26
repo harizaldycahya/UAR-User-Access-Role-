@@ -318,11 +318,11 @@
         <div class="flex-1 h-full rounded-lg flex flex-col ">
             
             <!-- Navbar -->
-            <div class="navbar  flex justify-between items-center w-full rounded-lg mb-[.5rem] bg-slate-100 dark:bg-slate-900 shadow-lg px-[3rem] py-[.5rem]">
+            <div class="navbar flex justify-between items-center w-full rounded-lg mb-[.5rem] bg-slate-100 dark:bg-slate-900 shadow-lg px-[3rem] py-[.5rem]">
                 
                 <!-- Left side: Hamburger Icon -->
                 <div 
-                    class="w-[3rem] h-[3rem] flex items-center justify-center cursor-pointer"
+                    class="w-[3rem] h-[3rem] flex items-center justify-center cursor-pointer text-black dark:text-white"
                     @click="sidebar = !sidebar"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" 
@@ -351,16 +351,39 @@
                         <span class="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
                     </div>
 
-                    <!-- Profile -->
-                    <div class="flex items-center gap-3 cursor-pointer select-none">
-                        <img 
-                            src="https://randomuser.me/api/portraits/men/32.jpg" 
-                            alt="profile"
-                            class="w-10 h-10 rounded-full object-cover shadow-sm"
-                        >
-                        <span class="font-semibold text-slate-700 text-sm">
-                            Mariadi Pudidi
-                        </span>
+                    <!-- Profile Dropdown -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="flex items-center gap-3 cursor-pointer select-none">
+                            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Profile"
+                                class="w-10 h-10 rounded-full object-cover shadow-sm">
+                            <span class="font-semibold text-black dark:text-white">
+                                Mariadi Pudidi
+                            </span>
+
+                            <!-- Chevron Down Icon -->
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-300 transition-transform duration-200"
+                                fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        <!-- Dropdown Menu -->
+                        <div x-show="open"
+                            @click.outside="open = false"
+                            x-transition
+                            class="absolute right-0 mt-2 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+                            
+                            <a href="/profile.html"
+                            class="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-indigo-100 dark:hover:bg-slate-700">
+                                Profile
+                            </a>
+
+                            <button onclick="window.location.href='/login.html'" 
+                                class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-slate-700">
+                                Logout
+                            </button>
+                        </div>
                     </div>
 
                 </div>
