@@ -1,130 +1,260 @@
-<html lang="en">
+<html lang="en" data-theme="white">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @import "tailwindcss";
+        @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+    </style>
+
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
+    <style>
+        @keyframes shine {
+            0% {
+                transform: translate(-50%, -50%) rotate(25deg);
+            }
+
+            100% {
+                transform: translate(50%, 50%) rotate(25deg);
+            }
+        }
+
+        /* Particle floating animation */
+        @keyframes float {
+            0% {
+                transform: translateY(20px) translateX(0);
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: translateY(-20px) translateX(10px);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-60px) translateX(-10px);
+            }
+        }
+
+        /* Particle design */
+        .particle {
+            position: absolute;
+            bottom: -10px;
+            width: 6px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: float 4s infinite ease-in-out;
+        }
+
+        /* Random particle positions & sizes */
+        .particle:nth-child(1) {
+            left: 15%;
+            width: 4px;
+            height: 4px;
+            animation-duration: 3s;
+        }
+
+        .particle:nth-child(2) {
+            left: 30%;
+            width: 6px;
+            height: 6px;
+            animation-duration: 4.5s;
+        }
+
+        .particle:nth-child(3) {
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            animation-duration: 3.8s;
+        }
+
+        .particle:nth-child(4) {
+            left: 70%;
+            width: 7px;
+            height: 7px;
+            animation-duration: 4.2s;
+        }
+
+        .particle:nth-child(5) {
+            left: 85%;
+            width: 3px;
+            height: 3px;
+            animation-duration: 3.3s;
+        }
+
+        .particle:nth-child(6) {
+            left: 40%;
+            width: 6px;
+            height: 6px;
+            animation-duration: 5s;
+        }
+
+        .particle:nth-child(7) {
+            left: 60%;
+            width: 4px;
+            height: 4px;
+            animation-duration: 3.6s;
+        }
+
+        .particle:nth-child(8) {
+            left: 20%;
+            width: 8px;
+            height: 8px;
+            animation-duration: 5.2s;
+        }
+    </style>
 </head>
-<body class="h-screen bg-black">
-    <div class="h-full flex p-[.5rem] gap-[.5rem]" x-data="{ sidebar: true }">
+
+<body class="h-screen bg-white dark:bg-indigo-900">
+    <div class="h-full flex p-[.5rem] gap-[.5rem] " x-data="{ sidebar: true }">
 
         <!-- Sidebar -->
-        <div 
-            class="sidebar w-[20rem] h-full rounded-lg bg-slate-100 shadow-lg px-5 py-10 flex flex-col"
-            x-show="sidebar"
-            x-transition:enter="transition-all duration-300 ease-out"
-            x-transition:enter-start="opacity-0 -ml-[20rem]"
-            x-transition:enter-end="opacity-100 ml-0"
-            x-transition:leave="transition-all duration-300 ease-in"
-            x-transition:leave-start="opacity-100 ml-0"
-            x-transition:leave-end="opacity-0 -ml-[20rem]"
-            >
-            
-            <!-- Top section -->
-            <div class="top flex items-center gap-3 mb-[3rem]">
+        <div class="sidebar w-[20rem] h-full rounded-lg bg-slate-900 shadow-lg px-5 py-10 flex flex-col"
+            x-show="sidebar" x-transition:enter="transition-all duration-300 ease-out"
+            x-transition:enter-start="opacity-0 -ml-[20rem]" x-transition:enter-end="opacity-100 ml-0"
+            x-transition:leave="transition-all duration-300 ease-in" x-transition:leave-start="opacity-100 ml-0"
+            x-transition:leave-end="opacity-0 -ml-[20rem]">
 
-                <div class="h-[5rem]">
-                    LOGO
+            <div class="top flex items-center gap-3 mb-[3rem]">
+                <div class="w-full flex items-center gap-3 my-5 rounded-lg cursor-pointer transition-colors">
+                    <div class="bg-indigo-900 rounded p-3">
+                        <img src="assets/logo.png" class="w-[4rem] h-auto object-contain" alt="">
+                    </div>
+                    <div class="flex flex-col justify-center ml-2 p-1">
+                        <h5 class="font-bold text-xl text-white">TRIASMITRA</h5>
+                        <p class="font-bold text-amber-400">submarine deployer</p>
+                    </div>
                 </div>
             </div>
-            
-            <!-- Center section (scrollable) -->
+
+            <!-- Center section -->
             <div class="center flex-1 overflow-y-auto mb-[3rem]">
-
-                <!-- Applications -->
-                <div class="w-full flex items-center gap-3 p-3 my-5 bg-white rounded-lg cursor-pointer transition-colors shadow-lg">
-                    <div class="w-8 h-8 bg-emerald-700 rounded flex items-center justify-center flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"
-                            class="w-5 h-5 text-white" fill="none" stroke="white" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="7" height="7" />
-                            <rect x="14" y="3" width="7" height="7" />
-                            <rect x="14" y="14" width="7" height="7" />
-                            <rect x="3" y="14" width="7" height="7" />
-                        </svg>
+                <a href="index.html">
+                    <div
+                        class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg bg-indigo-900">
+                        <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
+                                fill="none" stroke="black" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                        </div>
+                        <span class="font-medium text-white">Dashboard</span>
                     </div>
-                    <span class="text-emerald-700 font-medium">Applications</span>
+                </a>
+
+                <div
+                    class="w-full flex items-center gap-3 p-3 mt-8 rounded-lg cursor-pointer transition-colors shadow-lg">
+                    <span class="font-bold text-white"><small>APPLICATION TICKET</small></span>
                 </div>
 
-                <!-- Request Access -->
-                <div class="w-full flex items-center gap-3 p-3 my-5 rounded-lg cursor-pointer transition-colors">
-                    <div class="w-8 h-8 bg-emerald-700 rounded flex items-center justify-center flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"
-                            class="w-5 h-5 text-white" fill="none" stroke="white" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="8" cy="12" r="3"/>
-                            <path d="M11 12h10l-2 2v2"/>
-                        </svg>
+                <a href="create_ticket.html">
+                    <div
+                        class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
+                        <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
+                                fill="none" stroke="black" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                        </div>
+                        <span class="font-medium text-white">Create New Ticket</span>
                     </div>
-                    <span class="text-emerald-700 font-medium">Request Access</span>
+                </a>
+
+                <a href="myticket.html">
+                    <div
+                        class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
+                        <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
+                                fill="none" stroke="black" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                        </div>
+                        <span class="font-medium text-white">My Ticket</span>
+                    </div>
+                </a>
+
+                <div
+                    class="w-full flex items-center gap-3 p-3 mt-8 rounded-lg cursor-pointer transition-colors shadow-lg">
+                    <span class="font-bold text-white"><small>TICKET APPROVAL</small></span>
                 </div>
 
-                <!-- Request Role -->
-                <div class="w-full flex items-center gap-3 p-3 my-5 rounded-lg cursor-pointer transition-colors">
-                    <div class="w-8 h-8 bg-emerald-700 rounded flex items-center justify-center flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"
-                            class="w-5 h-5 text-white" fill="none" stroke="white" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 2l7 4v6c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6l7-4z"/>
-                            <path d="M10 11l2 2 4-4"/>
-                        </svg>
+                <a href="ticket_pending.html">
+                    <div
+                        class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
+                        <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
+                                fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                        </div>
+                        <span class="font-medium text-white">Ticket Pending</span>
                     </div>
-                    <span class="text-emerald-700 font-medium">Request Role</span>
-                </div>
+                </a>
 
-                <!-- History -->
-                <div class="w-full flex items-center gap-3 p-3 my-5 rounded-lg cursor-pointer transition-colors">
-                    <div class="w-8 h-8 bg-emerald-700 rounded flex items-center justify-center flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"
-                            class="w-5 h-5 text-white" fill="none" stroke="white" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="9"/>
-                            <path d="M12 7v5l3 2"/>
-                        </svg>
+                <a href="history_approval.html">
+                    <div
+                        class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
+                        <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
+                                fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                        </div>
+                        <span class="font-medium text-white">History Approval</span>
                     </div>
-                    <span class="text-emerald-700 font-medium">History</span>
-                </div>
+                </a>
             </div>
 
             <!-- Bottom section -->
             <div class="bottom">
 
-                <!-- Profile -->
-                <div class="w-full flex items-center gap-3 p-3 my-5 rounded-lg cursor-pointer transition-colors">
-                    <div class="w-8 h-8 bg-emerald-700 rounded flex items-center justify-center flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"
-                            class="w-5 h-5 text-white" fill="none" stroke="white" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="8" r="4"/>
-                            <path d="M4 21c2-4 6-6 8-6s6 2 8 6"/>
-                        </svg>
+                <a href="profile.html">
+                    <div
+                        class="w-full flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors shadow-lg">
+                        <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
+                                fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                        </div>
+                        <span class="font-medium text-white">Profile</span>
                     </div>
-                    <span class="text-emerald-700 font-medium">Profile</span>
-                </div>
-
-                <!-- Settings -->
-                <div class="w-full flex items-center gap-3 p-3 my-5 rounded-lg cursor-pointer transition-colors">
-                    <div class="w-8 h-8 bg-emerald-700 rounded flex items-center justify-center flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"
-                            class="w-5 h-5 text-white" fill="none" stroke="white" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V22a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H2a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H8a1.7 1.7 0 0 0 1-1.5V2a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V8c0 .6.4 1.2 1 1.5a1.7 1.7 0 0 0 1.5 1H22a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.4.5z"/>
-                        </svg>
-                    </div>
-                    <span class="text-emerald-700 font-medium">Settings</span>
-                </div>
+                </a>
             </div>
         </div>
 
 
         <!-- Main Content -->
-        <div class="flex-1 h-full rounded-lg flex flex-col">
-            
+        <div class="flex-1 h-full rounded-lg flex flex-col ">
             <!-- Navbar -->
-            <div class="navbar flex justify-between items-center w-full rounded-lg mb-[.5rem] bg-slate-100 shadow-lg px-[3rem] py-[.5rem]">
+            <div class="navbar  flex justify-between items-center w-full rounded-lg mb-[.5rem] bg-slate-100 dark:bg-slate-900 shadow-lg px-[3rem] py-[.5rem]">
                 
                 <!-- Left side: Hamburger Icon -->
                 <div 
@@ -157,53 +287,1083 @@
                         <span class="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
                     </div>
 
-                    <!-- Profile -->
-                    <div class="flex items-center gap-3 cursor-pointer select-none">
-                        <img 
-                            src="https://randomuser.me/api/portraits/men/32.jpg" 
-                            alt="profile"
-                            class="w-10 h-10 rounded-full object-cover shadow-sm"
-                        >
-                        <span class="font-semibold text-slate-700 text-sm">
-                            Mariadi Pudidi
-                        </span>
+                    <!-- Profile Dropdown -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="flex items-center gap-3 cursor-pointer select-none">
+                            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Profile"
+                                class="w-10 h-10 rounded-full object-cover shadow-sm">
+                            <span class="font-semibold text-black dark:text-white">
+                                Mariadi Pudidi
+                            </span>
+
+                            <!-- Chevron Down Icon -->
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-300 transition-transform duration-200"
+                                fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        <!-- Dropdown Menu -->
+                        <div x-show="open"
+                            @click.outside="open = false"
+                            x-transition
+                            class="absolute right-0 mt-2 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+                            
+                            <a href="/profile.html"
+                            class="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-indigo-100 dark:hover:bg-slate-700">
+                                Profile
+                            </a>
+
+                            <button onclick="window.location.href='/login.html'" 
+                                class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-slate-700">
+                                Logout
+                            </button>
+                        </div>
                     </div>
 
                 </div>
 
             </div>
 
+            <div
+                class="content w-full flex-1 rounded-lg bg-slate-100 dark:bg-slate-900 shadow-lg p-[3rem] flex flex-col overflow-hidden">
 
-            <div class="content w-full flex-1 rounded-lg bg-slate-100 shadow-lg p-[3rem] flex flex-col overflow-hidden">
-
-                <div style="text-align:left;">
-                    <h1 style="
-                        font-weight:700; 
-                        margin:10px 0 20px;
-                        line-height:1.2;
-                    ">
-                        Applications
+                <div class="mb-5 text-black dark:text-white">
+                    <h1 class="font-bold text-5xl mb-5">
+                        Welcome, Mariadi pududi.
                     </h1>
 
-                    <p style="
-                        max-width:550px; 
-                        line-height:1.6;
-                    ">
-                    Explore all the applications you have access to in this portal.
+                    <p>
+                        Your central hub to access applications and stay updated with notifications.
                     </p>
                 </div>
 
                 <div class="my-5"></div>
+                <br>
+                <div class="flex h-full overflow-hidden">
 
-                <div class="overflow-y-auto grid lg:grid-cols-2 xl:grid-cols-4 gap-4">
-                    <!-- <div class="card bg-emerald-700">
-                        CMS
-                    </div> -->
+                    <!-- Panel Notifikasi -->
+                    <div class="w-[30%] flex flex-col h-full rounded-xl mr-2 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 overflow-hidden">
+                        <!-- Header -->
+                        <div class="p-5 border-b border-gray-200 dark:border-slate-700">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                                    </svg>
+                                    Notification
+                                </h3>
+                                <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">7</span>
+                            </div>
+                        </div>
+
+                        <!-- Notification List -->
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                            
+                            <!-- Notifikasi 1 - Belum dibaca -->
+                            <div class="bg-blue-50 dark:bg-slate-700 border border-blue-200 dark:border-slate-600 rounded-xl p-4 hover:bg-blue-100 dark:hover:bg-slate-600 transition-colors cursor-pointer">
+                                <div class="flex items-start justify-between mb-2">
+                                    <div class="flex-1">
+                                        <span class="inline-block text-[10px] font-bold px-2 py-1 rounded-md text-white bg-gray-600 dark:bg-gray-700 mb-2">
+                                            HRIS
+                                        </span>
+                                        <h4 class="text-gray-800 dark:text-white font-semibold text-sm">
+                                            Pengajuan Cuti Disetujui
+                                        </h4>
+                                    </div>
+                                    <div class="w-2 h-2 bg-blue-500 rounded-full mt-1 ml-2"></div>
+                                </div>
+                                <p class="text-gray-600 dark:text-slate-300 text-xs mb-2">
+                                    Cuti Anda tanggal 25-27 Nov telah disetujui
+                                </p>
+                                <div class="flex items-center gap-1 text-gray-500 dark:text-slate-400 text-xs">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    10 menit lalu
+                                </div>
+                            </div>
+
+                            <!-- Notifikasi 2 - Belum dibaca -->
+                            <div class="bg-blue-50 dark:bg-slate-700 border border-blue-200 dark:border-slate-600 rounded-xl p-4 hover:bg-blue-100 dark:hover:bg-slate-600 transition-colors cursor-pointer">
+                                <div class="flex items-start justify-between mb-2">
+                                    <div class="flex-1">
+                                        <span class="inline-block text-[10px] font-bold px-2 py-1 rounded-md text-white bg-indigo-600 dark:bg-indigo-900 mb-2">
+                                            CMS
+                                        </span>
+                                        <h4 class="text-gray-800 dark:text-white font-semibold text-sm">
+                                            Update Sistem
+                                        </h4>
+                                    </div>
+                                    <div class="w-2 h-2 bg-blue-500 rounded-full mt-1 ml-2"></div>
+                                </div>
+                                <p class="text-gray-600 dark:text-slate-300 text-xs mb-2">
+                                    CMS akan maintenance hari Minggu jam 02:00
+                                </p>
+                                <div class="flex items-center gap-1 text-gray-500 dark:text-slate-400 text-xs">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    30 menit lalu
+                                </div>
+                            </div>
+
+                            <!-- Notifikasi 3 - Belum dibaca -->
+                            <div class="bg-blue-50 dark:bg-slate-700 border border-blue-200 dark:border-slate-600 rounded-xl p-4 hover:bg-blue-100 dark:hover:bg-slate-600 transition-colors cursor-pointer">
+                                <div class="flex items-start justify-between mb-2">
+                                    <div class="flex-1">
+                                        <span class="inline-block text-[10px] font-bold px-2 py-1 rounded-md text-white bg-gray-600 dark:bg-gray-700 mb-2">
+                                            HRIS
+                                        </span>
+                                        <h4 class="text-gray-800 dark:text-white font-semibold text-sm">
+                                            Reminder: Isi Timesheet
+                                        </h4>
+                                    </div>
+                                    <div class="w-2 h-2 bg-blue-500 rounded-full mt-1 ml-2"></div>
+                                </div>
+                                <p class="text-gray-600 dark:text-slate-300 text-xs mb-2">
+                                    Jangan lupa isi timesheet minggu ini
+                                </p>
+                                <div class="flex items-center gap-1 text-gray-500 dark:text-slate-400 text-xs">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    2 jam lalu
+                                </div>
+                            </div>
+
+                            <!-- Notifikasi 4 - Belum dibaca -->
+                            <div class="bg-blue-50 dark:bg-slate-700 border border-blue-200 dark:border-slate-600 rounded-xl p-4 hover:bg-blue-100 dark:hover:bg-slate-600 transition-colors cursor-pointer">
+                                <div class="flex items-start justify-between mb-2">
+                                    <div class="flex-1">
+                                        <span class="inline-block text-[10px] font-bold px-2 py-1 rounded-md text-white bg-indigo-600 dark:bg-indigo-900 mb-2">
+                                            CMS
+                                        </span>
+                                        <h4 class="text-gray-800 dark:text-white font-semibold text-sm">
+                                            Dokumen Baru
+                                        </h4>
+                                    </div>
+                                    <div class="w-2 h-2 bg-blue-500 rounded-full mt-1 ml-2"></div>
+                                </div>
+                                <p class="text-gray-600 dark:text-slate-300 text-xs mb-2">
+                                    5 dokumen baru telah ditambahkan ke sistem
+                                </p>
+                                <div class="flex items-center gap-1 text-gray-500 dark:text-slate-400 text-xs">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    3 jam lalu
+                                </div>
+                            </div>
+
+                            <!-- Notifikasi 5 - Belum dibaca -->
+                            <div class="bg-blue-50 dark:bg-slate-700 border border-blue-200 dark:border-slate-600 rounded-xl p-4 hover:bg-blue-100 dark:hover:bg-slate-600 transition-colors cursor-pointer">
+                                <div class="flex items-start justify-between mb-2">
+                                    <div class="flex-1">
+                                        <span class="inline-block text-[10px] font-bold px-2 py-1 rounded-md text-white bg-emerald-600 dark:bg-emerald-800 mb-2">
+                                            Finance
+                                        </span>
+                                        <h4 class="text-gray-800 dark:text-white font-semibold text-sm">
+                                            Invoice Pending
+                                        </h4>
+                                    </div>
+                                    <div class="w-2 h-2 bg-blue-500 rounded-full mt-1 ml-2"></div>
+                                </div>
+                                <p class="text-gray-600 dark:text-slate-300 text-xs mb-2">
+                                    3 invoice menunggu approval Anda
+                                </p>
+                                <div class="flex items-center gap-1 text-gray-500 dark:text-slate-400 text-xs">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    15 menit lalu
+                                </div>
+                            </div>
+
+                            <!-- Notifikasi 6 - Sudah dibaca -->
+                            <div class="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer opacity-60">
+                                <div class="flex items-start justify-between mb-2">
+                                    <div class="flex-1">
+                                        <span class="inline-block text-[10px] font-bold px-2 py-1 rounded-md text-white bg-gray-600 dark:bg-gray-700 mb-2">
+                                            HRIS
+                                        </span>
+                                        <h4 class="text-gray-800 dark:text-white font-semibold text-sm">
+                                            Slip Gaji Tersedia
+                                        </h4>
+                                    </div>
+                                </div>
+                                <p class="text-gray-600 dark:text-slate-300 text-xs mb-2">
+                                    Slip gaji bulan November sudah dapat diunduh
+                                </p>
+                                <div class="flex items-center gap-1 text-gray-500 dark:text-slate-400 text-xs">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    1 hari lalu
+                                </div>
+                            </div>
+
+                            <!-- Notifikasi 7 - Sudah dibaca -->
+                            <div class="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer opacity-60">
+                                <div class="flex items-start justify-between mb-2">
+                                    <div class="flex-1">
+                                        <span class="inline-block text-[10px] font-bold px-2 py-1 rounded-md text-white bg-indigo-600 dark:bg-indigo-900 mb-2">
+                                            CMS
+                                        </span>
+                                        <h4 class="text-gray-800 dark:text-white font-semibold text-sm">
+                                            Backup Selesai
+                                        </h4>
+                                    </div>
+                                </div>
+                                <p class="text-gray-600 dark:text-slate-300 text-xs mb-2">
+                                    Backup data berhasil dilakukan
+                                </p>
+                                <div class="flex items-center gap-1 text-gray-500 dark:text-slate-400 text-xs">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    5 jam lalu
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="w-[70%] h-full overflow-y-auto grid grid-flow-row auto-rows-max content-start 
+                    sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 p-2 card">
+
+                        <div style="background: #333333;"
+                            class="relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 text-center p-4 sm:p-6">
+
+                            <!-- Particle Layer -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                            </div>
+
+                            <!-- Shine Effect -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="absolute top-[-150%] left-[-150%] w-[300%] h-[300%] rotate-45 opacity-30"
+                                    style="
+                                        background: linear-gradient(
+                                            135deg,
+                                            transparent,
+                                            rgba(255,255,255,0.4),
+                                            transparent
+                                        );
+                                        animation: shine 3s linear infinite;
+                                    ">
+                                </div>
+                            </div>
+
+                            <!-- Icon -->
+                            <svg class="text-white 
+                                    w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16" fill="currentColor"
+                                viewBox="0 0 24 24">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4
+                                1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 
+                                1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                            </svg>
+
+                            <!-- Title -->
+                            <h2 class="text-white font-bold 
+                                    text-2xl sm:text-xl md:text-xl lg:text-3xl 
+                                    tracking-wide drop-shadow-lg">
+                                HRIS
+                            </h2>
+
+                            <!-- Description -->
+                            <p class="text-white/80 
+                                    text-xs sm:text-sm md:text-base">
+                                Human Resource System
+                            </p>
+
+                        </div>
+                        <div style="background: #14006d;"
+                            class="relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 text-center p-4 sm:p-6">
+
+                            <!-- Particle Layer -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                            </div>
+
+                            <!-- Shine Effect -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="absolute top-[-150%] left-[-150%] w-[300%] h-[300%] rotate-45 opacity-30"
+                                    style="
+                                        background: linear-gradient(
+                                            135deg,
+                                            transparent,
+                                            rgba(255,255,255,0.4),
+                                            transparent
+                                        );
+                                        animation: shine 3s linear infinite;
+                                    ">
+                                </div>
+                            </div>
+
+                            <!-- Icon -->
+                            <svg class="text-white w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16"
+                                fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l9 5v10l-9 5-9-5V7l9-5zm0 2.2L5 7.5v9l7 3.9 7-3.9v-9l-7-3.3z" />
+                            </svg>
+
+
+                            <!-- Title -->
+                            <h2 class="text-white font-bold 
+                                    text-2xl sm:text-xl md:text-xl lg:text-3xl 
+                                    tracking-wide drop-shadow-lg">
+                                CMS
+                            </h2>
+
+                            <!-- Description -->
+                            <p class="text-white/80 
+                                    text-xs sm:text-sm md:text-base">
+                                Core Management System
+                            </p>
+                        </div>
+                        <div style="background: #333333;"
+                            class="relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 text-center p-4 sm:p-6">
+
+                            <!-- Particle Layer -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                            </div>
+
+                            <!-- Shine Effect -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="absolute top-[-150%] left-[-150%] w-[300%] h-[300%] rotate-45 opacity-30"
+                                    style="
+                                        background: linear-gradient(
+                                            135deg,
+                                            transparent,
+                                            rgba(255,255,255,0.4),
+                                            transparent
+                                        );
+                                        animation: shine 3s linear infinite;
+                                    ">
+                                </div>
+                            </div>
+
+                            <!-- Icon -->
+                            <svg class="text-white 
+                                    w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16" fill="currentColor"
+                                viewBox="0 0 24 24">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4
+                                1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 
+                                1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                            </svg>
+
+                            <!-- Title -->
+                            <h2 class="text-white font-bold 
+                                    text-2xl sm:text-xl md:text-xl lg:text-3xl 
+                                    tracking-wide drop-shadow-lg">
+                                HRIS
+                            </h2>
+
+                            <!-- Description -->
+                            <p class="text-white/80 
+                                    text-xs sm:text-sm md:text-base">
+                                Human Resource System
+                            </p>
+
+                        </div>
+                        <div style="background: #14006d;"
+                            class="relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 text-center p-4 sm:p-6">
+
+                            <!-- Particle Layer -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                            </div>
+
+                            <!-- Shine Effect -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="absolute top-[-150%] left-[-150%] w-[300%] h-[300%] rotate-45 opacity-30"
+                                    style="
+                                        background: linear-gradient(
+                                            135deg,
+                                            transparent,
+                                            rgba(255,255,255,0.4),
+                                            transparent
+                                        );
+                                        animation: shine 3s linear infinite;
+                                    ">
+                                </div>
+                            </div>
+
+                            <!-- Icon -->
+                            <svg class="text-white w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16"
+                                fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l9 5v10l-9 5-9-5V7l9-5zm0 2.2L5 7.5v9l7 3.9 7-3.9v-9l-7-3.3z" />
+                            </svg>
+
+
+                            <!-- Title -->
+                            <h2 class="text-white font-bold 
+                                    text-2xl sm:text-xl md:text-xl lg:text-3xl 
+                                    tracking-wide drop-shadow-lg">
+                                CMS
+                            </h2>
+
+                            <!-- Description -->
+                            <p class="text-white/80 
+                                    text-xs sm:text-sm md:text-base">
+                                Core Management System
+                            </p>
+                        </div>
+                        <div style="background: #333333;"
+                            class="relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 text-center p-4 sm:p-6">
+
+                            <!-- Particle Layer -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                            </div>
+
+                            <!-- Shine Effect -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="absolute top-[-150%] left-[-150%] w-[300%] h-[300%] rotate-45 opacity-30"
+                                    style="
+                                        background: linear-gradient(
+                                            135deg,
+                                            transparent,
+                                            rgba(255,255,255,0.4),
+                                            transparent
+                                        );
+                                        animation: shine 3s linear infinite;
+                                    ">
+                                </div>
+                            </div>
+
+                            <!-- Icon -->
+                            <svg class="text-white 
+                                    w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16" fill="currentColor"
+                                viewBox="0 0 24 24">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4
+                                1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 
+                                1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                            </svg>
+
+                            <!-- Title -->
+                            <h2 class="text-white font-bold 
+                                    text-2xl sm:text-xl md:text-xl lg:text-3xl 
+                                    tracking-wide drop-shadow-lg">
+                                HRIS
+                            </h2>
+
+                            <!-- Description -->
+                            <p class="text-white/80 
+                                    text-xs sm:text-sm md:text-base">
+                                Human Resource System
+                            </p>
+
+                        </div>
+                        <div style="background: #14006d;"
+                            class="relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 text-center p-4 sm:p-6">
+
+                            <!-- Particle Layer -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                            </div>
+
+                            <!-- Shine Effect -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="absolute top-[-150%] left-[-150%] w-[300%] h-[300%] rotate-45 opacity-30"
+                                    style="
+                                        background: linear-gradient(
+                                            135deg,
+                                            transparent,
+                                            rgba(255,255,255,0.4),
+                                            transparent
+                                        );
+                                        animation: shine 3s linear infinite;
+                                    ">
+                                </div>
+                            </div>
+
+                            <!-- Icon -->
+                            <svg class="text-white w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16"
+                                fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l9 5v10l-9 5-9-5V7l9-5zm0 2.2L5 7.5v9l7 3.9 7-3.9v-9l-7-3.3z" />
+                            </svg>
+
+
+                            <!-- Title -->
+                            <h2 class="text-white font-bold 
+                                    text-2xl sm:text-xl md:text-xl lg:text-3xl 
+                                    tracking-wide drop-shadow-lg">
+                                CMS
+                            </h2>
+
+                            <!-- Description -->
+                            <p class="text-white/80 
+                                    text-xs sm:text-sm md:text-base">
+                                Core Management System
+                            </p>
+                        </div>
+                        <div style="background: #333333;"
+                            class="relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 text-center p-4 sm:p-6">
+
+                            <!-- Particle Layer -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                            </div>
+
+                            <!-- Shine Effect -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="absolute top-[-150%] left-[-150%] w-[300%] h-[300%] rotate-45 opacity-30"
+                                    style="
+                                        background: linear-gradient(
+                                            135deg,
+                                            transparent,
+                                            rgba(255,255,255,0.4),
+                                            transparent
+                                        );
+                                        animation: shine 3s linear infinite;
+                                    ">
+                                </div>
+                            </div>
+
+                            <!-- Icon -->
+                            <svg class="text-white 
+                                    w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16" fill="currentColor"
+                                viewBox="0 0 24 24">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4
+                                1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 
+                                1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                            </svg>
+
+                            <!-- Title -->
+                            <h2 class="text-white font-bold 
+                                    text-2xl sm:text-xl md:text-xl lg:text-3xl 
+                                    tracking-wide drop-shadow-lg">
+                                HRIS
+                            </h2>
+
+                            <!-- Description -->
+                            <p class="text-white/80 
+                                    text-xs sm:text-sm md:text-base">
+                                Human Resource System
+                            </p>
+
+                        </div>
+                        <div style="background: #14006d;"
+                            class="relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 text-center p-4 sm:p-6">
+
+                            <!-- Particle Layer -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                            </div>
+
+                            <!-- Shine Effect -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="absolute top-[-150%] left-[-150%] w-[300%] h-[300%] rotate-45 opacity-30"
+                                    style="
+                                        background: linear-gradient(
+                                            135deg,
+                                            transparent,
+                                            rgba(255,255,255,0.4),
+                                            transparent
+                                        );
+                                        animation: shine 3s linear infinite;
+                                    ">
+                                </div>
+                            </div>
+
+                            <!-- Icon -->
+                            <svg class="text-white w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16"
+                                fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l9 5v10l-9 5-9-5V7l9-5zm0 2.2L5 7.5v9l7 3.9 7-3.9v-9l-7-3.3z" />
+                            </svg>
+
+
+                            <!-- Title -->
+                            <h2 class="text-white font-bold 
+                                    text-2xl sm:text-xl md:text-xl lg:text-3xl 
+                                    tracking-wide drop-shadow-lg">
+                                CMS
+                            </h2>
+
+                            <!-- Description -->
+                            <p class="text-white/80 
+                                    text-xs sm:text-sm md:text-base">
+                                Core Management System
+                            </p>
+                        </div>
+                        <div style="background: #333333;"
+                            class="relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 text-center p-4 sm:p-6">
+
+                            <!-- Particle Layer -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                            </div>
+
+                            <!-- Shine Effect -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="absolute top-[-150%] left-[-150%] w-[300%] h-[300%] rotate-45 opacity-30"
+                                    style="
+                                        background: linear-gradient(
+                                            135deg,
+                                            transparent,
+                                            rgba(255,255,255,0.4),
+                                            transparent
+                                        );
+                                        animation: shine 3s linear infinite;
+                                    ">
+                                </div>
+                            </div>
+
+                            <!-- Icon -->
+                            <svg class="text-white 
+                                    w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16" fill="currentColor"
+                                viewBox="0 0 24 24">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4
+                                1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 
+                                1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                            </svg>
+
+                            <!-- Title -->
+                            <h2 class="text-white font-bold 
+                                    text-2xl sm:text-xl md:text-xl lg:text-3xl 
+                                    tracking-wide drop-shadow-lg">
+                                HRIS
+                            </h2>
+
+                            <!-- Description -->
+                            <p class="text-white/80 
+                                    text-xs sm:text-sm md:text-base">
+                                Human Resource System
+                            </p>
+
+                        </div>
+                        <div style="background: #14006d;"
+                            class="relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 text-center p-4 sm:p-6">
+
+                            <!-- Particle Layer -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                            </div>
+
+                            <!-- Shine Effect -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="absolute top-[-150%] left-[-150%] w-[300%] h-[300%] rotate-45 opacity-30"
+                                    style="
+                                        background: linear-gradient(
+                                            135deg,
+                                            transparent,
+                                            rgba(255,255,255,0.4),
+                                            transparent
+                                        );
+                                        animation: shine 3s linear infinite;
+                                    ">
+                                </div>
+                            </div>
+
+                            <!-- Icon -->
+                            <svg class="text-white w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16"
+                                fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l9 5v10l-9 5-9-5V7l9-5zm0 2.2L5 7.5v9l7 3.9 7-3.9v-9l-7-3.3z" />
+                            </svg>
+
+
+                            <!-- Title -->
+                            <h2 class="text-white font-bold 
+                                    text-2xl sm:text-xl md:text-xl lg:text-3xl 
+                                    tracking-wide drop-shadow-lg">
+                                CMS
+                            </h2>
+
+                            <!-- Description -->
+                            <p class="text-white/80 
+                                    text-xs sm:text-sm md:text-base">
+                                Core Management System
+                            </p>
+                        </div>
+                        <div style="background: #333333;"
+                            class="relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 text-center p-4 sm:p-6">
+
+                            <!-- Particle Layer -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                            </div>
+
+                            <!-- Shine Effect -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="absolute top-[-150%] left-[-150%] w-[300%] h-[300%] rotate-45 opacity-30"
+                                    style="
+                                        background: linear-gradient(
+                                            135deg,
+                                            transparent,
+                                            rgba(255,255,255,0.4),
+                                            transparent
+                                        );
+                                        animation: shine 3s linear infinite;
+                                    ">
+                                </div>
+                            </div>
+
+                            <!-- Icon -->
+                            <svg class="text-white 
+                                    w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16" fill="currentColor"
+                                viewBox="0 0 24 24">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4
+                                1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 
+                                1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                            </svg>
+
+                            <!-- Title -->
+                            <h2 class="text-white font-bold 
+                                    text-2xl sm:text-xl md:text-xl lg:text-3xl 
+                                    tracking-wide drop-shadow-lg">
+                                HRIS
+                            </h2>
+
+                            <!-- Description -->
+                            <p class="text-white/80 
+                                    text-xs sm:text-sm md:text-base">
+                                Human Resource System
+                            </p>
+
+                        </div>
+                        <div style="background: #14006d;"
+                            class="relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 text-center p-4 sm:p-6">
+
+                            <!-- Particle Layer -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                            </div>
+
+                            <!-- Shine Effect -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="absolute top-[-150%] left-[-150%] w-[300%] h-[300%] rotate-45 opacity-30"
+                                    style="
+                                        background: linear-gradient(
+                                            135deg,
+                                            transparent,
+                                            rgba(255,255,255,0.4),
+                                            transparent
+                                        );
+                                        animation: shine 3s linear infinite;
+                                    ">
+                                </div>
+                            </div>
+
+                            <!-- Icon -->
+                            <svg class="text-white w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16"
+                                fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l9 5v10l-9 5-9-5V7l9-5zm0 2.2L5 7.5v9l7 3.9 7-3.9v-9l-7-3.3z" />
+                            </svg>
+
+
+                            <!-- Title -->
+                            <h2 class="text-white font-bold 
+                                    text-2xl sm:text-xl md:text-xl lg:text-3xl 
+                                    tracking-wide drop-shadow-lg">
+                                CMS
+                            </h2>
+
+                            <!-- Description -->
+                            <p class="text-white/80 
+                                    text-xs sm:text-sm md:text-base">
+                                Core Management System
+                            </p>
+                        </div>
+                        <div style="background: #333333;"
+                            class="relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 text-center p-4 sm:p-6">
+
+                            <!-- Particle Layer -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                            </div>
+
+                            <!-- Shine Effect -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="absolute top-[-150%] left-[-150%] w-[300%] h-[300%] rotate-45 opacity-30"
+                                    style="
+                                        background: linear-gradient(
+                                            135deg,
+                                            transparent,
+                                            rgba(255,255,255,0.4),
+                                            transparent
+                                        );
+                                        animation: shine 3s linear infinite;
+                                    ">
+                                </div>
+                            </div>
+
+                            <!-- Icon -->
+                            <svg class="text-white 
+                                    w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16" fill="currentColor"
+                                viewBox="0 0 24 24">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4
+                                1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 
+                                1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                            </svg>
+
+                            <!-- Title -->
+                            <h2 class="text-white font-bold 
+                                    text-2xl sm:text-xl md:text-xl lg:text-3xl 
+                                    tracking-wide drop-shadow-lg">
+                                HRIS
+                            </h2>
+
+                            <!-- Description -->
+                            <p class="text-white/80 
+                                    text-xs sm:text-sm md:text-base">
+                                Human Resource System
+                            </p>
+
+                        </div>
+                        <div style="background: #14006d;"
+                            class="relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 text-center p-4 sm:p-6">
+
+                            <!-- Particle Layer -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                            </div>
+
+                            <!-- Shine Effect -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="absolute top-[-150%] left-[-150%] w-[300%] h-[300%] rotate-45 opacity-30"
+                                    style="
+                                        background: linear-gradient(
+                                            135deg,
+                                            transparent,
+                                            rgba(255,255,255,0.4),
+                                            transparent
+                                        );
+                                        animation: shine 3s linear infinite;
+                                    ">
+                                </div>
+                            </div>
+
+                            <!-- Icon -->
+                            <svg class="text-white w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16"
+                                fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l9 5v10l-9 5-9-5V7l9-5zm0 2.2L5 7.5v9l7 3.9 7-3.9v-9l-7-3.3z" />
+                            </svg>
+
+
+                            <!-- Title -->
+                            <h2 class="text-white font-bold 
+                                    text-2xl sm:text-xl md:text-xl lg:text-3xl 
+                                    tracking-wide drop-shadow-lg">
+                                CMS
+                            </h2>
+
+                            <!-- Description -->
+                            <p class="text-white/80 
+                                    text-xs sm:text-sm md:text-base">
+                                Core Management System
+                            </p>
+                        </div>
+                        <div style="background: #333333;"
+                            class="relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 text-center p-4 sm:p-6">
+
+                            <!-- Particle Layer -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                            </div>
+
+                            <!-- Shine Effect -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="absolute top-[-150%] left-[-150%] w-[300%] h-[300%] rotate-45 opacity-30"
+                                    style="
+                                        background: linear-gradient(
+                                            135deg,
+                                            transparent,
+                                            rgba(255,255,255,0.4),
+                                            transparent
+                                        );
+                                        animation: shine 3s linear infinite;
+                                    ">
+                                </div>
+                            </div>
+
+                            <!-- Icon -->
+                            <svg class="text-white 
+                                    w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16" fill="currentColor"
+                                viewBox="0 0 24 24">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4
+                                1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 
+                                1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                            </svg>
+
+                            <!-- Title -->
+                            <h2 class="text-white font-bold 
+                                    text-2xl sm:text-xl md:text-xl lg:text-3xl 
+                                    tracking-wide drop-shadow-lg">
+                                HRIS
+                            </h2>
+
+                            <!-- Description -->
+                            <p class="text-white/80 
+                                    text-xs sm:text-sm md:text-base">
+                                Human Resource System
+                            </p>
+
+                        </div>
+                        <div style="background: #14006d;"
+                            class="relative aspect-square rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 text-center p-4 sm:p-6">
+
+                            <!-- Particle Layer -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                                <div class="particle"></div>
+                            </div>
+
+                            <!-- Shine Effect -->
+                            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div class="absolute top-[-150%] left-[-150%] w-[300%] h-[300%] rotate-45 opacity-30"
+                                    style="
+                                        background: linear-gradient(
+                                            135deg,
+                                            transparent,
+                                            rgba(255,255,255,0.4),
+                                            transparent
+                                        );
+                                        animation: shine 3s linear infinite;
+                                    ">
+                                </div>
+                            </div>
+
+                            <!-- Icon -->
+                            <svg class="text-white w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16"
+                                fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l9 5v10l-9 5-9-5V7l9-5zm0 2.2L5 7.5v9l7 3.9 7-3.9v-9l-7-3.3z" />
+                            </svg>
+
+
+                            <!-- Title -->
+                            <h2 class="text-white font-bold 
+                                    text-2xl sm:text-xl md:text-xl lg:text-3xl 
+                                    tracking-wide drop-shadow-lg">
+                                CMS
+                            </h2>
+
+                            <!-- Description -->
+                            <p class="text-white/80 
+                                    text-xs sm:text-sm md:text-base">
+                                Core Management System
+                            </p>
+                        </div>
+                    </div>
                 </div>
-
             </div>
         </div>
-        
     </div>
+
+    </div>
+
 </body>
+
 </html>
