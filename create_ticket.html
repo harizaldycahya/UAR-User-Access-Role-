@@ -1,4 +1,5 @@
 <html lang="en" data-theme="white">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,6 +17,7 @@
             0% {
                 transform: translate(-50%, -50%) rotate(25deg);
             }
+
             100% {
                 transform: translate(50%, 50%) rotate(25deg);
             }
@@ -27,10 +29,12 @@
                 transform: translateY(20px) translateX(0);
                 opacity: 0;
             }
+
             50% {
                 opacity: 0.6;
                 transform: translateY(-20px) translateX(10px);
             }
+
             100% {
                 opacity: 0;
                 transform: translateY(-60px) translateX(-10px);
@@ -43,25 +47,70 @@
             bottom: -10px;
             width: 6px;
             height: 6px;
-            background: rgba(255,255,255,0.5);
+            background: rgba(255, 255, 255, 0.5);
             border-radius: 50%;
             animation: float 4s infinite ease-in-out;
         }
 
         /* Random particle positions & sizes */
-        .particle:nth-child(1) { left: 15%; width: 4px; height: 4px; animation-duration: 3s; }
-        .particle:nth-child(2) { left: 30%; width: 6px; height: 6px; animation-duration: 4.5s; }
-        .particle:nth-child(3) { left: 50%; width: 5px; height: 5px; animation-duration: 3.8s; }
-        .particle:nth-child(4) { left: 70%; width: 7px; height: 7px; animation-duration: 4.2s; }
-        .particle:nth-child(5) { left: 85%; width: 3px; height: 3px; animation-duration: 3.3s; }
-        .particle:nth-child(6) { left: 40%; width: 6px; height: 6px; animation-duration: 5s; }
-        .particle:nth-child(7) { left: 60%; width: 4px; height: 4px; animation-duration: 3.6s; }
-        .particle:nth-child(8) { left: 20%; width: 8px; height: 8px; animation-duration: 5.2s; }
+        .particle:nth-child(1) {
+            left: 15%;
+            width: 4px;
+            height: 4px;
+            animation-duration: 3s;
+        }
 
-        
+        .particle:nth-child(2) {
+            left: 30%;
+            width: 6px;
+            height: 6px;
+            animation-duration: 4.5s;
+        }
 
+        .particle:nth-child(3) {
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            animation-duration: 3.8s;
+        }
+
+        .particle:nth-child(4) {
+            left: 70%;
+            width: 7px;
+            height: 7px;
+            animation-duration: 4.2s;
+        }
+
+        .particle:nth-child(5) {
+            left: 85%;
+            width: 3px;
+            height: 3px;
+            animation-duration: 3.3s;
+        }
+
+        .particle:nth-child(6) {
+            left: 40%;
+            width: 6px;
+            height: 6px;
+            animation-duration: 5s;
+        }
+
+        .particle:nth-child(7) {
+            left: 60%;
+            width: 4px;
+            height: 4px;
+            animation-duration: 3.6s;
+        }
+
+        .particle:nth-child(8) {
+            left: 20%;
+            width: 8px;
+            height: 8px;
+            animation-duration: 5.2s;
+        }
     </style>
 </head>
+
 <body class="h-screen bg-white dark:bg-indigo-900">
     <div class="h-full flex p-[.5rem] gap-[.5rem] " x-data="{ sidebar: true }">
 
@@ -88,7 +137,7 @@
             <div class="center flex-1 overflow-y-auto mb-[3rem]">
                 <a href="index.html">
                     <div
-                        class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
+                        class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg ">
                         <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
                                 fill="none" stroke="black" stroke-width="2" stroke-linecap="round"
@@ -121,7 +170,7 @@
                                 <rect x="3" y="14" width="7" height="7" />
                             </svg>
                         </div>
-                        <span class="font-medium text-white">Create New Ticket</span>
+                        <span class="font-medium text-white">Create New Request</span>
                     </div>
                 </a>
 
@@ -138,7 +187,7 @@
                                 <rect x="3" y="14" width="7" height="7" />
                             </svg>
                         </div>
-                        <span class="font-medium text-white">My Ticket</span>
+                        <span class="font-medium text-white">My Request</span>
                     </div>
                 </a>
 
@@ -159,7 +208,7 @@
                                 <rect x="3" y="14" width="7" height="7" />
                             </svg>
                         </div>
-                        <span class="font-medium text-white">Ticket Pending</span>
+                        <span class="font-medium text-white">Approval Pending</span>
                     </div>
                 </a>
 
@@ -182,27 +231,24 @@
 
             <!-- Bottom section -->
             <div class="bottom">
-                <a href="profile.html">
-                    <div
-                        class="w-full flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors shadow-lg">
-                        <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
-                                fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="3" width="7" height="7" />
-                                <rect x="14" y="3" width="7" height="7" />
-                                <rect x="14" y="14" width="7" height="7" />
-                                <rect x="3" y="14" width="7" height="7" />
-                            </svg>
-                        </div>
-                        <span class="font-medium text-white">Profile</span>
+                <div
+                    class="w-full flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors shadow-lg">
+                    <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
+                            fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7" />
+                            <rect x="14" y="3" width="7" height="7" />
+                            <rect x="14" y="14" width="7" height="7" />
+                            <rect x="3" y="14" width="7" height="7" />
+                        </svg>
                     </div>
-                </a>
+                    <span class="font-medium text-white">Profile</span>
+                </div>
             </div>
         </div>
 
         <!-- Main Content -->
         <div class="flex-1 h-full rounded-lg flex flex-col ">
-            
             <!-- Navbar -->
             <div class="navbar  flex justify-between items-center w-full rounded-lg mb-[.5rem] bg-slate-100 dark:bg-slate-900 shadow-lg px-[3rem] py-[.5rem]">
                 
@@ -275,312 +321,319 @@
                 </div>
 
             </div>
-            
-            <div class="content w-full flex-1 rounded-lg bg-slate-100 dark:bg-slate-900 shadow-lg p-[3rem] flex flex-col overflow-hidden">
 
-                <div class="mb-5 text-black dark:text-white">
-                    <h1 class="font-bold text-5xl mb-5 ">
-                        MY Ticket
-                    </h1>
+            <div
+                class="content w-full flex-1 rounded-lg bg-slate-100 dark:bg-slate-900 shadow-lg p-[3rem] flex flex-col overflow-hidden">
+                    <div class="mb-5 text-black dark:text-white">
+                        <h1 class="font-bold text-5xl mb-5 ">
+                            Create new request
+                        </h1>
 
-                    <p>
-                        Browse your ticket history, check updates, and monitor the status of each request.
-                    </p>
-                </div>
+                        <p>
+                            Lorem ipsum dolor sit amet consectetur, adipisicing elit. Possimus, beatae.
+                        </p>
+                    </div>
 
-                <div class="my-5"></div>
-                <br>
+                    <div class="flex-1 overflow-y-auto mt-12" x-data="{
+                        step: 1,
+                        formData: {
+                            ticketType: '',
+                            title: '',
+                            description: '',
+                            currentRole: 'SPV Area East 1',
+                            selectedRole: 'SPV Area East 1',   // ⬅ tambahkan ini
+                            requestedRole: '',
+                            accessOptions: [
+                                { name: 'SPV Area Central 1', checked: false },
+                                { name: 'SPV Area Central 2', checked: false },
+                                { name: 'SPV Area Central 3', checked: false },
+                                { name: 'SPV Area Central 4', checked: false },
+                                { name: 'SPV Area East 1', checked: false },
+                                { name: 'SPV Area East 2', checked: false },
+                                { name: 'SPV Area East 3', checked: false },
+                                { name: 'SPV Area East 4', checked: false },
+                                { name: 'SPV Area West 1', checked: false },
+                                { name: 'SPV Area West 2', checked: false },
+                                { name: 'SPV Area West 3', checked: false },
+                            ]
+                        },
+                        nextStep() {
+                            if (this.step < 4) this.step++;
+                        },
+                        prevStep() {
+                            if (this.step > 1) this.step--;
+                        },
+                        submitForm() {
+                            Swal.fire({
+                                title: 'Request Submitted!',
+                                text: 'Your ticket has been successfully created.',
+                                icon: 'success',
+                                confirmButtonText: 'Go to My Requests'
+                            }).then(() => {
+                                window.location.href = 'myticket.html';
+                            });
+                        }
+                    }">
 
-                <div class="flex-1 overflow-y-auto" x-data="{
-                    step: 1,
-                    formData: {
-                        ticketType: '',
-                        title: '',
-                        description: '',
-                        currentRole: 'MS Admin',
-                        requestedRole: '',
-                        accessOptions: [
-                            { name: 'View Dashboard', checked: false },
-                            { name: 'Download Report', checked: false },
-                            { name: 'Manage Data', checked: false },
-                            { name: 'Admin Panel', checked: false },
-                        ]
-                    },
-                    nextStep() {
-                        if (this.step < 4) this.step++;
-                    },
-                    prevStep() {
-                        if (this.step > 1) this.step--;
-                    },
-                    submitForm() {
-                        Swal.fire({
-                            title: 'Ticket Submitted!',
-                            text: 'Your ticket has been successfully created.',
-                            icon: 'success',
-                            confirmButtonText: 'Go to My Tickets'
-                        }).then(() => {
-                            window.location.href = 'myticket.html';
-                        });
-                    }
-                }">
+                        <!-- Progress Steps -->
+                        <div class="mb-8">
+                            <div class="flex items-center justify-between max-w-[80%] mx-auto">
+                                <template x-for="i in 4" :key="i">
+                                    <div class="flex items-center" :class="{ 'flex-1': i < 4 }">
+                                        <div class="flex flex-col items-center">
+                                            <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all duration-300"
+                                                :class="step >= i ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-300 text-slate-600'">
+                                                <span x-text="i"></span>
+                                            </div>
 
-                    <!-- Progress Steps -->
-                    <div class="mb-8">
-                        <div class="flex items-center justify-between max-w-[80%]">
-                            <template x-for="i in 4" :key="i">
-                                <div class="flex items-center" :class="{ 'flex-1': i < 4 }">
-                                    <div class="flex flex-col items-center">
-                                        <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all duration-300"
-                                            :class="step >= i ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-300 text-slate-600'">
-                                            <span x-text="i"></span>
+                                            <span class="text-xs mt-2 font-medium text-slate-600"
+                                                x-text="i === 1 ? 'Type' : i === 2 ? 'Details' : i === 3 ? 'Access' : 'Review'"></span>
                                         </div>
 
-                                        <span class="text-xs mt-2 font-medium text-slate-600"
-                                            x-text="i === 1 ? 'Type' : i === 2 ? 'Details' : i === 3 ? 'Access' : 'Review'"></span>
+                                        <div x-show="i < 4"
+                                            class="flex-1 h-1 mx-4 rounded transition-all duration-300"
+                                            :class="step > i ? 'bg-indigo-600' : 'bg-slate-300'">
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Form Content -->
+                        <div class="max-w-[100%] bg-white rounded-xl shadow-md p-8">
+
+                            <!-- Step 1 - Type -->
+                            <div x-show="step === 1"
+                                x-transition:enter="transition ease-out duration-300"
+                                x-transition:enter-start="opacity-0 transform translate-x-8"
+                                x-transition:enter-end="opacity-100 transform translate-x-0">
+
+                                <h2 class="text-2xl font-bold text-slate-800 mb-6">Select Request Type</h2>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                    <div @click="formData.ticketType = 'open_access'"
+                                        class="p-6 border-2 rounded-lg cursor-pointer transition-all hover:shadow-lg"
+                                        :class="formData.ticketType === 'open_access' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-300'">
+
+                                        <div class="text-3xl mb-3">🔓</div>
+                                        <h3 class="font-bold text-lg mb-2">Request Application Access</h3>
+                                        <p class="text-sm text-slate-600">
+                                            Submit a ticket to request access to an application you currently cannot use.
+                                        </p>
                                     </div>
 
-                                    <div x-show="i < 4"
-                                        class="flex-1 h-1 mx-4 rounded transition-all duration-300"
-                                        :class="step > i ? 'bg-indigo-600' : 'bg-slate-300'">
+                                    <div @click="formData.ticketType = 'change_role'"
+                                        class="p-6 border-2 rounded-lg cursor-pointer transition-all hover:shadow-lg"
+                                        :class="formData.ticketType === 'change_role' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-300'">
+
+                                        <div class="text-3xl mb-3">🛠️</div>
+                                        <h3 class="font-bold text-lg mb-2">Change Role / Permissions</h3>
+                                        <p class="text-sm text-slate-600">
+                                            Submit a ticket to modify your existing role or permissions within an application.
+                                        </p>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <!-- Step 2 - Details -->
+                            <div x-show="step === 2"
+                                x-transition:enter="transition ease-out duration-300"
+                                x-transition:enter-start="opacity-0 transform translate-x-8"
+                                x-transition:enter-end="opacity-100 transform translate-x-0">
+
+                                <h2 class="text-2xl font-bold text-slate-800 mb-6">Request Details</h2>
+
+                                <div x-show="formData.ticketType === 'open_access'" class="space-y-5">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                            Application Name
+                                        </label>
+
+                                        <select x-model="formData.title"
+                                            class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                            <option value="">Select an application</option>
+                                            <option value="HRIS">HRIS – Human Resource Management System</option>
+                                            <option value="AMS">AMS – Assets Management System</option>
+                                            <option value="AAS">AAS – Advance Administration System</option>
+                                            <option value="SHOCART">SHOCART – Shopping Cart</option>
+                                            <option value="HELPDESK">HELPDESK – Helpdesk</option>
+                                            <option value="CMS">CMS – Core Management System</option>
+                                            <option value="IMS">IMS – Inventory Management System</option>
+                                            <option value="DAS">DAS – Digital Archiving System</option>
+                                            <option value="CAMPERS">CAMPERS – Cable Monitoring Performance System</option>
+                                            <option value="QMS">QMS – Quality Management System</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                            Justification for Access
+                                        </label>
+                                        <textarea x-model="formData.description" rows="5"
+                                            class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-none"
+                                            placeholder="Provide a detailed justification"></textarea>
                                     </div>
                                 </div>
-                            </template>
-                        </div>
-                    </div>
 
-                    <!-- Form Content -->
-                    <div class="max-w-[80%] bg-white rounded-xl shadow-md p-8">
+                                <!-- TYPE = Change Role -->
+                                <div x-show="formData.ticketType === 'change_role'" class="space-y-5">
 
-                        <!-- Step 1 - Type -->
-                        <div x-show="step === 1"
-                            x-transition:enter="transition ease-out duration-300"
-                            x-transition:enter-start="opacity-0 transform translate-x-8"
-                            x-transition:enter-end="opacity-100 transform translate-x-0">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700 mb-2">Application Name</label>
+                                        <select x-model="formData.title"
+                                            class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                            <option value="">Select an application</option>
+                                            <option value="HRIS">HRIS – Human Resource Management System</option>
+                                            <option value="AMS">AMS – Assets Management System</option>
+                                            <option value="AAS">AAS – Advance Administration System</option>
+                                            <option value="SHOCART">SHOCART – Shopping Cart</option>
+                                            <option value="HELPDESK">HELPDESK – Helpdesk</option>
+                                            <option value="CMS">CMS – Core Management System</option>
+                                            <option value="IMS">IMS – Inventory Management System</option>
+                                            <option value="DAS">DAS – Digital Archiving System</option>
+                                            <option value="CAMPERS">CAMPERS – Cable Monitoring Performance System</option>
+                                            <option value="QMS">QMS – Quality Management System</option>
+                                        </select>
+                                    </div>
 
-                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Select Ticket Type</h2>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700 mb-2">Current Role</label>
+                                        <input disabled type="text" x-model="formData.currentRole"
+                                            class="w-full px-4 py-3 border border-slate-300 rounded-lg bg-slate-100">
+                                    </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                            Reason for Role Change
+                                        </label>
+                                        <textarea x-model="formData.description" rows="5"
+                                            class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-none"
+                                            placeholder="Explain why this role change is needed"></textarea>
+                                    </div>
 
-                                <div @click="formData.ticketType = 'open_access'"
-                                    class="p-6 border-2 rounded-lg cursor-pointer transition-all hover:shadow-lg"
-                                    :class="formData.ticketType === 'open_access' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-300'">
-
-                                    <div class="text-3xl mb-3">🔓</div>
-                                    <h3 class="font-bold text-lg mb-2">Request Application Access</h3>
-                                    <p class="text-sm text-slate-600">
-                                        Submit a ticket to request access to an application you currently cannot use.
-                                    </p>
-                                </div>
-
-                                <div @click="formData.ticketType = 'change_role'"
-                                    class="p-6 border-2 rounded-lg cursor-pointer transition-all hover:shadow-lg"
-                                    :class="formData.ticketType === 'change_role' ? 'border-indigo-600 bg-indigo-50' : 'border-slate-300'">
-
-                                    <div class="text-3xl mb-3">🛠️</div>
-                                    <h3 class="font-bold text-lg mb-2">Change Role / Permissions</h3>
-                                    <p class="text-sm text-slate-600">
-                                        Submit a ticket to modify your existing role or permissions within an application.
-                                    </p>
-                                </div>
-
-                            </div>
-                        </div>
-
-                        <!-- Step 2 - Details -->
-                        <div x-show="step === 2"
-                            x-transition:enter="transition ease-out duration-300"
-                            x-transition:enter-start="opacity-0 transform translate-x-8"
-                            x-transition:enter-end="opacity-100 transform translate-x-0">
-
-                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Ticket Details</h2>
-
-                            <div x-show="formData.ticketType === 'open_access'" class="space-y-5">
-                                <div>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                                        Application Name
-                                    </label>
-
-                                    <select x-model="formData.title"
-                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                                        <option value="">Select an application</option>
-                                        <option value="HRIS">HRIS – Human Resource Management System</option>
-                                        <option value="AMS">AMS – Assets Management System</option>
-                                        <option value="AAS">AAS – Advance Administration System</option>
-                                        <option value="SHOCART">SHOCART – Shopping Cart</option>
-                                        <option value="HELPDESK">HELPDESK – Helpdesk</option>
-                                        <option value="CMS">CMS – Core Management System</option>
-                                        <option value="IMS">IMS – Inventory Management System</option>
-                                        <option value="DAS">DAS – Digital Archiving System</option>
-                                        <option value="CAMPERS">CAMPERS – Cable Monitoring Performance System</option>
-                                        <option value="QMS">QMS – Quality Management System</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                                        Justification for Access
-                                    </label>
-                                    <textarea x-model="formData.description" rows="5"
-                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-none"
-                                        placeholder="Provide a detailed justification"></textarea>
-                                </div>
-                            </div>
-
-                            <!-- TYPE = Change Role -->
-                            <div x-show="formData.ticketType === 'change_role'" class="space-y-5">
-
-                                <div>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Application Name</label>
-                                    <select x-model="formData.title"
-                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                                        <option value="">Select an application</option>
-                                        <option value="HRIS">HRIS – Human Resource Management System</option>
-                                        <option value="AMS">AMS – Assets Management System</option>
-                                        <option value="AAS">AAS – Advance Administration System</option>
-                                        <option value="SHOCART">SHOCART – Shopping Cart</option>
-                                        <option value="HELPDESK">HELPDESK – Helpdesk</option>
-                                        <option value="CMS">CMS – Core Management System</option>
-                                        <option value="IMS">IMS – Inventory Management System</option>
-                                        <option value="DAS">DAS – Digital Archiving System</option>
-                                        <option value="CAMPERS">CAMPERS – Cable Monitoring Performance System</option>
-                                        <option value="QMS">QMS – Quality Management System</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Current Role</label>
-                                    <input disabled type="text" x-model="formData.currentRole"
-                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg bg-slate-100">
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Requested Role</label>
-                                    <input type="text" x-model="formData.requestedRole"
-                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                                        placeholder="Enter requested role">
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                                        Reason for Role Change
-                                    </label>
-                                    <textarea x-model="formData.description" rows="5"
-                                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-none"
-                                        placeholder="Explain why this role change is needed"></textarea>
                                 </div>
 
                             </div>
 
-                        </div>
+                            <!-- Step 3 - Access -->
+                            <div x-show="step === 3"
+                                x-transition:enter="transition ease-out duration-300"
+                                x-transition:enter-start="opacity-0 transform translate-x-8"
+                                x-transition:enter-end="opacity-100 transform translate-x-0">
 
-                        <!-- Step 3 - Access -->
-                        <div x-show="step === 3"
-                            x-transition:enter="transition ease-out duration-300"
-                            x-transition:enter-start="opacity-0 transform translate-x-8"
-                            x-transition:enter-end="opacity-100 transform translate-x-0">
+                                <h2 class="text-2xl font-bold text-slate-800 mb-6">Select Access</h2>
 
-                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Select Access</h2>
-
-                            <table class="w-full table-auto border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-100">
-                                        <th class="border px-4 py-2 text-left text-sm font-semibold text-slate-600">Access Name</th>
-                                        <th class="border px-4 py-2 text-center text-sm font-semibold text-slate-600">Enable</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <template x-for="(item, index) in formData.accessOptions" :key="index">
-                                        <tr>
-                                            <td class="border px-4 py-3 text-sm text-slate-700"
-                                                x-text="item.name"></td>
-                                            <td class="border px-4 py-3 text-center">
-                                                <input type="checkbox" x-model="item.checked"
-                                                    class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500">
-                                            </td>
+                                <table class="w-full table-auto border-collapse">
+                                    <thead>
+                                        <tr class="bg-slate-100">
+                                            <th class="border px-4 py-2 text-left text-sm font-semibold text-slate-600">Role Name</th>
+                                            <th class="border px-4 py-2 text-center text-sm font-semibold text-slate-600">Enable</th>
                                         </tr>
-                                    </template>
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="(item, index) in formData.accessOptions" :key="index">
+                                            <tr>
+                                                <td class="border px-4 py-3 text-sm text-slate-700"
+                                                    x-text="item.name"></td>
 
-                        <!-- Step 4 - Review -->
-                        <div x-show="step === 4"
-                            x-transition:enter="transition ease-out duration-300"
-                            x-transition:enter-start="opacity-0 transform translate-x-8"
-                            x-transition:enter-end="opacity-100 transform translate-x-0">
+                                                <td class="border px-4 py-3 text-center">
+                                                    <input type="radio"
+                                                        name="roleSelection"
+                                                        x-model="formData.selectedRole"
+                                                        :value="item.name"
+                                                        class="w-5 h-5 text-indigo-600 focus:ring-indigo-500">
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
 
-                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Review Your Ticket</h2>
+                                </table>
+                            </div>
 
-                            <p class="text-slate-600 mb-6">
-                                Please review all information below before submitting your ticket.
-                            </p>
+                            <!-- Step 4 - Review -->
+                            <div x-show="step === 4"
+                                x-transition:enter="transition ease-out duration-300"
+                                x-transition:enter-start="opacity-0 transform translate-x-8"
+                                x-transition:enter-end="opacity-100 transform translate-x-0">
 
-                            <div class="space-y-6">
+                                <h2 class="text-2xl font-bold text-slate-800 mb-6">Review Your Request</h2>
 
-                                <!-- Ticket Type -->
-                                <div class="p-5 border rounded-lg bg-slate-50">
-                                    <h3 class="font-semibold text-slate-800 mb-2">Ticket Type</h3>
-                                    <p class="text-slate-700 capitalize"
-                                    x-text="formData.ticketType.replace('_', ' ') || '-'"></p>
-                                </div>
+                                <p class="text-slate-600 mb-6">
+                                    Please review all information below before submitting your ticket.
+                                </p>
 
-                                <!-- App Details -->
-                                <div class="p-5 border rounded-lg bg-slate-50">
-                                    <h3 class="font-semibold text-slate-800 mb-2">Application Details</h3>
-                                    <p class="text-sm">
-                                        Application: <span class="font-medium" x-text="formData.title || '-'"></span>
-                                    </p>
-                                    <p class="text-sm mt-1">
-                                        Description: <span class="font-medium" x-text="formData.description || '-'"></span>
-                                    </p>
-                                </div>
+                                <div class="space-y-6">
 
-                                <!-- Access List -->
-                                <div class="p-5 border rounded-lg bg-slate-50">
-                                    <h3 class="font-semibold text-slate-800 mb-2">Requested Access</h3>
+                                    <!-- Request Type -->
+                                    <div class="p-5 border rounded-lg bg-slate-50">
+                                        <h3 class="font-semibold text-slate-800 mb-2">Request Type</h3>
+                                        <p class="text-slate-700 capitalize"
+                                        x-text="formData.ticketType.replace('_', ' ') || '-'"></p>
+                                    </div>
 
-                                    <template x-if="formData.accessOptions.filter(x => x.checked).length > 0">
-                                        <ul class="list-disc pl-6 space-y-1">
-                                            <template x-for="(item, i) in formData.accessOptions.filter(x => x.checked)" :key="i">
-                                                <li class="text-sm text-slate-700" x-text="item.name"></li>
-                                            </template>
-                                        </ul>
-                                    </template>
+                                    <!-- App Details -->
+                                    <div class="p-5 border rounded-lg bg-slate-50">
+                                        <h3 class="font-semibold text-slate-800 mb-2">Application Details</h3>
+                                        <p class="text-sm">
+                                            Application: <span class="font-medium" x-text="formData.title || '-'"></span>
+                                        </p>
+                                        <p class="text-sm mt-1">
+                                            Description: <span class="font-medium" x-text="formData.description || '-'"></span>
+                                        </p>
+                                    </div>
 
-                                    <p x-show="formData.accessOptions.filter(x => x.checked).length === 0"
-                                        class="text-sm text-slate-600 italic">
-                                        No access selected.
-                                    </p>
+                                    <!-- Access List -->
+                                    <div class="p-5 border rounded-lg bg-slate-50">
+                                        <h3 class="font-semibold text-slate-800 mb-2">Requested Access</h3>
+
+                                        <!-- Jika ada role yang dipilih -->
+                                        <template x-if="formData.selectedRole">
+                                            <p class="text-sm text-slate-700 font-medium"
+                                            x-text="formData.selectedRole"></p>
+                                        </template>
+
+                                        <!-- Jika belum pilih apa-apa -->
+                                        <p x-show="!formData.selectedRole"
+                                            class="text-sm text-slate-600 italic">
+                                            No access selected.
+                                        </p>
+                                    </div>
+
                                 </div>
 
                             </div>
 
-                        </div>
+                            <!-- Navigation Buttons -->
+                            <div class="flex justify-between mt-8 pt-6 border-t border-slate-200">
+                                <button @click="prevStep()" x-show="step > 1"
+                                    class="px-6 py-3 bg-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-300 transition-colors">
+                                    ← Previous
+                                </button>
 
-                        <!-- Navigation Buttons -->
-                        <div class="flex justify-between mt-8 pt-6 border-t border-slate-200">
-                            <button @click="prevStep()" x-show="step > 1"
-                                class="px-6 py-3 bg-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-300 transition-colors">
-                                ← Previous
-                            </button>
+                                <div x-show="step === 1"></div>
 
-                            <div x-show="step === 1"></div>
+                                <button @click="nextStep()" x-show="step < 4"
+                                    class="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors shadow-md">
+                                    Next →
+                                </button>
 
-                            <button @click="nextStep()" x-show="step < 4"
-                                class="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors shadow-md">
-                                Next →
-                            </button>
-
-                            <button @click="submitForm()" x-show="step === 4"
-                                class="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors shadow-md">
-                                Submit Ticket ✓
-                            </button>
+                                <button @click="submitForm()" x-show="step === 4"
+                                    class="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors shadow-md">
+                                    Submit Request ✓
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
             </div>
+
         </div>
 
     </div>
+
+    
+
 </body>
+
 </html>

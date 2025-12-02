@@ -183,7 +183,7 @@
                                 <rect x="3" y="14" width="7" height="7" />
                             </svg>
                         </div>
-                        <span class="font-medium text-black dark:text-white">Create New Ticket</span>
+                        <span class="font-medium text-black dark:text-white">Create New Request</span>
                     </div>
                 </a>
                 <div
@@ -199,7 +199,7 @@
                             <rect x="3" y="14" width="7" height="7" />
                         </svg>
                     </div>
-                    <span class="font-medium text-black dark:text-white">My Ticket</span>
+                    <span class="font-medium text-black dark:text-white">My Request</span>
                 </div>
 
                 <div
@@ -219,7 +219,7 @@
                             <rect x="3" y="14" width="7" height="7" />
                         </svg>
                     </div>
-                    <span class="font-medium text-black dark:text-white">Ticket Pending</span>
+                    <span class="font-medium text-black dark:text-white">Approval Pending</span>
                 </div>
                 <div
                     class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
@@ -297,7 +297,7 @@
 
                 <div class="mb-5">
                     <h1 class="font-bold text-5xl mb-5 text-slate-800">
-                        Create New Ticket
+                        Create New Request
                     </h1>
                     <p class="text-slate-600">
                         Please fill out the form below to create a new deployment ticket.
@@ -326,7 +326,7 @@
                         if (this.step > 1) this.step--;
                     },
                     submitForm() {
-                        alert('Ticket submitted successfully!');
+                        alert('Request submitted successfully!');
                         console.log(this.formData);
                     }
                 }">
@@ -356,11 +356,11 @@
                     <!-- Form Content -->
                     <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-8">
                         
-                        <!-- Step 1: Ticket Type -->
+                        <!-- Step 1: Request Type -->
                         <div x-show="step === 1" x-transition:enter="transition ease-out duration-300"
                             x-transition:enter-start="opacity-0 transform translate-x-8"
                             x-transition:enter-end="opacity-100 transform translate-x-0">
-                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Select Ticket Type</h2>
+                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Select Request Type</h2>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div @click="formData.ticketType = 'deployment'" 
@@ -401,7 +401,7 @@
                         <div x-show="step === 2" x-transition:enter="transition ease-out duration-300"
                             x-transition:enter-start="opacity-0 transform translate-x-8"
                             x-transition:enter-end="opacity-100 transform translate-x-0">
-                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Ticket Details</h2>
+                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Request Details</h2>
                             
                             <div class="space-y-5">
                                 <div>
@@ -496,11 +496,11 @@
                         <div x-show="step === 4" x-transition:enter="transition ease-out duration-300"
                             x-transition:enter-start="opacity-0 transform translate-x-8"
                             x-transition:enter-end="opacity-100 transform translate-x-0">
-                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Review Your Ticket</h2>
+                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Review Your Request</h2>
                             
                             <div class="space-y-4 bg-slate-50 p-6 rounded-lg">
                                 <div class="grid grid-cols-3 gap-4 py-3 border-b border-slate-200">
-                                    <span class="font-semibold text-slate-700">Ticket Type:</span>
+                                    <span class="font-semibold text-slate-700">Request Type:</span>
                                     <span class="col-span-2 capitalize" x-text="formData.ticketType || '-'"></span>
                                 </div>
                                 <div class="grid grid-cols-3 gap-4 py-3 border-b border-slate-200">
@@ -555,7 +555,7 @@
                             
                             <button @click="submitForm()" x-show="step === 4"
                                 class="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors shadow-md">
-                                Submit Ticket ✓
+                                Submit Request ✓
                             </button>
                         </div>
                     </div>
