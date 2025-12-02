@@ -9,110 +9,14 @@
         @import "tailwindcss";
         @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
     </style>
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-    <style>
-        @keyframes shine {
-            0% {
-                transform: translate(-50%, -50%) rotate(25deg);
-            }
-
-            100% {
-                transform: translate(50%, 50%) rotate(25deg);
-            }
-        }
-
-        /* Particle floating animation */
-        @keyframes float {
-            0% {
-                transform: translateY(20px) translateX(0);
-                opacity: 0;
-            }
-
-            50% {
-                opacity: 0.6;
-                transform: translateY(-20px) translateX(10px);
-            }
-
-            100% {
-                opacity: 0;
-                transform: translateY(-60px) translateX(-10px);
-            }
-        }
-
-        /* Particle design */
-        .particle {
-            position: absolute;
-            bottom: -10px;
-            width: 6px;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.5);
-            border-radius: 50%;
-            animation: float 4s infinite ease-in-out;
-        }
-
-        /* Random particle positions & sizes */
-        .particle:nth-child(1) {
-            left: 15%;
-            width: 4px;
-            height: 4px;
-            animation-duration: 3s;
-        }
-
-        .particle:nth-child(2) {
-            left: 30%;
-            width: 6px;
-            height: 6px;
-            animation-duration: 4.5s;
-        }
-
-        .particle:nth-child(3) {
-            left: 50%;
-            width: 5px;
-            height: 5px;
-            animation-duration: 3.8s;
-        }
-
-        .particle:nth-child(4) {
-            left: 70%;
-            width: 7px;
-            height: 7px;
-            animation-duration: 4.2s;
-        }
-
-        .particle:nth-child(5) {
-            left: 85%;
-            width: 3px;
-            height: 3px;
-            animation-duration: 3.3s;
-        }
-
-        .particle:nth-child(6) {
-            left: 40%;
-            width: 6px;
-            height: 6px;
-            animation-duration: 5s;
-        }
-
-        .particle:nth-child(7) {
-            left: 60%;
-            width: 4px;
-            height: 4px;
-            animation-duration: 3.6s;
-        }
-
-        .particle:nth-child(8) {
-            left: 20%;
-            width: 8px;
-            height: 8px;
-            animation-duration: 5.2s;
-        }
-    </style>
 </head>
 
 <body class="h-screen bg-white dark:bg-indigo-900">
     <div class="h-full flex p-[.5rem] gap-[.5rem] " x-data="{ sidebar: true }">
+
 
         <!-- Sidebar -->
         <div class="sidebar w-[20rem] h-full rounded-lg bg-slate-900 shadow-lg px-5 py-10 flex flex-col"
@@ -140,7 +44,7 @@
                     <span class="font-bold text-white"><small>Management Application</small></span>
                 </div>
 
-                <a href="myticket.html">
+                <a href="admin_application.html">
                     <div
                         class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg bg-indigo-900">
                         <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
@@ -158,7 +62,7 @@
                 </a>
 
 
-                <a href="create_ticket.html">
+                <a href="admin_create.html">
                     <div
                         class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
                         <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
@@ -223,7 +127,7 @@
                             <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Profile"
                                 class="w-10 h-10 rounded-full object-cover shadow-sm">
                             <span class="font-semibold text-black dark:text-white">
-                                ADMIN IT
+                                Mariadi Pudidi
                             </span>
 
                             <!-- Chevron Down Icon -->
@@ -255,69 +159,120 @@
             </div>
 
 
+
+
             <div
                 class="content w-full flex-1 rounded-lg bg-slate-100 dark:bg-slate-900 shadow-lg p-[3rem] flex flex-col overflow-hidden bg-indigo-900">
 
                 <div class="mb-5 text-black dark:text-white">
-                    <h1 class="font-bold text-5xl mb-5 ">
-                        
-                    </h1>
-
-                    <p>
-                        Lorem ipsum dolor sit amet consectetur, adipisicing elit. Ad, unde!
-                    </p>
+                    <h1 class="font-bold text-5xl mb-5">CMS ( Core Management System)</h1>
+                    <p>Fill the form below to register a new application into the system.</p>
                 </div>
-
-                <div class="my-2"></div>
                 <br>
-                <div class="flex-1 overflow-y-auto pr-10">
+                <div class="flex-1 overflow-y-auto">
+                    <div>
+                        <!-- Main Content Grid -->
+                        <div class="grid grid-cols-1 ">
 
-                    <!-- Table Section -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden fade-in">
-                        <div class="overflow-x-auto">
-                            <table class="w-full border-collapse">
-                                <thead>
-                                    <tr class="bg-gradient-to-r from-indigo-600 to-indigo-700">
-                                        <th
-                                            class="px-6 py-4 text-left font-semibold text-white uppercase tracking-wider border border-indigo-500 align-top">
-                                            No
-                                        </th>
-                                        <th
-                                            class="px-6 py-4 text-left font-semibold text-white uppercase tracking-wider border border-indigo-500 align-top">
-                                            Application
-                                        </th>
-                                        <th
-                                            class="px-6 py-4 text-left font-semibold text-white uppercase tracking-wider border border-indigo-500 align-top">
-                                            Application Owner
-                                        </th>
-                                        <th
-                                            class="px-6 py-4 text-left font-semibold text-white uppercase tracking-wider border border-indigo-500 align-top">
-                                            Action
-                                        </th>
-                                    </tr>
-                                </thead>
+                            <div class="bg-white rounded-xl shadow-lg p-8 relative">
 
-                                <tbody id="table-body">
-                                    <tr>
-                                        <td class="px-6 py-4 border border-slate-300 align-top">
-                                            1.
-                                        </td>
-                                        <td class="px-6 py-4 border border-slate-300 align-top">
-                                            CMS ( Core Management System )
-                                        </td>
+                                <div class="flex justify-between">
+                                    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                        <div class="w-1 h-8 bg-indigo-900 rounded"></div>
+                                        Application Information
+                                    </h2>
+                                    <div class="flex gap-3 mt-4 md:mt-0">
+                                        <button onclick="showEditProfileModal()"
+                                            class="px-6 py-3 bg-indigo-900 text-white rounded-xl hover:bg-indigo-800 shadow-lg transition-all hover:shadow-xl font-medium cursor-pointer">
+                                            Edit Information
+                                        </button>
+                                    </div>
+                                </div>
 
-                                        <td class="px-6 py-4 border border-slate-300 align-top">
-                                            Bang Kalmin (KT-18917312)
-                                        </td>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-5">
+                                    <div>
+                                        <p class="text-gray-500 font-medium">Application Name</p>
+                                        <p class="text-lg font-semibold text-gray-900 mt-1">Core Management system</p>
+                                    </div>
 
-                                        <td class="px-6 py-4 border border-slate-300 align-top">
-                                            DETAIL
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                    <div>
+                                        <p class="text-gray-500 font-medium">Application Code</p>
+                                        <p class="text-lg font-semibold text-gray-900 mt-1">CMS</p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-gray-500 font-medium">Application URL</p>
+                                        <p class="text-lg font-semibold text-gray-900 mt-1">https://cms.triasmitra.com/
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-gray-500 font-medium">Application Owner</p>
+                                        <p class="text-lg font-semibold text-gray-900 mt-1">KT-13040086 ( Akhmad Kalmin
+                                            )</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="my-5">
+                                <div class="bg-white rounded-xl shadow-lg p-7">
+
+                                    <div class="flex justify-between mb-5">
+                                        <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                            <div class="w-1 h-8 bg-indigo-900 rounded"></div>
+                                            Application role list
+                                        </h2>
+                                        <div class="flex gap-3 mt-4 md:mt-0">
+                                            <button onclick="showEditRoleModal()"
+                                                class="px-6 py-3 bg-indigo-900 text-white rounded-xl hover:bg-indigo-800 shadow-lg transition-all hover:shadow-xl font-medium cursor-pointer">
+                                                Edit Role
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <table class="w-full border-collapse">
+                                        <thead>
+                                            <tr class="bg-gradient-to-r from-indigo-600 to-indigo-700">
+                                                <th
+                                                    class="px-6 py-4 text-left font-semibold text-white uppercase tracking-wider border border-indigo-500 align-top">
+                                                    No
+                                                </th>
+                                                <th
+                                                    class="px-6 py-4 text-left font-semibold text-white uppercase tracking-wider border border-indigo-500 align-top">
+                                                    Role Name
+                                                </th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody id="table-body">
+                                            <tr>
+                                                <td class="px-6 py-4 border border-slate-300 align-top">1.</td>
+                                                <td class="px-6 py-4 border border-slate-300 align-top">SPV Area Central
+                                                    1</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="px-6 py-4 border border-slate-300 align-top">2.</td>
+                                                <td class="px-6 py-4 border border-slate-300 align-top">SPV Area Central
+                                                    2</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="px-6 py-4 border border-slate-300 align-top">3.</td>
+                                                <td class="px-6 py-4 border border-slate-300 align-top">SPV Area Central
+                                                    3</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="px-6 py-4 border border-slate-300 align-top">4.</td>
+                                                <td class="px-6 py-4 border border-slate-300 align-top">SPV Area Central
+                                                    4</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                            </div>
 
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -325,6 +280,177 @@
 
     </div>
 
+    <script>
+        // Edit Profile Modal
+        function showEditProfileModal() {
+            Swal.fire({
+                title: '<strong>Edit Profile</strong>',
+                html: `
+                    <div class="text-left space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Application name</label>
+                            <input id="applicationName" type="text" value="Core Management System" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Application Code</label>
+                            <input id="applicationCode" type="text" value="CMS" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Application URL</label>
+                            <input id="applicationURL" type="text" value="https://cms.triasmitra.com/" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Application Owner</label>
+                            <input id="applicationOwner" type="text" value="KT-13040086 ( Akhmad Kalmin )" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+                `,
+                width: '600px',
+                showCancelButton: true,
+                confirmButtonText: 'Save Changes',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#312e81',
+                cancelButtonColor: '#6b7280',
+                preConfirm: () => {
+                    const applicationName = document.getElementById('applicationName').value;
+                    const applicationCode = document.getElementById('applicationCode').value;
+                    const applicationURL = document.getElementById('applicationURL').value;
+                    const applicationOwner = document.getElementById('applicationOwner').value;
+
+                    if (!applicationName || !applicationCode || !applicationURL || !applicationOwner) {
+                        Swal.showValidationMessage('Please fill in all fields');
+                        return false;
+                    }
+
+                    return { applicationName, applicationCode, applicationURL, applicationOwner };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Your profile has been updated successfully',
+                        icon: 'success',
+                        confirmButtonColor: '#312e81',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
+        }
+
+    </script>
+
+    <script>
+        function showEditRoleModal() {
+
+            // Ambil data role dari tabel
+            const rows = document.querySelectorAll("#table-body tr");
+            let roleList = [];
+
+            rows.forEach(row => {
+                roleList.push(row.children[1].innerText.trim());
+            });
+
+            // Buat HTML dynamic input
+            let inputsHTML = `
+            <div id="roleContainer" style="text-align:left;">
+        `;
+
+            roleList.forEach((role, index) => {
+                inputsHTML += `
+                <div class="role-item" style="display:flex; gap:10px; margin-bottom:10px;">
+                    <input type="text" class="swal2-input role-input" value="${role}" placeholder="Role name" style="flex:1;">
+                    <button type="button" onclick="removeRoleField(this)" class="bg-red-500 text-white px-3 py-2 rounded">-</button>
+                </div>
+            `;
+            });
+
+            inputsHTML += `</div>`;
+
+            // SweetAlert Modal
+            Swal.fire({
+                title: "Edit Role List",
+                html: `
+                    <style>
+                        .swal2-input {
+                            margin: 0 !important;
+                            width: 100% !important;
+                            box-sizing: border-box;
+                        }
+                        .role-item {
+                            display: flex;
+                            align-items: center;
+                            gap: 10px;
+                            margin-bottom: 12px;
+                        }
+                        .remove-btn {
+                            padding: 8px 14px;
+                            background: #ef4444;
+                            color: white;
+                            border-radius: 8px;
+                        }
+                    </style>
+
+                    <div id="roleContainer" style="text-align:left;">
+                        ${inputsHTML}
+                    </div>
+
+                    <div class="text-left">
+                        <button type="button" onclick="addRoleField()" 
+                            class="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700">
+                            + Add Role
+                        </button>
+                    </div>
+                    <hr class="my-2">
+                `,
+
+                width: 600,
+                showCancelButton: true,
+                confirmButtonText: "Save Changes",
+                cancelButtonText: "Cancel",
+                confirmButtonColor: '#312e81',
+                cancelButtonColor: '#6b7280',
+                preConfirm: () => {
+                    const inputs = document.querySelectorAll(".role-input");
+                    let result = [];
+
+                    inputs.forEach(i => {
+                        if (i.value.trim() !== "") result.push(i.value.trim());
+                    });
+
+                    return result;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    console.log("UPDATED ROLE LIST:", result.value);
+
+                    // TODO: kamu bisa update table secara langsung kalau ingin
+                    // nanti kalau mau aku buatkan auto update table-nya
+
+                }
+            });
+        }
+
+        // Tambah field
+        function addRoleField() {
+            const container = document.getElementById("roleContainer");
+
+            const div = document.createElement("div");
+            div.className = "role-item";
+            div.style = "display:flex; gap:10px; margin-bottom:10px;";
+
+            div.innerHTML = `
+            <input type="text" class="swal2-input role-input" placeholder="Role name" style="flex:1;">
+            <button type="button" onclick="removeRoleField(this)" class="bg-red-500 text-white px-3 py-2 rounded">-</button>
+        `;
+
+            container.appendChild(div);
+        }
+
+        // Hapus field
+        function removeRoleField(button) {
+            button.parentElement.remove();
+        }
+    </script>
 
 
 </body>
