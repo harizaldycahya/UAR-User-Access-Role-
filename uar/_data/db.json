@@ -1,0 +1,36 @@
+{
+    "notification":[
+        {
+           "id" : "1", 
+           "application" : "CMS", 
+           "title" : "Request SOR", 
+           "description" : "Request SOR Approved", 
+           "date" : "10 minutes ago", 
+           "active" : "true"
+        }, 
+        {
+           "id" : "2", 
+           "application" : "CMS", 
+           "title" : "Request SOR", 
+           "description" : "Request SOR Approved", 
+           "date" : "10 minutes ago", 
+           "active" : "true"
+        }, 
+        {
+           "id" : "3", 
+           "application" : "CMS", 
+           "title" : "Request SOR", 
+           "description" : "Request SOR Approved", 
+           "date" : "10 minutes ago", 
+           "active" : "true"
+        }, 
+        {
+           "id" : "4", 
+           "application" : "CMS", 
+           "title" : "Request SOR", 
+           "description" : "Request SOR Approved", 
+           "date" : "10 minutes ago", 
+           "active" : "true"
+        }
+    ]
+}
