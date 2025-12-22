@@ -1,0 +1,470 @@
+<html lang="en" data-theme="white">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @import "tailwindcss";
+        @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+    <style>
+        @keyframes shine {
+            0% {
+                transform: translate(-50%, -50%) rotate(25deg);
+            }
+
+            100% {
+                transform: translate(50%, 50%) rotate(25deg);
+            }
+        }
+
+        /* Particle floating animation */
+        @keyframes float {
+            0% {
+                transform: translateY(20px) translateX(0);
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: translateY(-20px) translateX(10px);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-60px) translateX(-10px);
+            }
+        }
+
+        /* Particle design */
+        .particle {
+            position: absolute;
+            bottom: -10px;
+            width: 6px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: float 4s infinite ease-in-out;
+        }
+
+        /* Random particle positions & sizes */
+        .particle:nth-child(1) {
+            left: 15%;
+            width: 4px;
+            height: 4px;
+            animation-duration: 3s;
+        }
+
+        .particle:nth-child(2) {
+            left: 30%;
+            width: 6px;
+            height: 6px;
+            animation-duration: 4.5s;
+        }
+
+        .particle:nth-child(3) {
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            animation-duration: 3.8s;
+        }
+
+        .particle:nth-child(4) {
+            left: 70%;
+            width: 7px;
+            height: 7px;
+            animation-duration: 4.2s;
+        }
+
+        .particle:nth-child(5) {
+            left: 85%;
+            width: 3px;
+            height: 3px;
+            animation-duration: 3.3s;
+        }
+
+        .particle:nth-child(6) {
+            left: 40%;
+            width: 6px;
+            height: 6px;
+            animation-duration: 5s;
+        }
+
+        .particle:nth-child(7) {
+            left: 60%;
+            width: 4px;
+            height: 4px;
+            animation-duration: 3.6s;
+        }
+
+        .particle:nth-child(8) {
+            left: 20%;
+            width: 8px;
+            height: 8px;
+            animation-duration: 5.2s;
+        }
+    </style>
+</head>
+
+<body class="h-screen bg-white dark:bg-indigo-900">
+    <div class="h-full flex p-[.5rem] gap-[.5rem] " x-data="{ sidebar: true }">
+
+        <!-- Sidebar -->
+        <div class="sidebar w-[20rem] h-full rounded-lg bg-slate-900 shadow-lg px-5 py-10 flex flex-col"
+            x-show="sidebar" x-transition:enter="transition-all duration-300 ease-out"
+            x-transition:enter-start="opacity-0 -ml-[20rem]" x-transition:enter-end="opacity-100 ml-0"
+            x-transition:leave="transition-all duration-300 ease-in" x-transition:leave-start="opacity-100 ml-0"
+            x-transition:leave-end="opacity-0 -ml-[20rem]">
+
+            <div class="top flex items-center gap-3 mb-[3rem]">
+                <div class="w-full flex items-center gap-3 my-5 rounded-lg cursor-pointer transition-colors">
+                    <div class="bg-indigo-900 rounded p-3">
+                        <img src="assets/logo.png" class="w-[4rem] h-auto object-contain" alt="">
+                    </div>
+                    <div class="flex flex-col justify-center ml-2 p-1">
+                        <h5 class="font-bold text-xl text-white">TRIASMITRA</h5>
+                        <p class="font-bold text-amber-400">submarine deployer</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center section -->
+            <div class="center flex-1 overflow-y-auto mb-[3rem]">
+                <div
+                    class="w-full flex items-center gap-3 p-3 mt-8 rounded-lg cursor-pointer transition-colors shadow-lg">
+                    <span class="font-bold text-white"><small>Management Application</small></span>
+                </div>
+
+                <a href="admin_application.html">
+                    <div
+                        class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg ">
+                        <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
+                                fill="none" stroke="black" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                        </div>
+                        <span class="font-medium text-white">Applications</span>
+                    </div>
+                </a>
+
+
+                <a href="admin_create.html">
+                    <div
+                        class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg">
+                        <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
+                                fill="none" stroke="black" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                        </div>
+                        <span class="font-medium text-white">Create New Application</span>
+                    </div>
+                </a>
+                <div
+                    class="w-full flex items-center gap-3 p-3 mt-8 rounded-lg cursor-pointer transition-colors shadow-lg">
+                    <span class="font-bold text-white"><small>Management Users</small></span>
+                </div>
+
+                <a href="admin_users.html">
+                    <div
+                        class="w-full flex items-center gap-3 p-3 my-2 rounded-lg cursor-pointer transition-colors shadow-lg bg-indigo-900">
+                        <div class="w-8 h-8 bg-white rounded flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="w-5 h-5 text-black"
+                                fill="none" stroke="black" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                        </div>
+                        <span class="font-medium text-white">Users</span>
+                    </div>
+                </a>
+
+
+            </div>
+
+            <!-- Bottom section -->
+            <div class="bottom">
+            </div>
+        </div>
+
+
+        <!-- Main Content -->
+        <div class="flex-1 h-full rounded-lg flex flex-col ">
+
+            <!-- Navbar -->
+            <div
+                class="navbar  flex justify-between items-center w-full rounded-lg mb-[.5rem] bg-slate-100 dark:bg-slate-900 shadow-lg px-[3rem] py-[.5rem]">
+
+                <!-- Left side: Hamburger Icon -->
+                <div class="w-[3rem] h-[3rem] flex items-center justify-center cursor-pointer text-black dark:text-white"
+                    @click="sidebar = !sidebar">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </div>
+
+                <!-- Right side -->
+                <div class="flex gap-[.5rem] items-center">
+
+                    <!-- Notification Icon -->
+                    <div class="relative w-[3rem] h-[3rem] flex items-center justify-center cursor-pointer">
+                        <!-- Bell Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 
+                                    6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 
+                                    6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0h6z" />
+                        </svg>
+
+                        <!-- Red dot -->
+                        <span class="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                    </div>
+
+                    <!-- Profile Dropdown -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="flex items-center gap-3 cursor-pointer select-none">
+                            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Profile"
+                                class="w-10 h-10 rounded-full object-cover shadow-sm">
+                            <span class="font-semibold text-black dark:text-white">
+                                ADMIN IT
+                            </span>
+
+                            <!-- Chevron Down Icon -->
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-300 transition-transform duration-200"
+                                fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        <!-- Dropdown Menu -->
+                        <div x-show="open" @click.outside="open = false" x-transition
+                            class="absolute right-0 mt-2 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+
+                            <a href="/profile.html"
+                                class="block px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-indigo-100 dark:hover:bg-slate-700">
+                                Profile
+                            </a>
+
+                            <button onclick="window.location.href='/login.html'"
+                                class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-slate-700">
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="content w-full flex-1 rounded-lg bg-slate-100 dark:bg-slate-900 shadow-lg p-[3rem] flex flex-col overflow-hidden bg-indigo-900">
+
+                <div class="mb-5 text-black dark:text-white">
+                    <h1 class="font-bold text-5xl mb-5 ">
+                        Users
+                    </h1>
+
+                    <p>
+                        Lorem ipsum dolor sit amet consectetur, adipisicing elit. Ad, unde!
+                    </p>
+                </div>
+
+                <div class="my-2"></div>
+                <br>
+                <div class="flex-1 overflow-y-auto pr-10">
+
+                    <!-- Table Section -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden fade-in">
+                        <div class="overflow-x-auto">
+                            <table class="w-full border-collapse">
+                                <thead>
+                                    <tr class="bg-gradient-to-r from-indigo-600 to-indigo-700">
+                                        <th
+                                            class="px-6 py-4 text-left font-semibold text-white uppercase tracking-wider border border-indigo-500 align-top">
+                                            No
+                                        </th>
+                                        <th
+                                            class="px-6 py-4 text-left font-semibold text-white uppercase tracking-wider border border-indigo-500 align-top">
+                                            Application
+                                        </th>
+                                        <th
+                                            class="px-6 py-4 text-left font-semibold text-white uppercase tracking-wider border border-indigo-500 align-top">
+                                            Application Owner
+                                        </th>
+                                        <th
+                                            class="px-6 py-4 text-left font-semibold text-white uppercase tracking-wider border border-indigo-500 align-top">
+                                            Application URL
+                                        </th>
+                                        <th
+                                            class="px-6 py-4 text-left font-semibold text-white uppercase tracking-wider border border-indigo-500 align-top">
+                                            Action
+                                        </th>
+                                    </tr>
+                                </thead>
+
+                                <tbody id="table-body">
+                                    <tr>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">1.</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">HRIS (Human Resource
+                                            Management System)</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">Fullname ( NIK )</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">hris.triasmitra.com</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">
+                                            <a href="admin_detail.html"
+                                                class="inline-block px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all duration-200">DETAIL</a>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">2.</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">AMS (Assets Management
+                                            System)</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">Fullname ( NIK )</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">ams.triasmitra.com</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">
+                                            <a href="admin_detail.html"
+                                                class="inline-block px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all duration-200">DETAIL</a>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">3.</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">AAS (Advance
+                                            Administration System)</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">Fullname ( NIK )</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">aas.triasmitra.com</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">
+                                            <a href="admin_detail.html"
+                                                class="inline-block px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all duration-200">DETAIL</a>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">4.</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">SHOCART (Shopping Cart)
+                                        </td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">Fullname ( NIK )</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">shocart.triasmitra.com
+                                        </td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">
+                                            <a href="admin_detail.html"
+                                                class="inline-block px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all duration-200">DETAIL</a>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">5.</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">HELPDESK</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">Fullname ( NIK )</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">helpdesk.triasmitra.com
+                                        </td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">
+                                            <a href="admin_detail.html"
+                                                class="inline-block px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all duration-200">DETAIL</a>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">6.</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">CMS (Core Management
+                                            System)</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">Fullname ( NIK )</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">cms.triasmitra.com</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">
+                                            <a href="admin_detail.html"
+                                                class="inline-block px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all duration-200">DETAIL</a>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Unavailable Apps -->
+
+                                    <tr>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">7.</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">IMS (Inventory
+                                            Management System)</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">Fullname ( NIK )</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">ims.triasmitra.com</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">
+                                            <a href="admin_detail.html"
+                                                class="inline-block px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all duration-200">
+                                                DETAIL
+                                            </a>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">8.</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">DAS (Digital Archiving
+                                            System)</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">Fullname ( NIK )</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">das.triasmitra.com</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">
+                                            <a href="admin_detail.html"
+                                                class="inline-block px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all duration-200">
+                                                DETAIL
+                                            </a>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">9.</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">CAMPERS (Cable
+                                            Monitoring Performance System)</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">Fullname ( NIK )</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">campers.triasmitra.com
+                                        </td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">
+                                            <a href="admin_detail.html"
+                                                class="inline-block px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all duration-200">
+                                                DETAIL
+                                            </a>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">10.</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">QMS (Quality Management
+                                            System)</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">Fullname ( NIK )</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">qms.triasmitra.com</td>
+                                        <td class="px-6 py-4 border border-slate-300 align-top">
+                                            <a href="admin_detail.html"
+                                                class="inline-block px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all duration-200">
+                                                DETAIL
+                                            </a>
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+                            </table>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>
