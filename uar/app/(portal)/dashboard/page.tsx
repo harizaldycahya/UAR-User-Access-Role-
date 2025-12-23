@@ -19,7 +19,7 @@ async function getNotification():Promise<Notification[]>{
   return result.json()
 }
 
-export default async function Home() {
+export default async function Dashboard() {
 
   const notifications = await getNotification()
 

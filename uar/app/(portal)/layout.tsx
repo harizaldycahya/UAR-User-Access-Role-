@@ -2,9 +2,21 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { FileText } from "lucide-react";
-
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
+import { useTheme } from "next-themes";
+import { Sun, Moon, Monitor } from "lucide-react";
+
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import {
     SidebarProvider,
@@ -20,6 +32,15 @@ import {
 } from "@/components/ui/sidebar";
 
 import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+
+import {
     LayoutDashboard,
     User,
     Settings,
@@ -31,10 +52,12 @@ import {
     MessageSquare,
     Users,
     Bell,
-    Search
+    Search,
+    LogOut
 } from "lucide-react";
 
 import { usePathname } from "next/navigation";
+import React from "react";
 
 export default function PortalLayout({
     children,
@@ -42,66 +65,94 @@ export default function PortalLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
+    const { theme, setTheme } = useTheme();
+    const segments = pathname
+        .split("/")
+        .filter(Boolean)
+        .slice(1); // buang segment pertama (login)
 
     return (
         <SidebarProvider>
-            <div className="flex min-h-screen w-full">
-                <Sidebar>
+            <div className="flex min-h-screen w-full bg-background">
+                <Sidebar className="border-r-2 border-sidebar-border">
                     {/* BRAND */}
-                    <SidebarHeader>
-                        <div className="px-4 py-3 text-lg font-semibold">
-                            KETROSDEN TRIASMITRA
+                    <SidebarHeader className="">
+                        <div className="p-6">
+                            <div className="flex items-center gap-4 px-2">
+                                {/* Logo */}
+                                <div className="flex-shrink-0">
+                                    <img
+                                        src="/logo.png"
+                                        alt="Ketrosden Logo"
+                                        className="h-12 w-12 object-contain"
+                                    />
+                                </div>
+
+                                {/* Text */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-bold text-foreground tracking-wide">
+                                        KETROSDEN
+                                    </div>
+                                    <div className="text-sm text-muted-foreground font-medium mt-0.5 tracking-wide">
+                                        TRIASMITRA
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </SidebarHeader>
 
-                    <SidebarContent>
-                        {/* DASHBOARD */}
-                        <SidebarMenu>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton asChild isActive={pathname === "/"}>
-                                    <a href="/">
-                                        <LayoutDashboard />
-                                        <span>Dashboard</span>
-                                    </a>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        </SidebarMenu>
-
+                    <SidebarContent className="px-3 py-4">
                         {/* PAGES */}
                         <SidebarGroup>
-                            <SidebarGroupLabel>Pages</SidebarGroupLabel>
-                            <SidebarMenu>
+                            <SidebarGroupLabel className="text-base font-semibold text-sidebar-foreground/70 px-4 mb-2">
+                                Application
+                            </SidebarGroupLabel>
+                            <SidebarMenu className="space-y-1">
                                 <SidebarMenuItem>
-                                    <SidebarMenuButton asChild isActive={pathname === "/profile"}>
-                                        <a href="/profile">
-                                            <User />
+                                    <SidebarMenuButton
+                                        asChild
+                                        isActive={pathname === "/profile"}
+                                        className="h-12 text-base font-medium hover:bg-accent hover:text-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground rounded-lg transition-colors"
+                                    >
+                                        <a href="/profile" className="flex items-center gap-3 px-4">
+                                            <User className="h-5 w-5" />
                                             <span>User Profile</span>
                                         </a>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
 
                                 <SidebarMenuItem>
-                                    <SidebarMenuButton asChild isActive={pathname === "/settings"}>
-                                        <a href="/settings">
-                                            <Settings />
+                                    <SidebarMenuButton
+                                        asChild
+                                        isActive={pathname === "/settings"}
+                                        className="h-12 text-base font-medium hover:bg-accent hover:text-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground rounded-lg transition-colors"
+                                    >
+                                        <a href="/settings" className="flex items-center gap-3 px-4">
+                                            <Settings className="h-5 w-5" />
                                             <span>Account Settings</span>
                                         </a>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
 
                                 <SidebarMenuItem>
-                                    <SidebarMenuButton asChild>
-                                        <a href="/faq">
-                                            <HelpCircle />
+                                    <SidebarMenuButton
+                                        asChild
+                                        className="h-12 text-base font-medium hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors"
+                                    >
+                                        <a href="/faq" className="flex items-center gap-3 px-4">
+                                            <HelpCircle className="h-5 w-5" />
                                             <span>FAQ</span>
                                         </a>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
 
                                 <SidebarMenuItem>
-                                    <SidebarMenuButton asChild>
-                                        <a href="/pricing">
-                                            <DollarSign />
+                                    <SidebarMenuButton
+                                        asChild
+                                        className="h-12 text-base font-medium hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors"
+                                    >
+                                        <a href="/pricing" className="flex items-center gap-3 px-4">
+                                            <DollarSign className="h-5 w-5" />
                                             <span>Pricing</span>
                                         </a>
                                     </SidebarMenuButton>
@@ -109,135 +160,158 @@ export default function PortalLayout({
                             </SidebarMenu>
                         </SidebarGroup>
 
-                        {/* APPLICATIONS */}
-                        <SidebarGroup>
-                            <SidebarGroupLabel>Applications</SidebarGroupLabel>
-                            <SidebarMenu>
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton asChild isActive={pathname === "/applications"}>
-                                        <a href="/applications">
-                                            <Grid />
-                                            <span>Applications</span>
-                                        </a>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton asChild isActive={pathname === "/requests"}>
-                                        <a href="/requests">
-                                            <Lock />
-                                            <span>Access Requests</span>
-                                        </a>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            </SidebarMenu>
-                        </SidebarGroup>
-
-                        {/* COMMUNICATION */}
-                        <SidebarGroup>
-                            <SidebarGroupLabel>Communication</SidebarGroupLabel>
-                            <SidebarMenu>
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton asChild>
-                                        <a href="/email">
-                                            <Mail />
-                                            <span>Email</span>
-                                        </a>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton asChild>
-                                        <a href="/chat">
-                                            <MessageSquare />
-                                            <span>Chat</span>
-                                        </a>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            </SidebarMenu>
-                        </SidebarGroup>
-
-                        {/* ADMIN */}
-                        <SidebarGroup>
-                            <SidebarGroupLabel>Administration</SidebarGroupLabel>
-                            <SidebarMenu>
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton asChild isActive={pathname === "/users"}>
-                                        <a href="/users">
-                                            <Users />
-                                            <span>Users</span>
-                                        </a>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            </SidebarMenu>
-                        </SidebarGroup>
                     </SidebarContent>
 
-                    {/* BOTTOM CARD */}
-                    <div className="border-t p-4">
-                        <Card className="bg-muted/50">
-                            <CardContent className="p-4">
-                                <div className="flex items-start justify-between">
-                                    {/* LEFT CONTENT */}
-                                    <div className="flex flex-col gap-3">
-                                        {/* ICON */}
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background shadow">
-                                            <FileText className="h-5 w-5" />
-                                        </div>
-
-                                        {/* TEXT */}
-                                        <div>
-                                            <p className="text-sm font-medium">
-                                                Pending Approvals
-                                            </p>
-                                            <p className="mt-1 text-2xl font-bold">
-                                                13
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* AVATAR STACK */}
-                                    <div className="flex -space-x-2 pt-1">
-                                        <div className="h-6 w-6 rounded-full bg-background ring-2 ring-muted" />
-                                        <div className="h-6 w-6 rounded-full bg-background ring-2 ring-muted" />
-                                        <div className="h-6 w-6 rounded-full bg-background ring-2 ring-muted" />
-                                    </div>
-                                </div>
-
-                            </CardContent>
-                        </Card>
-                    </div>
                 </Sidebar>
 
                 {/* MAIN CONTENT */}
                 <SidebarInset>
-                    <SidebarInset>
-                        {/* NAVBAR */}
-                        <header className="flex h-14 items-center gap-4 border-b px-4">
-                            {/* LEFT */}
-                            <SidebarTrigger className="-ml-1" />
+                    {/* NAVBAR */}
+                    <header className="flex h-20 items-center gap-6 border-b-2 border-border px-6 bg-card/80 backdrop-blur-sm">
+                        {/* LEFT */}
+                        <SidebarTrigger className="h-10 w-10 hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors" />
 
-                            {/* SEARCH */}
-                            <div className="relative flex-1 max-w-md">
-                                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                    placeholder="Type to search..."
-                                    className="pl-9"
-                                />
-                            </div>
+                        {/* BREADCRUMB */}
+                        <div className="flex flex-1 items-center">
+                            <Breadcrumb>
+                                <BreadcrumbList>
+                                    <BreadcrumbItem>
+                                        <BreadcrumbLink href="/" className="text-base">
+                                            Home
+                                        </BreadcrumbLink>
+                                    </BreadcrumbItem>
 
-                            {/* RIGHT ICONS */}
-                            <div className="ml-auto flex items-center gap-3">
-                                <Bell className="h-5 w-5 text-muted-foreground cursor-pointer" />
-                                <User className="h-6 w-6 rounded-full border p-1" />
-                            </div>
-                        </header>
+                                    {segments.map((segment, index) => {
+                                        const href = "/" + segments.slice(0, index + 1).join("/");
+                                        const label = segment.replace(/-/g, " ");
 
-                        {/* PAGE CONTENT */}
-                        <main className="p-6">
-                            {children}
-                        </main>
-                    </SidebarInset>
+                                        return (
+                                            <React.Fragment key={href}>
+                                                <BreadcrumbSeparator />
+                                                <BreadcrumbItem>
+                                                    {index === segments.length - 1 ? (
+                                                        <BreadcrumbPage className="text-base font-semibold capitalize">
+                                                            {label}
+                                                        </BreadcrumbPage>
+                                                    ) : (
+                                                        <BreadcrumbLink
+                                                            href={href}
+                                                            className="text-base capitalize"
+                                                        >
+                                                            {label}
+                                                        </BreadcrumbLink>
+                                                    )}
+                                                </BreadcrumbItem>
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </BreadcrumbList>
+                            </Breadcrumb>
+                        </div>
+
+
+                        {/* RIGHT ICONS */}
+                        <div className="ml-auto flex items-center gap-4">
+                            {/* Theme Toggle */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button className="flex h-10 w-10 items-center justify-center rounded-md border hover:bg-muted">
+                                        {theme === "dark" ? (
+                                            <Moon className="h-5 w-5" />
+                                        ) : theme === "light" ? (
+                                            <Sun className="h-5 w-5" />
+                                        ) : (
+                                            <Monitor className="h-5 w-5" />
+                                        )}
+                                    </button>
+                                </DropdownMenuTrigger>
+                                
+
+                                <DropdownMenuContent align="end" className="w-48 p-2">
+                                    <DropdownMenuItem
+                                        className="text-base py-3 rounded-lg cursor-pointer"
+                                        onClick={() => setTheme("light")}
+                                    >
+                                        <Sun className="mr-3 h-5 w-5" />
+                                        Light
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuItem
+                                        className="text-base py-3 rounded-lg cursor-pointer"
+                                        onClick={() => setTheme("dark")}
+                                    >
+                                        <Moon className="mr-3 h-5 w-5" />
+                                        Dark
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuItem
+                                        className="text-base py-3 rounded-lg cursor-pointer"
+                                        onClick={() => setTheme("system")}
+                                    >
+                                        <Monitor className="mr-3 h-5 w-5" />
+                                        System
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            {/* Notification */}
+                            <button className="relative flex h-11 w-11 items-center justify-center rounded-xl border-2 hover:bg-accent hover:text-accent-foreground transition-colors">
+                                <Bell className="h-5 w-5" />
+                                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-white">
+                                    3
+                                </span>
+                            </button>
+
+                            {/* Avatar Dropdown */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button className="outline-none">
+                                        <Avatar className="h-11 w-11 cursor-pointer ring-2 ring-border hover:ring-ring transition-all">
+                                            <AvatarImage src="/avatar.png" alt="User" />
+                                            <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-lg">
+                                                Z
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    </button>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent align="end" className="w-64 p-2">
+                                    <DropdownMenuLabel className="p-3">
+                                        <div className="flex flex-col">
+                                            <span className="text-lg font-semibold">Zaldy</span>
+                                            <span className="text-sm text-muted-foreground mt-1">
+                                                zaldy@company.com
+                                            </span>
+                                        </div>
+                                    </DropdownMenuLabel>
+
+                                    <DropdownMenuSeparator />
+
+                                    <DropdownMenuItem className="text-base py-3 rounded-lg cursor-pointer">
+                                        <User className="mr-3 h-5 w-5" />
+                                        Profile
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuItem className="text-base py-3 rounded-lg cursor-pointer">
+                                        <Settings className="mr-3 h-5 w-5" />
+                                        Settings
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuSeparator />
+
+                                    <DropdownMenuItem className="text-base py-3 rounded-lg cursor-pointer text-destructive">
+                                        <LogOut className="mr-3 h-5 w-5" />
+                                        Logout
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </header>
+
+                    {/* PAGE CONTENT */}
+                    <main className="p-8">
+                        {children}
+                    </main>
                 </SidebarInset>
             </div>
         </SidebarProvider>
