@@ -1,36 +1,265 @@
 {
-    "notification":[
-        {
-           "id" : "1", 
-           "application" : "CMS", 
-           "title" : "Request SOR", 
-           "description" : "Request SOR Approved", 
-           "date" : "10 minutes ago", 
-           "active" : "true"
-        }, 
-        {
-           "id" : "2", 
-           "application" : "CMS", 
-           "title" : "Request SOR", 
-           "description" : "Request SOR Approved", 
-           "date" : "10 minutes ago", 
-           "active" : "true"
-        }, 
-        {
-           "id" : "3", 
-           "application" : "CMS", 
-           "title" : "Request SOR", 
-           "description" : "Request SOR Approved", 
-           "date" : "10 minutes ago", 
-           "active" : "true"
-        }, 
-        {
-           "id" : "4", 
-           "application" : "CMS", 
-           "title" : "Request SOR", 
-           "description" : "Request SOR Approved", 
-           "date" : "10 minutes ago", 
-           "active" : "true"
-        }
-    ]
+   "users": [
+      {
+         "id": 1,
+         "nik": "KT-23071336",
+         "name": "Harizaldy Cahya Pratama",
+         "position_id": 1,
+         "supervisor_id": 2,
+         "password": "admin123",
+         "last_login": "2025-01-15 10:30:00",
+         "created_at": "2025-01-15 10:30:00",
+         "updated_at": "2025-01-15 10:30:00",
+         "deleted_at": null
+      },
+      {
+         "id": 2,
+         "nik": "KT-23071335",
+         "name": "Budi Santoso",
+         "position_id": 2,
+         "supervisor_id": 3,
+         "password": "password",
+         "last_login": null,
+         "created_at": "2025-01-15 10:30:00",
+         "updated_at": "2025-01-15 10:30:00",
+         "deleted_at": null
+      },
+      {
+         "id": 3,
+         "nik": "KT-23071333",
+         "name": "Rudiyanto",
+         "position_id": 3,
+         "supervisor_id": 4,
+         "password": "password",
+         "last_login": null,
+         "created_at": "2025-01-15 10:30:00",
+         "updated_at": "2025-01-15 10:30:00",
+         "deleted_at": null
+      },
+      {
+         "id": 4,
+         "nik": "KT-23071332",
+         "name": "Yanuar Wahyudi",
+         "position_id": 4,
+         "supervisor_id": 5,
+         "password": "password",
+         "last_login": null,
+         "created_at": "2025-01-15 10:30:00",
+         "updated_at": "2025-01-15 10:30:00",
+         "deleted_at": null
+      },
+      {
+         "id": 5,
+         "nik": "KT-00000002",
+         "name": "Dani Samsul Efendi",
+         "position_id": 5,
+         "supervisor_id": null,
+         "password": "password",
+         "last_login": null,
+         "created_at": "2025-01-15 10:30:00",
+         "updated_at": "2025-01-15 10:30:00",
+         "deleted_at": null
+      }
+   ],
+   "positions": [
+      {
+         "id": 1,
+         "name": "SUBSI",
+         "level": 1
+      },
+      {
+         "id": 2,
+         "name": "KASIE",
+         "level": 2
+      },
+      {
+         "id": 3,
+         "name": "KADEPT",
+         "level": 3
+      },
+      {
+         "id": 4,
+         "name": "KADIV",
+         "level": 4
+      },
+      {
+         "id": 5,
+         "name": "DIREKTORAT",
+         "level": 5
+      }
+   ],
+   "applications": [
+      {
+         "id": 1,
+         "is_accessible": true,
+         "owner": "KT-23071335",
+         "code": "CMS",
+         "name": "Core Management System",
+         "url": "https://cms.triasmitra.com",
+         "color": "#2563EB",
+         "icon": "<svg viewBox='0 0 24 24' fill='currentColor'><path d='M3 4h18v4H3V4zm0 6h18v10H3V10z'/></svg>",
+         "created_at": "2025-01-15 10:30:00",
+         "updated_at": "2025-01-15 10:30:00",
+         "deleted_at": null
+      },
+      {
+         "id": 2,
+         "is_accessible": true,
+         "owner": "KT-23071336",
+         "code": "HRIS",
+         "name": "Human Resource Information System",
+         "url": "https://hris.triasmitra.com",
+         "color": "#16A34A",
+         "icon": "<svg viewBox='0 0 24 24' fill='currentColor'><path d='M12 12a5 5 0 100-10 5 5 0 000 10zm-7 9a7 7 0 0114 0H5z'/></svg>",
+         "created_at": "2025-01-15 10:30:00",
+         "updated_at": "2025-01-15 10:30:00",
+         "deleted_at": null
+      },
+      {
+         "id": 3,
+         "is_accessible": true,
+         "owner": "KT-23071333",
+         "code": "NMS",
+         "name": "Network Monitoring System",
+         "url": "https://nms.triasmitra.com",
+         "color": "#DC2626",
+         "icon": "<svg viewBox='0 0 24 24' fill='currentColor'><path d='M4 4h16v4H4V4zm0 6h10v4H4v-4zm0 6h7v4H4v-4z'/></svg>",
+         "created_at": "2025-01-15 10:30:00",
+         "updated_at": "2025-01-15 10:30:00",
+         "deleted_at": null
+      },
+      {
+         "id": 4,
+         "is_accessible": true,
+         "owner": "KT-23071332",
+         "code": "FIN",
+         "name": "Finance Management",
+         "url": "https://finance.triasmitra.com",
+         "color": "#F59E0B",
+         "icon": "<svg viewBox='0 0 24 24' fill='currentColor'><path d='M3 6h18v12H3V6zm3 3h6v6H6V9z'/></svg>",
+         "created_at": "2025-01-15 10:30:00",
+         "updated_at": "2025-01-15 10:30:00",
+         "deleted_at": null
+      },
+      {
+         "id": 5,
+         "is_accessible": true,
+         "owner": "KT-00000002",
+         "code": "DOC",
+         "name": "Document Approval System",
+         "url": "https://doc.triasmitra.com",
+         "color": "#6B7280",
+         "icon": "<svg viewBox='0 0 24 24' fill='currentColor'><path d='M6 2h9l5 5v15H6V2zm8 1.5V8h4.5'/></svg>",
+         "created_at": "2025-01-15 10:30:00",
+         "updated_at": "2025-01-15 10:30:00",
+         "deleted_at": null
+      }
+   ],
+   "roles": [
+      {
+         "id": 1,
+         "application_id": 1,
+         "role_name": "SPV Area Central 1",
+         "created_at": "2025-01-15 10:30:00",
+         "updated_at": "2025-01-15 10:30:00",
+         "deleted_at": null
+      },
+      {
+         "id": 2,
+         "application_id": 1,
+         "role_name": "SPV Area Central 2",
+         "created_at": "2025-01-15 10:30:00",
+         "updated_at": "2025-01-15 10:30:00",
+         "deleted_at": null
+      },
+      {
+         "id": 3,
+         "application_id": 1,
+         "role_name": "SPV Area Central 3",
+         "created_at": "2025-01-15 10:30:00",
+         "updated_at": "2025-01-15 10:30:00",
+         "deleted_at": null
+      }
+   ],
+   "notifications": [
+      {
+         "id": 1,
+         "user_nik": "KT-23071335",
+         "application": "CMS",
+         "title": "Request SOR",
+         "description": "Request SOR telah disetujui oleh KADEPT",
+         "date": "2025-01-15 10:30:00",
+         "active": true
+      },
+      {
+         "id": 2,
+         "user_nik": "KT-23071336",
+         "application": "CMS",
+         "title": "Request SOR",
+         "description": "Request SOR menunggu persetujuan Anda",
+         "date": "2025-01-15 09:45:00",
+         "active": true
+      },
+      {
+         "id": 3,
+         "user_nik": "KT-23071333",
+         "application": "HRIS",
+         "title": "Approval Cuti",
+         "description": "Pengajuan cuti dari Budi Santoso menunggu persetujuan",
+         "date": "2025-01-14 16:20:00",
+         "active": true
+      },
+      {
+         "id": 4,
+         "user_nik": "KT-23071332",
+         "application": "NMS",
+         "title": "Request Access",
+         "description": "Permintaan akses NMS telah disetujui",
+         "date": "2025-01-13 14:05:00",
+         "active": false
+      },
+      {
+         "id": 5,
+         "user_nik": "KT-00000002",
+         "application": "DOC",
+         "title": "Final Approval",
+         "description": "Dokumen pengadaan telah disetujui seluruh level",
+         "date": "2025-01-12 11:00:00",
+         "active": false
+      }
+   ],
+   "requests": [
+      {
+         "id": 1,
+         "request_id": "REQ-001",
+         "application": "CMS",
+         "category": "Access",
+         "requested_by": "KT-23071336",
+         "current_step": 2,
+         "final_status": "In Progress",
+         "created_at": "2024-02-12 09:10:00"
+      }
+   ],
+   "request_approvals": [
+      {
+         "id": 1,
+         "request_id": "REQ-001",
+         "step": 1,
+         "approver_nik": "KT-23071335",
+         "role": "Supervisor",
+         "status": "Approved",
+         "action_date": "2024-02-12 10:00:00",
+         "note": "Approved by supervisor"
+      },
+      {
+         "id": 2,
+         "request_id": "REQ-001",
+         "step": 2,
+         "approver_nik": "KT-23071333",
+         "role": "Manager",
+         "status": "Pending",
+         "action_date": null,
+         "note": null
+      }
+   ]
 }
