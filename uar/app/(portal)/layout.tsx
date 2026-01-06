@@ -49,6 +49,7 @@ import {
     Clock,
     CheckCircle,
     KeyRound,
+    Book,
 } from 'lucide-react';
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
@@ -168,8 +169,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                 <SidebarMenuItem>
                                     <SidebarMenuButton asChild className="h-12 rounded-lg">
                                         <a href="/change_password" className="flex gap-3 px-4">
-                                            <KeyRound className="h-5 w-5" />
-                                            Change Password
+                                            <Book className="h-5 w-5" />
+                                            Guide Book
                                         </a>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
@@ -182,13 +183,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 <SidebarInset>
                     <header className="flex h-20 items-center gap-6 border-b-2 px-6 bg-card/80 backdrop-blur-sm">
                         <SidebarTrigger className="h-10 w-10 rounded-lg hover:bg-accent" />
-
-                        {/* Breadcrumbs only render after mounted */}
-                        {mounted && (
+                        {mounted && segments.length > 0 && (
                             <Breadcrumb>
                                 <BreadcrumbList>
                                     <BreadcrumbItem>
-                                        <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                                        <BreadcrumbLink href="/dashboard">Home</BreadcrumbLink>
                                     </BreadcrumbItem>
 
                                     {segments.map((segment, index) => {
@@ -200,9 +199,13 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                                 <BreadcrumbSeparator />
                                                 <BreadcrumbItem>
                                                     {index === segments.length - 1 ? (
-                                                        <BreadcrumbPage className="font-semibold capitalize">{label}</BreadcrumbPage>
+                                                        <BreadcrumbPage className="font-semibold capitalize">
+                                                            {label}
+                                                        </BreadcrumbPage>
                                                     ) : (
-                                                        <BreadcrumbLink href={href} className="capitalize">{label}</BreadcrumbLink>
+                                                        <BreadcrumbLink href={href} className="capitalize">
+                                                            {label}
+                                                        </BreadcrumbLink>
                                                     )}
                                                 </BreadcrumbItem>
                                             </React.Fragment>

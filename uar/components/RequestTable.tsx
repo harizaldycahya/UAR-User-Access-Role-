@@ -129,8 +129,6 @@ export default function RequestTable() {
   return (
 
     <>
-
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card className="border-border/40 hover:border-border transition-colors">
           <CardContent className="p-5">
