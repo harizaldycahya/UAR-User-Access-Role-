@@ -231,7 +231,7 @@
    "requests": [
       {
          "id": 1,
-         "request_id": "REQ-001",
+         "requestId": "REQ-001",
          "application": "CMS",
          "category": "Access",
          "requested_by": "KT-23071336",
