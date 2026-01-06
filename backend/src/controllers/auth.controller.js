@@ -43,6 +43,12 @@ export const login = async (req, res) => {
     role: user.role,
   });
 
+  res.cookie("token", token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: false,
+  });
+
   return res.json({
     token,
     user: {

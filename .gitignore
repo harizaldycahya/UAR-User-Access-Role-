@@ -1,0 +1,34 @@
+# ========================
+# GLOBAL
+# ========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ========================
+# BACKEND (Express)
+# ========================
+backend/node_modules/
+backend/.env
+backend/.env.*
+
+backend/logs/
+backend/dist/
+backend/build/
+backend/coverage/
+
+# ========================
+# FRONTEND (Next.js)
+# ========================
+uar/node_modules/
+uar/.env
+uar/.env.*
+uar/.next/
+uar/out/
+uar/build/
+
+# logs
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
