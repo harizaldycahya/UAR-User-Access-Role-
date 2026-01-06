@@ -1,9 +1,19 @@
 'use client';
 
 import React from "react";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { MoreVertical, Calendar, ExternalLink, Bell, CheckCircle2, Lock, Clock } from "lucide-react";
+import {
+  Card, CardContent, CardDescription,
+  CardHeader, CardTitle
+} from "@/components/ui/card";
+import {
+  MoreVertical, Calendar, ExternalLink,
+  Bell, CheckCircle2, Lock, Clock
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -11,7 +21,6 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-
 
 interface Application {
   id: number;
@@ -22,9 +31,6 @@ interface Application {
   url: string;
   icon: string;
   color: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
 }
 
 interface Notification {
@@ -37,33 +43,35 @@ interface Notification {
 }
 
 export default function DashboardPage() {
-  const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [applications, setApplications] = React.useState<Application[]>([]);
+  const [notifications, setNotifications] = React.useState<Notification[]>([]);
+
   const [loading, setLoading] = React.useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) router.replace("/login");
+  }, []);
+
 
   React.useEffect(() => {
-    async function fetchData() {
+    const load = async () => {
       try {
-        const [notifRes, appRes] = await Promise.all([
-          fetch("http://localhost:4000/notifications"),
-          fetch("http://localhost:4000/applications"),
-        ]);
+        const res = await apiFetch("/applications");
+        if (!res.ok) throw new Error("Failed fetch");
 
-        const notifData = await notifRes.json();
-        const appData = await appRes.json();
-
-        setNotifications(notifData);
-        setApplications(appData);
+        const data = await res.json();
+        setApplications(data);
       } catch (err) {
         console.error(err);
-        setNotifications([]);
         setApplications([]);
       } finally {
         setLoading(false);
       }
-    }
+    };
 
-    fetchData();
+    load();
   }, []);
 
   return (

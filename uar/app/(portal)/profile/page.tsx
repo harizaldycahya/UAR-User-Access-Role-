@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { User, Mail, Phone, Building, MapPin, Calendar, Camera } from "lucide-react";
+import { Select, SelectContent, SelectValue, SelectTrigger, SelectItem } from "@/components/ui/select";
 
 // Skeleton Components
 function ProfileCardSkeleton() {

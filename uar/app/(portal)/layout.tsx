@@ -64,6 +64,18 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         ? pathname.split('/').filter(Boolean).slice(1)
         : [];
 
+    const logout = () => {
+        // hapus cookie token
+        document.cookie = "token=; path=/; max-age=0";
+
+        // bersih-bersih tambahan
+        localStorage.removeItem("token");
+
+        // tendang ke login
+        window.location.href = "/login";
+    };
+
+
     return (
         <SidebarProvider>
             <div className="flex w-full bg-background" suppressHydrationWarning>
@@ -252,7 +264,12 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                         <DropdownMenuSeparator />
 
                                         <DropdownMenuItem className="py-3 text-destructive">
-                                            <LogOut className="mr-3 h-5 w-5" /> Logout
+                                            <DropdownMenuItem
+                                                className="py-3 text-destructive cursor-pointer"
+                                                onClick={logout}
+                                            >
+                                                <LogOut className="mr-3 h-5 w-5" /> Logout
+                                            </DropdownMenuItem>
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
