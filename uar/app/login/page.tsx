@@ -17,60 +17,39 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const submit = async () => {
-    setError("");
     setIsLoading(true);
+    setError("");
 
     try {
-      // Simulasi API call - ganti dengan apiFetch yang sebenarnya
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Uncomment untuk production:
-
-      const res = await apiFetch("/auth/login", {
+      const res = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ username, password }),
       });
 
-      const contentType = res.headers.get("content-type");
-
       if (!res.ok) {
-        if (contentType && contentType.includes("application/json")) {
-          const err = await res.json();
-          throw new Error(err.message || "Login gagal");
-        } else {
-          throw new Error("Login gagal (response bukan JSON)");
-        }
+        const err = await res.json();
+        throw new Error(err.message || "Login gagal");
       }
 
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Response backend bukan JSON");
-      }
-
+      // ⬇️ WAJIB
       const data = await res.json();
 
-      if (!data.token) {
-        throw new Error("Token tidak ditemukan");
-      }
+      // ⬇️ SIMPAN TOKEN (INI KUNCI SEMESTA)
+      localStorage.setItem("token", data.token);
 
-      // Simpan token dengan expiry sesuai pilihan remember me
-      if (rememberMe) {
-        // Remember me: 30 hari
-        document.cookie = `token=${data.token}; path=/; max-age=${30 * 24 * 60 * 60}`;
-      } else {
-        // Session only: hilang saat browser ditutup
-        document.cookie = `token=${data.token}; path=/;`;
-      }
-
+      // ⬇️ REDIRECT
       window.location.href = "/dashboard";
-
-      // Demo success
-      console.log("Login success:", { username, password });
     } catch (err: any) {
       setError(err.message || "Login gagal");
     } finally {
       setIsLoading(false);
     }
   };
+
+
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && username && password) {
