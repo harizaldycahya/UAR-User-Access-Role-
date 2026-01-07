@@ -263,10 +263,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
                                         <DropdownMenuSeparator />
 
-                                        <DropdownMenuItem className="py-3 text-destructive">
+                                        <DropdownMenuItem className="py-3 text-destructive " onClick={logout}> 
                                             <DropdownMenuItem
                                                 className="py-3 text-destructive cursor-pointer"
-                                                onClick={logout}
+                                                
                                             >
                                                 <LogOut className="mr-3 h-5 w-5" /> Logout
                                             </DropdownMenuItem>

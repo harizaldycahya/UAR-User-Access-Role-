@@ -62,7 +62,8 @@ export default function DashboardPage() {
         if (!res.ok) throw new Error("Failed fetch");
 
         const data = await res.json();
-        setApplications(data);
+        console.log(data);
+        setApplications(data.data);
       } catch (err) {
         console.error(err);
         setApplications([]);
@@ -337,10 +338,10 @@ export default function DashboardPage() {
                       {/* App info */}
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-semibold text-foreground truncate mb-1">
-                          {app.name}
+                          {app.code} 
                         </h3>
                         <p className="text-xs text-muted-foreground truncate">
-                          {app.owner}
+                          {app.name}
                         </p>
                       </div>
                     </div>
