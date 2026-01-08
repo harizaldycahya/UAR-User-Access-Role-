@@ -188,6 +188,32 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                 </SidebarMenuItem>
                             </SidebarMenu>
                         </SidebarGroup>
+
+                        {/* Admin Menu */}
+                        <SidebarGroup>
+                            <SidebarGroupLabel className="px-4 mb-2 text-sm font-semibold uppercase tracking-wide text-sidebar-foreground/60">
+                                Management Applications
+                            </SidebarGroupLabel>
+                            <SidebarMenu className="space-y-1">
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild className="h-12 rounded-lg">
+                                        <a href="/applications" className="flex gap-3 px-4">
+                                            <FilePlus className="h-5 w-5" />
+                                            Applications
+                                        </a>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild className="h-12 rounded-lg">
+                                        <a href="/create_application" className="flex gap-3 px-4">
+                                            <ClipboardList className="h-5 w-5" />
+                                            Create Application
+                                        </a>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            </SidebarMenu>
+                        </SidebarGroup>
+                        
                     </SidebarContent>
                 </Sidebar>
 
