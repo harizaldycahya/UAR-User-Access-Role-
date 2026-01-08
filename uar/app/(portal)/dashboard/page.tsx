@@ -134,7 +134,7 @@ export default function DashboardPage() {
               <div className="flex-1">
                 <p className="text-xs font-medium text-muted-foreground mb-1">Pending Access</p>
                 <h3 className="text-2xl font-bold text-foreground">
-                  {loading ? <Skeleton className="h-8 w-16" /> : applications.filter(app => !app.is_accessible).length}
+                  {loading ? <Skeleton className="h-8 w-16" /> : '0'}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                   <Lock className="h-3 w-3 text-muted-foreground" />
