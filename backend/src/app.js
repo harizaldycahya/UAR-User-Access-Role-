@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 
 import authRoutes from "./routes/auth.routes.js";
 import applicationRoutes from "./routes/application.routes.js";
+import applicationRoleRoutes from "./routes/applicationRole.routes.js";
 
 dotenv.config();
 
@@ -23,5 +24,6 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/applications", applicationRoutes);
+app.use("/api", applicationRoleRoutes);
 
 export default app;

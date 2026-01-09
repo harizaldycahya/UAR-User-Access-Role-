@@ -84,9 +84,9 @@ export default function ApplicationTable() {
   }, []);
 
   /* ================= HANDLERS ================= */
-  const handleOpenDetail = (id: number) => {
+  const handleOpenDetail = (id: string) => {
     // Navigate to detail page
-    window.location.href = `/applications/${id}`;
+    window.location.href = `/applications/${code}`;
     // Or if using Next.js router:
     // router.push(`/applications/${id}`);
   };
@@ -151,7 +151,7 @@ export default function ApplicationTable() {
         return (
             <Button
               size="icon"
-              onClick={() => handleOpenDetail(app.id)}
+              onClick={() => handleOpenDetail(app.code)}
               className="min-w-20"
             >
               Detail
