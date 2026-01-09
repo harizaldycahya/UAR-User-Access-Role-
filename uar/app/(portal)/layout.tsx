@@ -60,9 +60,14 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     const [mounted, setMounted] = React.useState(false);
     React.useEffect(() => setMounted(true), []);
 
-    const segments = mounted
-        ? pathname.split('/').filter(Boolean).slice(1)
-        : [];
+
+    const segments = React.useMemo(() => {
+        if (!pathname) return [];
+
+        return pathname
+            .split("/")
+            .filter(Boolean);
+    }, [pathname]);
 
     const logout = () => {
         // hapus cookie token
@@ -213,7 +218,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                 </SidebarMenuItem>
                             </SidebarMenu>
                         </SidebarGroup>
-                        
+
                     </SidebarContent>
                 </Sidebar>
 
@@ -225,19 +230,19 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                             <Breadcrumb>
                                 <BreadcrumbList>
                                     <BreadcrumbItem>
-                                        <BreadcrumbLink href="/dashboard">Home</BreadcrumbLink>
+                                        <BreadcrumbLink href="/">Home</BreadcrumbLink>
                                     </BreadcrumbItem>
 
                                     {segments.map((segment, index) => {
-                                        const href = '/' + segments.slice(0, index + 1).join('/');
-                                        const label = segment.replace(/-/g, ' ');
+                                        const href = "/" + segments.slice(0, index + 1).join("/");
+                                        const label = segment.replace(/-/g, " ");
 
                                         return (
                                             <React.Fragment key={href}>
                                                 <BreadcrumbSeparator />
                                                 <BreadcrumbItem>
                                                     {index === segments.length - 1 ? (
-                                                        <BreadcrumbPage className="font-semibold capitalize">
+                                                        <BreadcrumbPage className="capitalize font-semibold">
                                                             {label}
                                                         </BreadcrumbPage>
                                                     ) : (
@@ -251,6 +256,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                     })}
                                 </BreadcrumbList>
                             </Breadcrumb>
+
+
                         )}
 
                         <div className="ml-auto flex items-center gap-4">
@@ -289,10 +296,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
                                         <DropdownMenuSeparator />
 
-                                        <DropdownMenuItem className="py-3 text-destructive " onClick={logout}> 
+                                        <DropdownMenuItem className="py-3 text-destructive " onClick={logout}>
                                             <DropdownMenuItem
                                                 className="py-3 text-destructive cursor-pointer"
-                                                
+
                                             >
                                                 <LogOut className="mr-3 h-5 w-5" /> Logout
                                             </DropdownMenuItem>
