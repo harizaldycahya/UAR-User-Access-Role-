@@ -2,6 +2,7 @@ import express from "express";
 import {
   getApplications,
   getApplicationById,
+  getApplicationByCode,
   createApplication,
   updateApplication,
   deleteApplication,
@@ -11,13 +12,14 @@ import { roleMiddleware } from "../middleware/role.middleware.js";
 
 const router = express.Router();
 
-// 🔒 semua route di bawah ini butuh token
 router.use(authMiddleware);
 
 router.get("/", getApplications);
+router.get("/by-code/:code", getApplicationByCode);
 router.get("/:id", getApplicationById);
-router.post("/",roleMiddleware(["admin"]),  createApplication);
-router.put("/:id",roleMiddleware(["admin"]),  updateApplication);
-router.delete("/:id",roleMiddleware(["admin"]),  deleteApplication);
+
+router.post("/", roleMiddleware(["admin"]), createApplication);
+router.put("/:id", roleMiddleware(["admin"]), updateApplication);
+router.delete("/:id", roleMiddleware(["admin"]), deleteApplication);
 
 export default router;

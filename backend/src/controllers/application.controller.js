@@ -50,6 +50,42 @@ export const getApplicationById = async (req, res) => {
   }
 };
 
+/* ================= GET BY CODE ================= */
+export const getApplicationByCode = async (req, res) => {
+  try {
+    const { code } = req.params;
+
+    const [[app]] = await db.query(
+      `
+      SELECT *
+      FROM applications
+      WHERE code = ?
+      AND deleted_at IS NULL
+      `,
+      [code]
+    );
+
+    if (!app) {
+      return res.status(404).json({
+        success: false,
+        message: "Application not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: app,
+    });
+  } catch (err) {
+    console.error("GET APPLICATION BY CODE ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch application",
+    });
+  }
+};
+
+
 /* ================= CREATE ================= */
 export const createApplication = async (req, res) => {
   try {

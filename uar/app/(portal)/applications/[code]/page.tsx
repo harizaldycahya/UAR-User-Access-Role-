@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect } from "react";
 
 import RoleTable from "@/components/RoleTable";
-
+import { lucideIconMap } from "@/lib/lucide-icons"
 
 import {
   Card,
@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useParams } from "next/navigation"
 import { apiFetch } from "@/lib/api"
 
+import { createPortal } from "react-dom"
 
 interface Application {
   id: number
@@ -32,6 +33,54 @@ interface Application {
   color: string
 }
 
+
+function LucideIcon({
+  name,
+  className,
+}: {
+  name?: string
+  className?: string
+}) {
+  if (!name) return null
+
+  const IconComp = (lucideIconMap as any)[name]
+  if (!IconComp) return null
+
+  return <IconComp className={className} />
+}
+
+
+
+function IconPicker({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (icon: string) => void
+}) {
+  const icons = Object.keys(lucideIconMap)
+
+  return (
+    <div className="grid grid-cols-6 gap-2 max-h-64 overflow-auto">
+      {icons.map((iconName) => {
+        const IconComp = (lucideIconMap as any)[iconName]
+
+        return (
+          <button
+            key={iconName}
+            type="button"
+            onClick={() => onChange(iconName)}
+            className={`p-2 rounded-md border hover:bg-muted flex items-center justify-center
+              ${value === iconName ? "border-primary bg-muted" : ""}
+            `}
+          >
+            <IconComp className="w-5 h-5" />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
 
 function PersonalInfoSkeleton() {
@@ -69,10 +118,11 @@ function PersonalInfoSkeleton() {
 
 export default function DetailApplicationPage() {
   const params = useParams()
-  const applicationId = params.id
+  const code = params.code as string
 
   const [isLoading, setIsLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
+  const [showIconPicker, setShowIconPicker] = useState(false)
 
   const [application, setApplication] = useState<Application | null>(null)
   const [form, setForm] = useState({
@@ -81,15 +131,15 @@ export default function DetailApplicationPage() {
     url: "",
     owner: "",
     icon: "",
-    color: "",
+    color: "#000000",
   })
 
   useEffect(() => {
-    if (!applicationId) return
+    if (!code) return
 
     const fetchApplication = async () => {
       try {
-        const res = await apiFetch(`/applications/${applicationId}`)
+        const res = await apiFetch(`/applications/by-code/${code}`)
         const data = res.data
 
         setApplication(data)
@@ -98,8 +148,8 @@ export default function DetailApplicationPage() {
           name: data.name,
           url: data.url,
           owner: data.owner,
-          icon: data.icon,
-          color: data.color,
+          icon: data.icon || "",
+          color: data.color || "#000000",
         })
       } catch (error) {
         console.error("Failed to fetch application", error)
@@ -109,7 +159,11 @@ export default function DetailApplicationPage() {
     }
 
     fetchApplication()
-  }, [applicationId])
+  }, [code])
+
+  useEffect(() => {
+    console.log("showIconPicker", showIconPicker)
+  }, [showIconPicker])
 
   const handleSave = async () => {
     if (!application) return
@@ -241,29 +295,60 @@ export default function DetailApplicationPage() {
                           )}
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 gap-4">
+                      <div className="grid grid-cols-1 gap-4 relative">
                         <div>
                           <Label>Application Icon</Label>
+
                           {isEditing ? (
-                            <Input
-                              value={form.icon}
-                              onChange={(e) => setForm({ ...form, icon: e.target.value })}
-                            />
+                            <>
+                              <div
+                                className="flex items-center gap-2 mb-2 px-3 py-2 border rounded-md cursor-pointer hover:bg-muted"
+                                onClick={() => setShowIconPicker((v) => !v)}
+                              >
+                                {form.icon ? (
+                                  <LucideIcon name={form.icon} className="w-5 h-5" />
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">
+                                    Click to select icon
+                                  </span>
+                                )}
+
+                                <span className="text-sm text-muted-foreground">
+                                  {form.icon || "Select icon"}
+                                </span>
+
+                                <span className="ml-auto text-xs text-muted-foreground">
+                                  Change
+                                </span>
+                              </div>
+                            </>
                           ) : (
-                            <p className="bg-muted/30 px-3 py-2.5 rounded-md">
-                              {application?.icon}
-                            </p>
+                            <div className="flex items-center gap-2 bg-muted/30 px-3 py-2.5 rounded-md">
+                              <LucideIcon name={application?.icon} className="w-4 h-4" />
+                              <span className="text-sm">{application?.icon}</span>
+                            </div>
                           )}
                         </div>
                       </div>
+
+
+
                       <div className="grid grid-cols-1 gap-4">
                         <div>
                           <Label>Application Color</Label>
+
                           {isEditing ? (
-                            <Input
-                              value={form.color}
-                              onChange={(e) => setForm({ ...form, color: e.target.value })}
-                            />
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="color"
+                                value={form.color}
+                                onChange={(e) =>
+                                  setForm({ ...form, color: e.target.value })
+                                }
+                                className="w-12 h-10 p-1 rounded border cursor-pointer"
+                              />
+                              <Input value={form.color} readOnly />
+                            </div>
                           ) : (
                             <div className="flex items-center gap-2 bg-muted/30 px-3 py-2.5 rounded-md">
                               <div
@@ -273,8 +358,8 @@ export default function DetailApplicationPage() {
                               <span className="text-sm">{application?.color}</span>
                             </div>
                           )}
-
                         </div>
+
                       </div>
 
 
@@ -306,10 +391,39 @@ export default function DetailApplicationPage() {
 
           {/* Right Column - Details Form */}
           <div className="lg:col-span-2">
-            <RoleTable applicationId={applicationId as string} />
+            <div className="lg:col-span-2">
+              {application && (
+                <RoleTable applicationId={String(application.id)} />
+              )}
+            </div>
           </div>
         </div>
       </div>
+      {showIconPicker &&
+        typeof window !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-9999">
+            {/* backdrop */}
+            <div
+              className="absolute inset-0 bg-black/30"
+              onClick={() => setShowIconPicker(false)}
+            />
+
+            {/* modal */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background border rounded-md shadow-xl p-4 max-h-[80vh] overflow-auto">
+              <IconPicker
+                value={form.icon}
+                onChange={(icon) => {
+                  setForm({ ...form, icon })
+                  setShowIconPicker(false)
+                }}
+              />
+            </div>
+          </div>,
+          document.body
+        )}
+
+
     </main>
   );
 }

@@ -1,6 +1,9 @@
 "use client";
 
+import React from "react";
 import { useState } from "react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,6 +25,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Check, FileText, Settings, CheckCircle2, ArrowRight } from "lucide-react";
+import { apiFetch } from "@/lib/api";
+import { Input } from "@/components/ui/input";
 
 type RequestType = "application_access" | "change_role" | "";
 
@@ -32,7 +37,36 @@ const steps = [
   { id: 4, title: "Review", icon: CheckCircle2 },
 ];
 
+
+interface Application {
+  id: number;
+  code: string;
+  name: string;
+  url: string;
+  icon: string;
+  color: string;
+  has_access: boolean;
+  granted_at: string | null;
+  role: {
+    id: number;
+    name: string;
+  } | null;
+}
+
+interface ApplicationRole {
+  id: number;
+  application_id: number;
+  name: string;
+  description: string;
+}
+
 export default function CreateRequestsPage() {
+
+  const [loading, setLoading] = React.useState(true);
+  const router = useRouter();
+
+  const [applications, setApplications] = React.useState<Application[]>([]);
+
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     requestType: "" as RequestType,
@@ -43,17 +77,97 @@ export default function CreateRequestsPage() {
     justification: "",
   });
 
+
   const canProceed = () => {
     if (step === 1) return form.requestType !== "";
     if (step === 2) return form.application !== "";
     if (step === 3) {
       if (form.requestType === "application_access") {
-        return form.role !== "";
+        return (
+          form.role !== "" &&
+          form.justification.trim() !== ""
+        );
       }
       return form.oldRole !== "" && form.newRole !== "" && form.justification.trim() !== "";
     }
     return true;
   };
+
+  // auth
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) router.replace("/login");
+  }, []);
+
+  // load applications
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await apiFetch("/application-users");
+        setApplications(Array.isArray(res) ? res : []);
+      } catch {
+        setApplications([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+  // load roles by application
+  useEffect(() => {
+    if (!form.application) {
+      setRoles([]);
+      return;
+    }
+
+    const loadRoles = async () => {
+      try {
+        setLoadingRoles(true);
+        const res = await apiFetch(
+          `/applications/${form.application}/roles`
+        );
+        setRoles(res?.data ?? []);
+      } finally {
+        setLoadingRoles(false);
+      }
+    };
+
+    loadRoles();
+  }, [form.application]);
+
+  useEffect(() => {
+    if (!form.application) return;
+
+
+    if (!app || !app.has_access) return;
+
+    const role = app.role;
+    if (!role) return;
+
+    setForm((prev) => ({
+      ...prev,
+      oldRole: String(role.id),
+    }));
+  }, [form.application, applications]);
+
+  const availableApps = applications.filter((app) => !app.has_access);
+  const ownedApps = applications.filter((app) => app.has_access);
+
+  const [roles, setRoles] = useState<ApplicationRole[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(false);
+
+  const app = applications.find(
+    (a) => String(a.id) === String(form.application)
+  );
+
+  const getRoleName = (roleId?: string) => {
+  if (!roleId) return "-";
+  return roles.find((r) => String(r.id) === roleId)?.name ?? "-";
+};
+
+
 
   return (
     <main className="min-h-screen bg-background p-6">
@@ -75,18 +189,17 @@ export default function CreateRequestsPage() {
               const Icon = s.icon;
               const isActive = step === s.id;
               const isCompleted = step > s.id;
-              
+
               return (
                 <div key={s.id} className="flex items-center flex-1 last:flex-none">
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                        isCompleted
-                          ? "bg-primary text-primary-foreground"
-                          : isActive
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${isCompleted
+                        ? "bg-primary text-primary-foreground"
+                        : isActive
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted text-muted-foreground"
-                      }`}
+                        }`}
                     >
                       {isCompleted ? (
                         <Check className="w-5 h-5" />
@@ -96,11 +209,10 @@ export default function CreateRequestsPage() {
                     </div>
                     <div className="mt-2 text-center">
                       <p
-                        className={`text-xs font-medium transition-colors whitespace-nowrap ${
-                          isActive || isCompleted
-                            ? "text-foreground"
-                            : "text-muted-foreground"
-                        }`}
+                        className={`text-xs font-medium transition-colors whitespace-nowrap ${isActive || isCompleted
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                          }`}
                       >
                         {s.title}
                       </p>
@@ -108,11 +220,10 @@ export default function CreateRequestsPage() {
                   </div>
                   {idx < steps.length - 1 && (
                     <div
-                      className={`h-0.5 flex-1 mx-4 transition-colors duration-300 self-start mt-5 ${
-                        step > s.id
-                          ? "bg-primary"
-                          : "bg-border"
-                      }`}
+                      className={`h-0.5 flex-1 mx-4 transition-colors duration-300 self-start mt-5 ${step > s.id
+                        ? "bg-primary"
+                        : "bg-border"
+                        }`}
                     />
                   )}
                 </div>
@@ -147,11 +258,10 @@ export default function CreateRequestsPage() {
                   className="space-y-3"
                 >
                   <div
-                    className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${
-                      form.requestType === "application_access"
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-muted-foreground/30 bg-card"
-                    }`}
+                    className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${form.requestType === "application_access"
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-muted-foreground/30 bg-card"
+                      }`}
                   >
                     <RadioGroupItem value="application_access" id="access" />
                     <Label htmlFor="access" className="flex-1 cursor-pointer">
@@ -163,11 +273,10 @@ export default function CreateRequestsPage() {
                   </div>
 
                   <div
-                    className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${
-                      form.requestType === "change_role"
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-muted-foreground/30 bg-card"
-                    }`}
+                    className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${form.requestType === "change_role"
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-muted-foreground/30 bg-card"
+                      }`}
                   >
                     <RadioGroupItem value="change_role" id="change" />
                     <Label htmlFor="change" className="flex-1 cursor-pointer">
@@ -185,41 +294,47 @@ export default function CreateRequestsPage() {
             {step === 2 && (
               <div className="space-y-4">
                 <div>
-                  <Label className="text-foreground text-sm mb-3 block">Select Application</Label>
+                  <Label className="text-foreground text-sm mb-3 block">
+                    Select Application
+                  </Label>
+
                   <Select
                     value={form.application}
                     onValueChange={(value) =>
                       setForm({ ...form, application: value })
                     }
                   >
-                    <SelectTrigger className="w-full h-12 bg-background border-border text-foreground">
+                    <SelectTrigger className="w-full bg-background border-border text-foreground px-5 py-8">
                       <SelectValue placeholder="Choose application" />
                     </SelectTrigger>
+
                     <SelectContent className="bg-popover border-border">
-                      <SelectItem value="hris" className="text-popover-foreground focus:bg-accent focus:text-accent-foreground">
-                        <div className="flex flex-col items-start py-1">
-                          <span className="font-medium">HRIS</span>
-                          <span className="text-xs text-muted-foreground">
-                            Human Resources Information System
-                          </span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="finance" className="text-popover-foreground focus:bg-accent focus:text-accent-foreground">
-                        <div className="flex flex-col items-start py-1">
-                          <span className="font-medium">Finance</span>
-                          <span className="text-xs text-muted-foreground">
-                            Financial Management System
-                          </span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="inventory" className="text-popover-foreground focus:bg-accent focus:text-accent-foreground">
-                        <div className="flex flex-col items-start py-1">
-                          <span className="font-medium">Inventory</span>
-                          <span className="text-xs text-muted-foreground">
-                            Inventory Management System
-                          </span>
-                        </div>
-                      </SelectItem>
+                      {(form.requestType === "application_access"
+                        ? availableApps
+                        : ownedApps
+                      ).length === 0 && (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                            Tidak ada aplikasi tersedia
+                          </div>
+                        )}
+
+                      {(form.requestType === "application_access"
+                        ? availableApps
+                        : ownedApps
+                      ).map((app) => (
+                        <SelectItem
+                          key={app.id}
+                          value={String(app.id)}
+                          className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
+                        >
+                          <div className="flex flex-col items-start py-1">
+                            <span className="font-medium">{app.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {app.code.toUpperCase()}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -230,62 +345,94 @@ export default function CreateRequestsPage() {
             {step === 3 && (
               <div>
                 {form.requestType === "application_access" && (
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     <div>
-                      <Label className="text-foreground text-sm mb-3 block">Requested Role</Label>
+                      <Label className="text-sm mb-3 block">Requested Role</Label>
                       <Select
                         value={form.role}
                         onValueChange={(value) =>
                           setForm({ ...form, role: value })
                         }
                       >
-                        <SelectTrigger className="w-full h-12 bg-background border-border text-foreground">
+                        <SelectTrigger className="w-full px-5 py-8">
                           <SelectValue placeholder="Select role" />
                         </SelectTrigger>
-                        <SelectContent className="bg-popover border-border">
-                          <SelectItem value="admin" className="text-popover-foreground focus:bg-accent focus:text-accent-foreground">Admin</SelectItem>
-                          <SelectItem value="user" className="text-popover-foreground focus:bg-accent focus:text-accent-foreground">User</SelectItem>
-                          <SelectItem value="viewer" className="text-popover-foreground focus:bg-accent focus:text-accent-foreground">Viewer</SelectItem>
+
+                        <SelectContent>
+                          {loadingRoles && (
+                            <div className="px-3 py-2 text-sm text-muted-foreground">
+                              Loading roles...
+                            </div>
+                          )}
+
+                          {!loadingRoles && roles.length === 0 && (
+                            <div className="px-3 py-2 text-sm text-muted-foreground">
+                              No roles available
+                            </div>
+                          )}
+
+                          {roles.map((role) => (
+                            <SelectItem key={role.id} value={String(role.id)}>
+                              <div className="flex flex-col">
+                                <span className="font-medium text-left">{role.name}</span>
+                                {role.description && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {role.description}
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm mb-3 block">Justification</Label>
+                      <Textarea
+                        placeholder="Explain why you need access to this application..." className="p-5"
+                        value={form.justification}
+                        onChange={(e) =>
+                          setForm({ ...form, justification: e.target.value })
+                        }
+                      />
                     </div>
                   </div>
                 )}
 
+
                 {form.requestType === "change_role" && (
                   <div className="space-y-5">
                     <div>
-                      <Label className="text-foreground text-sm mb-3 block">Current Role</Label>
-                      <Select
-                        value={form.oldRole}
-                        onValueChange={(value) =>
-                          setForm({ ...form, oldRole: value })
-                        }
-                      >
-                        <SelectTrigger className="w-full h-12 bg-background border-border text-foreground">
-                          <SelectValue placeholder="Select current role" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover border-border">
-                          <SelectItem value="user" className="text-popover-foreground focus:bg-accent focus:text-accent-foreground">User</SelectItem>
-                          <SelectItem value="viewer" className="text-popover-foreground focus:bg-accent focus:text-accent-foreground">Viewer</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label className="text-sm mb-3 block">Current Role</Label>
+                      <Input
+                        value={app?.role?.name ?? "-"}
+                        disabled
+                        className="bg-muted cursor-not-allowed"
+                      />
                     </div>
 
+
                     <div>
-                      <Label className="text-foreground text-sm mb-3 block">New Role</Label>
+                      <Label className="text-sm mb-3 block">New Role</Label>
                       <Select
                         value={form.newRole}
                         onValueChange={(value) =>
                           setForm({ ...form, newRole: value })
                         }
                       >
-                        <SelectTrigger className="w-full h-12 bg-background border-border text-foreground">
+                        <SelectTrigger className="w-full h-12">
                           <SelectValue placeholder="Select new role" />
                         </SelectTrigger>
-                        <SelectContent className="bg-popover border-border">
-                          <SelectItem value="admin" className="text-popover-foreground focus:bg-accent focus:text-accent-foreground">Admin</SelectItem>
-                          <SelectItem value="user" className="text-popover-foreground focus:bg-accent focus:text-accent-foreground">User</SelectItem>
+
+                        <SelectContent>
+                          {roles
+                            .filter((r) => String(r.id) !== String(form.oldRole))
+                            .map((role) => (
+                              <SelectItem key={role.id} value={String(role.id)}>
+                                {role.name}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -311,7 +458,7 @@ export default function CreateRequestsPage() {
               <div className="space-y-5">
                 <div className="bg-card border border-border rounded-lg p-6 space-y-4">
                   <h3 className="font-medium text-foreground text-base">Request Summary</h3>
-                  
+
                   <div className="space-y-3">
                     <div className="flex items-start">
                       <div className="w-32 text-sm text-muted-foreground">Request Type</div>
@@ -324,32 +471,20 @@ export default function CreateRequestsPage() {
 
                     <div className="flex items-start">
                       <div className="w-32 text-sm text-muted-foreground">Application</div>
-                      <div className="flex-1 text-sm text-foreground capitalize">
-                        {form.application}
+                      <div className="flex-1 text-sm text-foreground">
+                        {app?.name ?? "-"}
                       </div>
                     </div>
 
                     {form.requestType === "application_access" ? (
-                      <div className="flex items-start">
-                        <div className="w-32 text-sm text-muted-foreground">Role</div>
-                        <div className="flex-1 text-sm text-foreground capitalize">
-                          {form.role}
-                        </div>
-                      </div>
-                    ) : (
                       <>
                         <div className="flex items-start">
-                          <div className="w-32 text-sm text-muted-foreground">Current Role</div>
-                          <div className="flex-1 text-sm text-foreground capitalize">
-                            {form.oldRole}
+                          <div className="w-32 text-sm text-muted-foreground">Requested Role</div>
+                          <div className="flex-1 text-sm text-foreground">
+                            {getRoleName(form.role)}
                           </div>
                         </div>
-                        <div className="flex items-start">
-                          <div className="w-32 text-sm text-muted-foreground">New Role</div>
-                          <div className="flex-1 text-sm text-foreground capitalize">
-                            {form.newRole}
-                          </div>
-                        </div>
+
                         <div className="flex items-start">
                           <div className="w-32 text-sm text-muted-foreground">Justification</div>
                           <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">
@@ -357,6 +492,30 @@ export default function CreateRequestsPage() {
                           </div>
                         </div>
                       </>
+                    ) : (
+                      <>
+                        <div className="flex items-start">
+                          <div className="w-32 text-sm text-muted-foreground">Current Role</div>
+                          <div className="flex-1 text-sm text-foreground">
+                            {app?.role?.name ?? "-"}
+                          </div>
+                        </div>
+
+                        <div className="flex items-start">
+                          <div className="w-32 text-sm text-muted-foreground">New Role</div>
+                          <div className="flex-1 text-sm text-foreground">
+                            {getRoleName(form.newRole)}
+                          </div>
+                        </div>
+
+                        <div className="flex items-start">
+                          <div className="w-32 text-sm text-muted-foreground">Justification</div>
+                          <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">
+                            {form.justification}
+                          </div>
+                        </div>
+                      </>
+
                     )}
                   </div>
                 </div>
