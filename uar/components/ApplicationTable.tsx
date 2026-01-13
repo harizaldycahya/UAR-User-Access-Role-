@@ -46,7 +46,7 @@ import { LucideIcon } from "lucide-react";
 
 import RequestTableSkeleton from "./RequestTableSkeleton";
 import { apiFetch } from "@/lib/api";
-
+import { useRouter } from "next/navigation";
 
 /* ================= TYPES ================= */
 interface Application {
@@ -65,6 +65,7 @@ export default function ApplicationTable() {
   const [loading, setLoading] = React.useState(true);
   const [columnFilters, setColumnFilters] = React.useState<any[]>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const router = useRouter();
 
 
 
@@ -84,9 +85,9 @@ export default function ApplicationTable() {
   }, []);
 
   /* ================= HANDLERS ================= */
-  const handleOpenDetail = (id: string) => {
+  const handleOpenDetail = (code: string) => {
     // Navigate to detail page
-    window.location.href = `/applications/${code}`;
+     router.push(`/applications/${code}`);
     // Or if using Next.js router:
     // router.push(`/applications/${id}`);
   };

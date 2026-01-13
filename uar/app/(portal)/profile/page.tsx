@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -129,17 +130,27 @@ export default function ProfilePage() {
     },
   });
 
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        // const res = await fetch("/api/profile");
+        // const data = await res.json();
+        // setProfile(data);
 
-  // Simulate loading
-  useState(() => {
-    setTimeout(() => setIsLoading(false), 2000);
-  });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchProfile();
+  }, []);
 
   const handleSave = () => {
     console.log("Saving profile:", profile);
     setIsEditing(false);
     alert("Profile updated successfully!");
   };
+  
 
   return (
     <main className="min-h-screen bg-background p-6">
@@ -362,36 +373,6 @@ export default function ProfilePage() {
                           )}
                         </div>
                       </div>
-                      {/* Supervisor */}
-                      <div>
-                        <Label className="text-foreground text-sm mb-2 block">
-                          Supervisor
-                        </Label>
-
-                        {isEditing ? (
-                          <Select
-                            value={profile.supervisor_id}
-                            onValueChange={(value) =>
-                              setProfile({ ...profile, supervisor_id: value })
-                            }
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select supervisor" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {supervisors.map((spv) => (
-                                <SelectItem key={spv.id} value={spv.id}>
-                                  {spv.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <p className="text-foreground text-sm bg-muted/30 px-3 py-2.5 rounded-md">
-                            {profile.supervisor?.name || "-"}
-                          </p>
-                        )}
-                      </div>
 
 
 
@@ -434,18 +415,6 @@ export default function ProfilePage() {
                         </div>
                         <Button variant="outline" size="sm">
                           Change Password
-                        </Button>
-                      </div>
-
-                      <Separator />
-
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-foreground text-sm font-medium">Two-Factor Authentication</p>
-                          <p className="text-muted-foreground text-xs">Add an extra layer of security</p>
-                        </div>
-                        <Button variant="outline" size="sm">
-                          Enable
                         </Button>
                       </div>
                     </div>

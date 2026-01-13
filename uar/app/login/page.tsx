@@ -40,8 +40,14 @@ export default function LoginPage() {
       // ⬇️ SIMPAN TOKEN (INI KUNCI SEMESTA)
       localStorage.setItem("token", data.token);
 
+      localStorage.setItem("user", JSON.stringify(data.user));
+
       // ⬇️ REDIRECT
-      window.location.href = "/dashboard";
+      if (data.user.role === 'admin') {
+        window.location.href = "/applications";
+      } else {
+        window.location.href = "/dashboard";
+      }
     } catch (err: any) {
       setError(err.message || "Login gagal");
     } finally {
@@ -300,20 +306,6 @@ export default function LoginPage() {
                   <span className="text-sm font-medium">Sign in with Microsoft</span>
                 </Button>
               </div> */}
-            </div>
-
-            {/* Footer Links */}
-            <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800">
-              <p className="text-xs text-center text-gray-600 dark:text-gray-400">
-                By signing in, you agree to our{" "}
-                <a href="#" className="text-blue-600 dark:text-blue-500 hover:underline">
-                  Terms of Service
-                </a>{" "}
-                and{" "}
-                <a href="#" className="text-blue-600 dark:text-blue-500 hover:underline">
-                  Privacy Policy
-                </a>
-              </p>
             </div>
           </div>
 

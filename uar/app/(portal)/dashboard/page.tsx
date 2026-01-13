@@ -21,16 +21,18 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import * as Icons from "lucide-react";
+import { LucideIcon } from "lucide-react";
 
 interface Application {
   id: number;
-  is_accessible: boolean;
-  owner: string;
   code: string;
   name: string;
   url: string;
   icon: string;
   color: string;
+  has_access: boolean;
+  granted_at: string | null;
 }
 
 interface Notification {
@@ -54,16 +56,11 @@ export default function DashboardPage() {
     if (!token) router.replace("/login");
   }, []);
 
-
   React.useEffect(() => {
     const load = async () => {
       try {
-        const res = await apiFetch("/applications");
-        if (!res.ok) throw new Error("Failed fetch");
-
-        const data = await res.json();
-        console.log(data);
-        setApplications(data.data);
+          const res = await apiFetch("/application-users");
+          setApplications(Array.isArray(res) ? res : []);
       } catch (err) {
         console.error(err);
         setApplications([]);
@@ -88,12 +85,6 @@ export default function DashboardPage() {
                 <h3 className="text-2xl font-bold text-foreground">
                   {loading ? <Skeleton className="h-8 w-16" /> : applications.length}
                 </h3>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3 text-primary" />
-                  <span>
-                    {loading ? '...' : applications.filter(app => app.is_accessible).length} accessible
-                  </span>
-                </p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
                 <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -116,7 +107,7 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                   <Bell className="h-3 w-3 text-primary" />
                   <span>
-                    {loading ? '...' : notifications.length} total updates
+                    {loading ? '...' : notifications?.length ?? 0} total updates
                   </span>
                 </p>
               </div>
@@ -290,90 +281,78 @@ export default function DashboardPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {loading ? (
-                // Skeleton placeholder
                 Array.from({ length: 6 }).map((_, idx) => (
                   <div key={idx} className="rounded-lg border border-border/40 p-4">
-                    <div className="flex items-start gap-3 mb-4">
-                      <Skeleton className="h-12 w-12 rounded-lg" />
-                      <div className="flex-1 space-y-2">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-1/2" />
-                      </div>
-                    </div>
-                    <Skeleton className="h-9 w-full rounded-md" />
+                    <Skeleton className="h-12 w-12 rounded-lg mb-3" />
+                    <Skeleton className="h-4 w-3/4 mb-2" />
+                    <Skeleton className="h-9 w-full" />
                   </div>
                 ))
-              ) : applications && applications.length > 0 ? (
-                applications.map((app) => (
-                  <div
-                    key={app.id}
-                    className="group rounded-lg border border-border/40 hover:border-border hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 p-4 bg-card"
-                  >
-                    <div className="flex items-start gap-3 mb-4">
-                      {/* Icon container */}
-                      <div
-                        className="relative h-12 w-12 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105"
-                        style={{
-                          backgroundColor: app.color,
-                          opacity: 0.9
+              ) : applications.length > 0 ? (
+                applications.map((app) => {
+                  const Icon = (Icons as Record<string, LucideIcon>)[
+                    app.icon?.charAt(0).toUpperCase() + app.icon?.slice(1)
+                  ];
+
+                  return (
+                    <div
+                      key={app.id}
+                      className="rounded-lg border border-border/40 hover:border-border hover:shadow-lg transition p-4 bg-card"
+                    >
+                      <div className="flex items-start gap-3 mb-4">
+                        <div
+                          className="h-12 w-12 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: app.color }}
+                        >
+                          {Icon ? (
+                            <Icon className="h-6 w-6 text-white" />
+                          ) : (
+                            <span className="text-white font-semibold">
+                              {app.code}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold truncate">
+                            {app.code}
+                          </h3>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {app.name}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Button
+                        className="w-full h-9 text-xs"
+                        variant={app.has_access ? "default" : "outline"}
+                        onClick={() => {
+                          if (app.has_access) {
+                            window.open(app.url, "_blank");
+                          } else {
+                            router.push(`/request-access?appId=${app.id}`);
+                          }
                         }}
                       >
-                        {app.icon ? (
-                          <div
-                            className="w-6 h-6 text-white"
-                            dangerouslySetInnerHTML={{ __html: app.icon }}
-                          />
-                        ) : (
-                          <span className="text-white font-semibold text-base">{app.code}</span>
-                        )}
-
-                        {/* Status badge */}
-                        {app.is_accessible && (
-                          <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary flex items-center justify-center">
-                            <CheckCircle2 className="h-2.5 w-2.5 text-primary-foreground" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* App info */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-semibold text-foreground truncate mb-1">
-                          {app.code} 
-                        </h3>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {app.name}
-                        </p>
-                      </div>
+                        <span className="flex items-center gap-1.5">
+                          {app.has_access ? (
+                            <>
+                              <span>Open Application</span>
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="h-3.5 w-3.5" />
+                              <span>Request Access</span>
+                            </>
+                          )}
+                        </span>
+                      </Button>
                     </div>
-
-                    {/* Action button */}
-                    <Button
-                      className="w-full h-9 text-xs font-medium"
-                      variant={app.is_accessible ? "default" : "outline"}
-                      size="sm"
-                      disabled={!app.is_accessible}
-                      onClick={() => {
-                        if (app.is_accessible && app.url) {
-                          window.open(app.url, '_blank');
-                        }
-                      }}
-                    >
-                      {app.is_accessible ? (
-                        <span className="flex items-center gap-1.5">
-                          <span>Open Application</span>
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1.5">
-                          <Lock className="h-3.5 w-3.5" />
-                          <span>Request Access</span>
-                        </span>
-                      )}
-                    </Button>
-                  </div>
-                ))
+                  );
+                })
               ) : (
-                <div className="col-span-full flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <div className="col-span-full flex flex-col items-center py-16 text-muted-foreground">
                   <Calendar className="h-12 w-12 mb-3 opacity-20" />
                   <p className="text-sm">No applications available</p>
                 </div>
