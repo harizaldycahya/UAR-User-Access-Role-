@@ -3,7 +3,6 @@
 import * as React from "react";
 
 
-
 import {
   ColumnDef,
   flexRender,
@@ -232,8 +231,6 @@ export default function ApplicationTable() {
           </span>
         </CardFooter>
       </Card>
-
-
     </>
   );
 }
