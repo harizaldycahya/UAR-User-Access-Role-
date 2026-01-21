@@ -42,13 +42,23 @@ import { MoreVertical, Check, ChevronsUpDown, CheckCircle2 } from "lucide-react"
 import RequestTableSkeleton from "./RequestTableSkeleton";
 import { useSearchParams } from "next/navigation";
 
+import { apiFetch } from "@/lib/api";
+
+
 /* ================= TYPES ================= */
 type Request = {
-  requestId: string;
-  application: string;
-  category: string;
-  status: "Pending" | "Approved" | "Rejected";
-  requestDate: string;
+  id: number;
+  type: "application_access" | "change_role";
+  status: "pending" | "approved" | "rejected";
+
+  application_name: string;
+
+  old_role_name: string | null;
+  new_role_name: string | null;
+
+  justification: string | null;
+
+  created_at: string;
 };
 
 /* ================= COMPONENT ================= */
@@ -57,48 +67,95 @@ export default function RequestTable() {
   const [loading, setLoading] = React.useState(true);
   const [columnFilters, setColumnFilters] = React.useState<any[]>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
+
   const totalRequests = data.length;
+  const pendingCount = data.filter(r => r.status === "pending").length;
+  const approvedCount = data.filter(r => r.status === "approved").length;
+  const rejectedCount = data.filter(r => r.status === "rejected").length;
+
   const searchParams = useSearchParams();
   const statusParam = searchParams.get("status"); // Pending | Approved | Rejected
 
   /* ================= FETCH DATA ================= */
   React.useEffect(() => {
-    let mounted = true;
-
-    fetch("http://localhost:4000/requests")
-      .then(res => res.json())
-      .then((result: Request[]) => {
-        if (mounted) {
-          setData(result);
-          setLoading(false);
-        }
-      })
-      .catch(() => {
-        if (mounted) setLoading(false);
-      });
-
-    return () => {
-      mounted = false;
+    const load = async () => {
+      try {
+        const res = await apiFetch("/requests/me");
+        setData(res.data);
+      } catch {
+        setData([]);
+      } finally {
+        setLoading(false);
+      }
     };
+    load();
   }, []);
+
 
   /* ================= COLUMNS ================= */
   const columns: ColumnDef<Request, any>[] = [
-    { id: "requestId", header: "Request ID", accessorFn: row => row.requestId },
-    { id: "application", header: "Application", accessorFn: row => row.application },
-    { id: "category", header: "Category", accessorFn: row => row.category },
     {
-      id: "status",
-      header: "Status",
-      accessorFn: row => row.status,
-      cell: ({ row }) => (
-        <span className="rounded-md px-2 py-1 text-xs font-medium bg-card text-card-foreground">
-          {row.getValue("status")}
-        </span>
-      ),
+      accessorKey: "created_at",
+      header: "Date",
+      cell: ({ row }) => {
+        const date = new Date(row.original.created_at);
+        return date.toLocaleDateString();
+      },
     },
-    { id: "requestDate", header: "Request Date", accessorFn: row => row.requestDate },
+    {
+      accessorKey: "application_name",
+      header: "Application",
+    },
+    {
+      accessorKey: "type",
+      header: "Request Type",
+      cell: ({ row }) =>
+        row.original.type === "application_access"
+          ? "Application Access"
+          : "Role Change",
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      filterFn: "equalsString",
+      cell: ({ row }) => {
+        const status = row.original.status;
+        const color =
+          status === "approved"
+            ? "text-success"
+            : status === "rejected"
+              ? "text-danger"
+              : "text-warning";
+              
+        return (
+          <span className={`font-medium capitalize ${color}`}>
+            {status}
+          </span>
+        );
+      },
+    },
+    {
+      id: "role",
+      header: "Role",
+      cell: ({ row }) => {
+        const { type, old_role_name, new_role_name } = row.original;
+
+        if (type === "application_access") {
+          return new_role_name ?? "-";
+        }
+
+        return (
+          <div className="text-sm">
+            <div className="text-muted-foreground">
+              {old_role_name ?? "-"} → {new_role_name ?? "-"}
+            </div>
+          </div>
+        );
+      },
+    },
+
   ];
+
 
   /* ================= TABLE ================= */
   const table = useReactTable({
@@ -116,12 +173,12 @@ export default function RequestTable() {
   /* ================= URL FILTER ================= */
   React.useEffect(() => {
     if (!statusParam) return;
-
-    const normalized =
-      statusParam.charAt(0).toUpperCase() + statusParam.slice(1);
-
-    table.getColumn("status")?.setFilterValue(normalized);
+    table.getColumn("status")?.setFilterValue(statusParam);
   }, [statusParam]);
+
+  const filterByStatus = (status?: "pending" | "approved" | "rejected") => {
+    table.getColumn("status")?.setFilterValue(status);
+  };
 
 
   if (loading) return <RequestTableSkeleton />;
@@ -129,78 +186,83 @@ export default function RequestTable() {
   return (
 
     <>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card className="border-border/40 hover:border-border transition-colors">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card
+          onClick={() => filterByStatus(undefined)}
+          className="cursor-pointer border-border/40 hover:border-border transition-colors"
+        >
           <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-1">Total Requests</p>
-                <h3 className="text-2xl font-bold text-foreground">
-                  {loading ? <Skeleton className="h-8 w-16" /> : totalRequests}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3 text-primary" />
-                  <span>
-                    {loading ? '...' : totalRequests} Requested
-                  </span>
-                </p>
-              </div>
-              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                </svg>
-              </div>
-            </div>
+            <p className="text-xs font-medium text-muted-foreground mb-1">
+              Total Requests
+            </p>
+            <h3 className="text-2xl font-bold">
+              {loading ? <Skeleton className="h-8 w-16" /> : totalRequests}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3 text-primary" />
+              <span>
+                {loading ? '...' : totalRequests} Request
+              </span>
+            </p>
           </CardContent>
         </Card>
-        <Card className="border-border/40 hover:border-border transition-colors">
+        <Card
+          onClick={() => filterByStatus("pending")}
+          className="cursor-pointer border-border/40 hover:border-border transition-colors"
+        >
           <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-1">Pending Approval</p>
-                <h3 className="text-2xl font-bold text-foreground">
-                  {loading ? <Skeleton className="h-8 w-16" /> : totalRequests}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3 text-primary" />
-                  <span>
-                    {loading ? '...' : totalRequests} Requests
-                  </span>
-                </p>
-              </div>
-              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                </svg>
-              </div>
-            </div>
+            <p className="text-xs font-medium text-muted-foreground mb-1">
+              Pending Approval
+            </p>
+            <h3 className="text-2xl font-bold text-warning">
+              {loading ? <Skeleton className="h-8 w-16" /> : pendingCount}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3 text-primary" />
+              <span>
+                {loading ? '...' : pendingCount} Request
+              </span>
+            </p>
           </CardContent>
         </Card>
-        <Card className="border-border/40 hover:border-border transition-colors">
+        <Card
+          onClick={() => filterByStatus("approved")}
+          className="cursor-pointer border-border/40 hover:border-border transition-colors"
+        >
           <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-1">Approved</p>
-                <h3 className="text-2xl font-bold text-foreground">
-                  {loading ? <Skeleton className="h-8 w-16" /> : totalRequests}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3 text-primary" />
-                  <span>
-                    {loading ? '...' : totalRequests} Requested
-                  </span>
-                </p>
-              </div>
-              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                </svg>
-              </div>
-            </div>
+            <p className="text-xs font-medium text-muted-foreground mb-1">
+              Approved
+            </p>
+            <h3 className="text-2xl font-bold text-success">
+              {loading ? <Skeleton className="h-8 w-16" /> : approvedCount}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3 text-primary" />
+              <span>
+                {loading ? '...' : approvedCount} Request
+              </span>
+            </p>
           </CardContent>
         </Card>
-
-
+        <Card
+          onClick={() => filterByStatus("rejected")}
+          className="cursor-pointer border-border/40 hover:border-border transition-colors"
+        >
+          <CardContent className="p-5">
+            <p className="text-xs font-medium text-muted-foreground mb-1">
+              Rejected
+            </p>
+            <h3 className="text-2xl font-bold text-destructive">
+              {loading ? <Skeleton className="h-8 w-16" /> : rejectedCount}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3 text-primary" />
+              <span>
+                {loading ? '...' : rejectedCount} Request
+              </span>
+            </p>
+          </CardContent>
+        </Card>
       </div>
       <Card>
         <CardHeader className="flex flex-row justify-between">
@@ -225,45 +287,45 @@ export default function RequestTable() {
 
         {/* FILTERS */}
         <CardContent className="flex flex-wrap gap-4 mb-4">
-          {columns.map(col => {
-            const id = col.id;
-            if (!id) return null;
+          <Input
+            placeholder="Search application..."
+            value={(table.getColumn("application_name")?.getFilterValue() ?? "") as string}
+            onChange={e =>
+              table.getColumn("application_name")?.setFilterValue(e.target.value)
+            }
+            className="h-9 w-60 text-sm"
+          />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="h-9 w-60 text-sm capitalize text-left"
+              >
+                {(table.getColumn("status")?.getFilterValue() as string) || "Filter Status"}
+              </Button>
+            </DropdownMenuTrigger>
 
-            return id !== "status" ? (
-              <Input
-                key={id}
-                placeholder={`Search ${col.header}`}
-                value={(table.getColumn(id)?.getFilterValue() ?? "") as string}
-                onChange={e => table.getColumn(id)?.setFilterValue(e.target.value)}
-                className="h-9 w-60 text-sm"
-              />
-            ) : (
-              <DropdownMenu key={id}>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-9 w-60 text-sm text-left">
-                    {(table.getColumn(id)?.getFilterValue() as string) || "Filter Status"}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  {["Pending", "Approved", "Rejected"].map(status => (
-                    <DropdownMenuItem
-                      key={status}
-                      onClick={() => table.getColumn(id)?.setFilterValue(status)}
-                      className="flex justify-between"
-                    >
-                      {status}
-                      {table.getColumn(id)?.getFilterValue() === status && (
-                        <Check className="h-4 w-4" />
-                      )}
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuItem onClick={() => table.getColumn(id)?.setFilterValue("")}>
-                    Clear
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            );
-          })}
+            <DropdownMenuContent>
+              {["pending", "approved", "rejected"].map(status => (
+                <DropdownMenuItem
+                  key={status}
+                  onClick={() => table.getColumn("status")?.setFilterValue(status)}
+                  className="flex justify-between capitalize"
+                >
+                  {status}
+                  {table.getColumn("status")?.getFilterValue() === status && (
+                    <Check className="h-4 w-4" />
+                  )}
+                </DropdownMenuItem>
+              ))}
+
+              <DropdownMenuItem
+                onClick={() => table.getColumn("status")?.setFilterValue(undefined)}
+              >
+                Clear
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </CardContent>
 
         {/* TABLE */}

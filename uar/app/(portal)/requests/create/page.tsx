@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import Swal from "sweetalert2";
+
 import { useState } from "react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -27,6 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Check, FileText, Settings, CheckCircle2, ArrowRight } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { Input } from "@/components/ui/input";
+
 
 type RequestType = "application_access" | "change_role" | "";
 
@@ -163,9 +166,52 @@ export default function CreateRequestsPage() {
   );
 
   const getRoleName = (roleId?: string) => {
-  if (!roleId) return "-";
-  return roles.find((r) => String(r.id) === roleId)?.name ?? "-";
-};
+    if (!roleId) return "-";
+    return roles.find((r) => String(r.id) === roleId)?.name ?? "-";
+
+  };
+
+
+  const submitRequest = async () => {
+    try {
+      const res = await apiFetch("/requests", {
+        method: "POST",
+        body: JSON.stringify({
+          application_id: form.application,
+          type: form.requestType,
+          old_role_id:
+            form.requestType === "change_role" ? form.oldRole : null,
+          new_role_id:
+            form.requestType === "application_access"
+              ? form.role
+              : form.newRole,
+          justification: form.justification,
+        }),
+      });
+
+      // kalau backend kamu pakai { success: true }
+      if (res?.success === false) {
+        throw new Error(res?.message || "Request failed");
+      }
+
+      await Swal.fire({
+        icon: "success",
+        title: "Request submitted",
+        text: "Your request has been sent for approval.",
+        confirmButtonText: "OK",
+      });
+
+      router.push("/requests");
+    } catch (err: any) {
+      console.error(err);
+
+      Swal.fire({
+        icon: "error",
+        title: "Failed",
+        text: err?.message || "Failed to submit request",
+      });
+    }
+  };
 
 
 
@@ -258,27 +304,51 @@ export default function CreateRequestsPage() {
                   className="space-y-3"
                 >
                   <div
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        requestType: "application_access",
+                      }))
+                    }
                     className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${form.requestType === "application_access"
                       ? "border-primary bg-primary/10"
                       : "border-border hover:border-muted-foreground/30 bg-card"
                       }`}
                   >
-                    <RadioGroupItem value="application_access" id="access" />
+                    <RadioGroupItem
+                      value="application_access"
+                      id="access"
+                      checked={form.requestType === "application_access"}
+                    />
                     <Label htmlFor="access" className="flex-1 cursor-pointer">
-                      <div className="font-medium text-foreground">Request Application Access</div>
+                      <div className="font-medium text-foreground">
+                        Request Application Access
+                      </div>
                       <div className="text-sm text-muted-foreground mt-0.5">
                         Request access to a new application
                       </div>
                     </Label>
                   </div>
 
+
                   <div
-                    className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${form.requestType === "change_role"
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-muted-foreground/30 bg-card"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        requestType: "change_role",
+                      }))
+                    }
+                    className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all
+                        ${form.requestType === "change_role"
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-muted-foreground/30 bg-card"
                       }`}
                   >
-                    <RadioGroupItem value="change_role" id="change" />
+                    <RadioGroupItem
+                      value="change_role"
+                      id="change"
+                      checked={form.requestType === "change_role"}
+                    />
                     <Label htmlFor="change" className="flex-1 cursor-pointer">
                       <div className="font-medium text-foreground">Change Role</div>
                       <div className="text-sm text-muted-foreground mt-0.5">
@@ -286,6 +356,7 @@ export default function CreateRequestsPage() {
                       </div>
                     </Label>
                   </div>
+
                 </RadioGroup>
               </div>
             )}
@@ -559,13 +630,7 @@ export default function CreateRequestsPage() {
                   >
                     Cancel
                   </Button>
-                  <Button
-                    onClick={() => {
-                      console.log("SUBMIT DATA:", form);
-                      alert("Request submitted successfully!");
-                    }}
-                    className="min-w-30"
-                  >
+                  <Button onClick={submitRequest}>
                     Submit Request
                   </Button>
                 </div>
