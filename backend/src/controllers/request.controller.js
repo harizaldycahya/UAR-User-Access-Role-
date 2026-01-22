@@ -1,86 +1,5 @@
 import { db } from "../config/db.js";
 
-// export const createRequest = async (req, res) => {
-//   try {
-//     const userId = req.user.id;
-//     const {
-//       application_id,
-//       type,
-//       old_role_id,
-//       new_role_id,
-//       justification,
-//     } = req.body;
-
-//     // basic validation (jangan manja)
-//     if (!application_id || !type || !new_role_id || !justification) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Incomplete request data",
-//       });
-//     }
-
-//     if (!["application_access", "change_role"].includes(type)) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid request type",
-//       });
-//     }
-
-//     // prevent duplicate pending request
-//     const [[existing]] = await db.query(
-//       `
-//       SELECT id
-//       FROM requests
-//       WHERE user_id = ?
-//         AND application_id = ?
-//         AND status = 'pending'
-//         AND deleted_at IS NULL
-//       LIMIT 1
-//       `,
-//       [userId, application_id]
-//     );
-
-//     if (existing) {
-//       return res.status(409).json({
-//         success: false,
-//         message: "You already have a pending request for this application",
-//       });
-//     }
-
-//     const [result] = await db.query(
-//       `
-//       INSERT INTO requests
-//         (user_id, application_id, type, old_role_id, new_role_id, justification)
-//       VALUES (?, ?, ?, ?, ?, ?)
-//       `,
-//       [
-//         userId,
-//         application_id,
-//         type,
-//         old_role_id || null,
-//         new_role_id,
-//         justification,
-//       ]
-//     );
-
-//     const [[request]] = await db.query(
-//       `SELECT * FROM requests WHERE id = ?`,
-//       [result.insertId]
-//     );
-
-//     res.status(201).json({
-//       success: true,
-//       data: request,
-//     });
-//   } catch (err) {
-//     console.error("CREATE REQUEST ERROR:", err);
-//     res.status(500).json({
-//       success: false,
-//       message: "Failed to create request",
-//     });
-//   }
-// };
-
 export const createRequest = async (req, res) => {
   const conn = await db.getConnection();
 
@@ -164,11 +83,11 @@ export const createRequest = async (req, res) => {
     );
 
     const kadiv = {
-      approver_id: 999   // pastikan user ID ini ADA di tabel users
+      approver_id: 'KADIV'   // pastikan user ID ini ADA di tabel users
     };
 
     const [[hrd]] = await conn.query(
-      `SELECT username AS approver_id FROM users WHERE role = '3' LIMIT 1`
+      `SELECT username AS approver_id FROM users WHERE role_id = '3' LIMIT 1`
     );
 
     const [[appOwner]] = await conn.query(
@@ -228,17 +147,16 @@ export const createRequest = async (req, res) => {
   } catch (err) {
     await conn.rollback();
     console.error("CREATE REQUEST ERROR:", err);
+
     res.status(500).json({
       success: false,
-      message: "Failed to create request",
+      message: err.message || "Failed to create request",
+      error: err.code || null,
     });
   } finally {
     conn.release();
   }
 };
-
-
-
 
 
 export const getMyRequests = async (req, res) => {
@@ -291,3 +209,56 @@ export const getMyRequests = async (req, res) => {
     });
   }
 };
+
+export const getMyApprovals = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // ambil username dari users
+    const [[user]] = await db.query(
+      `SELECT username FROM users WHERE id = ?`,
+      [userId]
+    );
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User tidak ditemukan",
+      });
+    }
+
+    const username = user.username;
+
+    const [rows] = await db.query(
+      `
+      SELECT
+        ap.id AS approval_id,
+        ap.level,
+        ap.status AS approval_status,
+        r.id AS request_id,
+        r.type,
+        r.justification,
+        r.status AS request_status,
+        r.created_at
+      FROM approvals ap
+      JOIN requests r ON r.id = ap.request_id
+      WHERE ap.approver_id = ?
+      ORDER BY ap.created_at DESC
+      `,
+      [username]
+    );
+
+    res.json({
+      success: true,
+      data: rows,
+    });
+  } catch (err) {
+    console.error("GET MY APPROVALS ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+
