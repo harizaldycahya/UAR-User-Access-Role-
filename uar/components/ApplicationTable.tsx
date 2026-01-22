@@ -2,7 +2,6 @@
 
 import * as React from "react";
 
-
 import {
   ColumnDef,
   flexRender,
@@ -32,8 +31,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-
 
 import {
   ChevronsUpDown,
@@ -66,8 +63,6 @@ export default function ApplicationTable() {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const router = useRouter();
 
-
-
   /* ================= FETCH ================= */
   React.useEffect(() => {
     const load = async () => {
@@ -90,11 +85,7 @@ export default function ApplicationTable() {
     // Or if using Next.js router:
     // router.push(`/applications/${id}`);
   };
-
-
-
-
-
+  
   /* ================= COLUMNS ================= */
   const columns: ColumnDef<Application>[] = [
     { header: "Code", accessorKey: "code" },

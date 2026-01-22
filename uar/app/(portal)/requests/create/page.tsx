@@ -446,11 +446,6 @@ export default function CreateRequestsPage() {
                             <SelectItem key={role.id} value={String(role.id)}>
                               <div className="flex flex-col">
                                 <span className="font-medium text-left">{role.name}</span>
-                                {role.description && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {role.description}
-                                  </span>
-                                )}
                               </div>
                             </SelectItem>
                           ))}
