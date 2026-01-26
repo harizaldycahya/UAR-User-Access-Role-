@@ -100,8 +100,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             {
                 label: "Request Approval",
                 items: [
-                    { label: "Approval Pending", icon: <Clock className="h-5 w-5" />, href: "/approvals?status=Pending" },
-                    { label: "History Approvals", icon: <CheckCircle className="h-5 w-5" />, href: "/approvals" },
+                    { label: "Approval Pending", icon: <Clock className="h-5 w-5" />, href: "/approvals?status=pending" },
+                    { label: "History Approvals", icon: <CheckCircle className="h-5 w-5" />, href: "/approvals?status=history" },
                 ],
             },
             {

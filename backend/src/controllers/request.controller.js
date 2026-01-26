@@ -214,7 +214,7 @@ export const getMyApprovals = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // ambil username dari users
+    // ambil username approver
     const [[user]] = await db.query(
       `SELECT username FROM users WHERE id = ?`,
       [userId]
@@ -229,21 +229,48 @@ export const getMyApprovals = async (req, res) => {
 
     const username = user.username;
 
+
+    
+    console.log("APPROVER USER:", user);
+    console.log("APPROVER_ID PARAM:", username);
+
     const [rows] = await db.query(
       `
       SELECT
         ap.id AS approval_id,
         ap.level,
         ap.status AS approval_status,
-        r.id AS request_id,
+
+        r.id AS id,
         r.type,
         r.justification,
-        r.status AS request_status,
-        r.created_at
+        r.status,
+        r.created_at,
+
+        a.id AS application_id,
+        a.name AS application_name,
+
+        old_role.id AS old_role_id,
+        old_role.name AS old_role_name,
+
+        new_role.id AS new_role_id,
+        new_role.name AS new_role_name
+
       FROM approvals ap
-      JOIN requests r ON r.id = ap.request_id
+      JOIN requests r
+        ON r.id = ap.request_id
+
+      JOIN applications a
+        ON a.id = r.application_id
+
+      LEFT JOIN application_roles old_role
+        ON old_role.id = r.old_role_id
+
+      LEFT JOIN application_roles new_role
+        ON new_role.id = r.new_role_id
+
       WHERE ap.approver_id = ?
-      ORDER BY ap.created_at DESC
+      ORDER BY r.created_at DESC
       `,
       [username]
     );
@@ -256,9 +283,10 @@ export const getMyApprovals = async (req, res) => {
     console.error("GET MY APPROVALS ERROR:", err);
     res.status(500).json({
       success: false,
-      message: err.message,
+      message: "Failed to fetch approvals",
     });
   }
 };
+
 
 
