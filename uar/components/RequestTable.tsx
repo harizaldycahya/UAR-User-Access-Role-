@@ -38,6 +38,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+
 import { MoreVertical, Check, ChevronsUpDown, CheckCircle2 } from "lucide-react";
 import RequestTableSkeleton from "./RequestTableSkeleton";
 import { useSearchParams } from "next/navigation";
@@ -46,19 +55,40 @@ import { apiFetch } from "@/lib/api";
 
 
 /* ================= TYPES ================= */
+type Role = {
+  id: number;
+  name: string;
+};
+
+type Application = {
+  id: number;
+  name: string;
+};
+
+type Approval = {
+  id: number;
+  level: number;
+  approver_id: string;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+};
+
 type Request = {
   id: number;
+  request_code: string;
   type: "application_access" | "change_role";
   status: "pending" | "approved" | "rejected";
-
-  application_name: string;
-
-  old_role_name: string | null;
-  new_role_name: string | null;
 
   justification: string | null;
 
   created_at: string;
+
+  application: Application;
+
+  old_role: Role | null;
+  new_role: Role | null;
+
+  approvals: Approval[];
 };
 
 /* ================= COMPONENT ================= */
@@ -72,6 +102,12 @@ export default function RequestTable() {
   const pendingCount = data.filter(r => r.status === "pending").length;
   const approvedCount = data.filter(r => r.status === "approved").length;
   const rejectedCount = data.filter(r => r.status === "rejected").length;
+
+  const [openDetail, setOpenDetail] = React.useState(false);
+  const [selectedCode, setSelectedCode] = React.useState<string | null>(null);
+  const [detail, setDetail] = React.useState<Request | null>(null);
+  const [detailLoading, setDetailLoading] = React.useState(false);
+
 
   const searchParams = useSearchParams();
   const statusParam = searchParams.get("status"); // Pending | Approved | Rejected
@@ -91,9 +127,31 @@ export default function RequestTable() {
     load();
   }, []);
 
+  const openDetailModal = async (code: string) => {
+    try {
+      setOpenDetail(true);
+      setDetailLoading(true);
+      setDetail(null);
+
+      const res = await apiFetch(`/requests/${code}`);
+
+      setDetail(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+
+
 
   /* ================= COLUMNS ================= */
   const columns: ColumnDef<Request, any>[] = [
+    {
+      accessorKey: "request_code",
+      header: "Request Code",
+    },
     {
       accessorKey: "created_at",
       header: "Date",
@@ -103,8 +161,11 @@ export default function RequestTable() {
       },
     },
     {
-      accessorKey: "application_name",
+      accessorKey: "application.name", // ⬅️ ini trick penting
+      id: "application",               // ⬅️ tetap kasih id
       header: "Application",
+      cell: ({ row }) => row.original.application?.name ?? "-",
+      filterFn: "includesString",
     },
     {
       accessorKey: "type",
@@ -120,13 +181,14 @@ export default function RequestTable() {
       filterFn: "equalsString",
       cell: ({ row }) => {
         const status = row.original.status;
+
         const color =
           status === "approved"
             ? "text-success"
             : status === "rejected"
               ? "text-danger"
               : "text-warning";
-              
+
         return (
           <span className={`font-medium capitalize ${color}`}>
             {status}
@@ -138,23 +200,25 @@ export default function RequestTable() {
       id: "role",
       header: "Role",
       cell: ({ row }) => {
-        const { type, old_role_name, new_role_name } = row.original;
+        const { type, old_role, new_role } = row.original;
 
+        // Application access → cuma new role
         if (type === "application_access") {
-          return new_role_name ?? "-";
+          return new_role?.name ?? "-";
         }
 
+        // Change role → old → new
         return (
           <div className="text-sm">
             <div className="text-muted-foreground">
-              {old_role_name ?? "-"} → {new_role_name ?? "-"}
+              {old_role?.name ?? "-"} → {new_role?.name ?? "-"}
             </div>
           </div>
         );
       },
     },
-
   ];
+
 
 
   /* ================= TABLE ================= */
@@ -289,9 +353,11 @@ export default function RequestTable() {
         <CardContent className="flex flex-wrap gap-4 mb-4">
           <Input
             placeholder="Search application..."
-            value={(table.getColumn("application_name")?.getFilterValue() ?? "") as string}
-            onChange={e =>
-              table.getColumn("application_name")?.setFilterValue(e.target.value)
+            value={
+              (table.getColumn("application")?.getFilterValue() ?? "") as string
+            }
+            onChange={(e) =>
+              table.getColumn("application")?.setFilterValue(e.target.value)
             }
             className="h-9 w-60 text-sm"
           />
@@ -353,7 +419,11 @@ export default function RequestTable() {
 
               <TableBody>
                 {table.getRowModel().rows.map(row => (
-                  <TableRow key={row.id}>
+                  <TableRow
+                    key={row.id}
+                    onClick={() => openDetailModal(row.original.request_code)}
+                    className="cursor-pointer hover:bg-muted/50"
+                  >
                     {row.getVisibleCells().map(cell => (
                       <TableCell key={cell.id}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -382,6 +452,121 @@ export default function RequestTable() {
         </CardFooter>
       </Card>
 
+      <Dialog open={openDetail} onOpenChange={setOpenDetail}>
+        <DialogContent className="max-w-2xl">
+
+          <DialogHeader>
+            <DialogTitle>
+              Request Detail
+            </DialogTitle>
+            <DialogDescription>
+              {detail?.request_code}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* LOADING */}
+          {detailLoading && (
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          )}
+
+          {/* CONTENT */}
+          {!detailLoading && detail && (
+            <div className="space-y-4 text-sm">
+
+              {/* BASIC INFO */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-muted-foreground">Application</p>
+                  <p className="font-medium">
+                    {detail.application.name}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-muted-foreground">Type</p>
+                  <p className="capitalize">
+                    {detail.type.replace("_", " ")}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-muted-foreground">Status</p>
+                  <p className="font-medium capitalize">
+                    {detail.status}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-muted-foreground">Date</p>
+                  <p>
+                    {new Date(detail.created_at).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* ROLE */}
+              <div>
+                <p className="text-muted-foreground mb-1">Role</p>
+
+                {detail.type === "application_access" ? (
+                  <p>{detail.new_role?.name}</p>
+                ) : (
+                  <p>
+                    {detail.old_role?.name} → {detail.new_role?.name}
+                  </p>
+                )}
+              </div>
+
+              {/* JUSTIFICATION */}
+              <div>
+                <p className="text-muted-foreground mb-1">Justification</p>
+                <p className="bg-muted p-3 rounded">
+                  {detail.justification || "-"}
+                </p>
+              </div>
+
+              {/* APPROVALS */}
+              <div>
+                <p className="text-muted-foreground mb-2">Approvals</p>
+
+                <div className="space-y-2">
+                  {detail.approvals.map(a => (
+                    <div
+                      key={a.id}
+                      className="flex justify-between border rounded p-2"
+                    >
+                      <span>
+                        Level {a.level} - {a.approver_id}
+                      </span>
+
+                      <span
+                        className={`capitalize font-medium ${a.status === "approved"
+                            ? "text-success"
+                            : a.status === "rejected"
+                              ? "text-danger"
+                              : "text-warning"
+                          }`}
+                      >
+                        {a.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          )}
+
+        </DialogContent>
+      </Dialog>
+
+
     </>
   );
+
+
 }
