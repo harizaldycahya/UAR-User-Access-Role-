@@ -43,6 +43,7 @@ import RequestTableSkeleton from "./RequestTableSkeleton";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { apiFetch } from "@/lib/api";
+import Swal from "sweetalert2";
 
 
 
@@ -172,6 +173,9 @@ export default function ApprovalTable() {
     }
   }, [statusParam]);
 
+  React.useEffect(() => {
+    loadData();
+  }, []);
 
   const filterByStatus = (
     status?: "pending" | "approved" | "rejected" | "history"
@@ -194,6 +198,51 @@ export default function ApprovalTable() {
     column.setFilterValue(status);
     router.replace(`/approvals?status=${status}`);
   };
+
+
+  const submitApproval = async (
+    approvalId: number,
+    action: "approve" | "reject"
+  ) => {
+    try {
+      const res = await apiFetch("/requests/approvals/action", {
+        method: "POST",
+        body: JSON.stringify({
+          approval_id: approvalId,
+          action,
+        }),
+      });
+
+      if (res?.success === false) {
+        throw new Error(res?.message || "Approval failed");
+      }
+
+      await Swal.fire({
+        icon: "success",
+        title: "Success",
+        text:
+          action === "approve"
+            ? "Request approved"
+            : "Request rejected",
+        confirmButtonText: "OK",
+      });
+
+      await loadData(); 
+
+      // refresh data
+      router.refresh?.(); // Next.js App Router
+      // atau trigger refetch kalau pakai react-query
+    } catch (err: any) {
+      console.error(err);
+
+      Swal.fire({
+        icon: "error",
+        title: "Failed",
+        text: err?.message || "Failed to process approval",
+      });
+    }
+  };
+
 
 
 
@@ -255,6 +304,36 @@ export default function ApprovalTable() {
         );
       },
     },
+    {
+      id: "actions",
+      header: "Action",
+      cell: ({ row }) => {
+        const { approval_status, approval_id } = row.original;
+
+        if (approval_status !== "pending") {
+          return <span className="text-muted-foreground text-sm">-</span>;
+        }
+
+        return (
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={() => submitApproval(approval_id, "approve")}
+            >
+              Approve
+            </Button>
+
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => submitApproval(approval_id, "reject")}
+            >
+              Reject
+            </Button>
+          </div>
+        );
+      },
+    }
 
   ];
 
@@ -271,6 +350,20 @@ export default function ApprovalTable() {
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const res = await apiFetch("/requests/approvals/me");
+      setData(res.data);
+    } catch (err) {
+      console.error(err);
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   if (loading) return <RequestTableSkeleton />;
 
