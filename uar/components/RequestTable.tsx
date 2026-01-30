@@ -210,7 +210,7 @@ export default function RequestTable() {
         // Change role → old → new
         return (
           <div className="text-sm">
-            <div className="text-muted-foreground">
+            <div>
               {old_role?.name ?? "-"} → {new_role?.name ?? "-"}
             </div>
           </div>

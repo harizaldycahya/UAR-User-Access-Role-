@@ -22,7 +22,7 @@ export const authMiddleware = async (req, res, next) => {
 
     // ambil username dari DB
     const [[user]] = await db.query(
-      `SELECT id, username FROM users WHERE id = ? LIMIT 1`,
+      `SELECT id, username, role FROM users WHERE id = ? LIMIT 1`,
       [userId]
     );
 
@@ -34,6 +34,7 @@ export const authMiddleware = async (req, res, next) => {
     req.user = {
       id: user.id,
       username: user.username,
+      role: user.role,
     };
 
     next();

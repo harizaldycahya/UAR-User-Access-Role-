@@ -16,7 +16,7 @@ export const login = async (req, res) => {
         u.password,
         r.code AS role
      FROM users u
-     JOIN roles r ON r.id = u.role_id
+     JOIN roles r ON r.id = u.role
      WHERE u.username = ? AND u.is_active = 1
      LIMIT 1`,
     [username]

@@ -67,6 +67,10 @@ type Request = {
   created_at: string;
 };
 
+interface ApprovalItem {
+  approval_status: "pending" | "approved" | "rejected";
+}
+
 
 const StatusBadge = ({ status }: { status: "pending" | "approved" | "rejected" }) => {
   const styles = {
@@ -97,10 +101,14 @@ export default function ApprovalTable() {
   const [columnFilters, setColumnFilters] = React.useState<any[]>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
-  const totalRequests = data.length;
-  const pendingCount = data.filter(r => r.approval_status === "pending").length;
-  const approvedCount = data.filter(r => r.approval_status === "approved").length;
-  const rejectedCount = data.filter(r => r.approval_status === "rejected").length;
+  const [summary, setSummary] = React.useState({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+  });
+
+  const [statusFilter, setStatusFilter] = React.useState<"pending" | "approved" | "rejected" | null>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -137,65 +145,82 @@ export default function ApprovalTable() {
 
   /* ================= FETCH DATA ================= */
 
-  React.useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await apiFetch("/requests/approvals/me");
-        setData(res.data);
-      } catch (err) {
-        console.error("FETCH APPROVALS ERROR:", err);
-        setData([]);
-      } finally {
-        setLoading(false);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      const endpoint =
+        statusParam === "pending" || !statusParam
+          ? "/requests/approvals/me"
+          : "/requests/approvals/me/history";
+
+      const res = await apiFetch(endpoint);
+
+      if (!res || res.success === false) {
+        throw new Error(res?.message || "Unknown API error");
       }
-    };
 
-    load();
-  }, []);
+      setData(res.data);
+    } catch (err: any) {
+      console.error("LOAD DATA ERROR:", err);
 
-  React.useEffect(() => {
-    const column = table.getColumn("approval_status");
-    if (!column) return;
+      Swal.fire({
+        icon: "error",
+        title: "Failed to load data",
+        text:
+          err?.message ||
+          err?.response?.data?.message ||
+          JSON.stringify(err),
+      });
 
-    if (!statusParam) {
-      column.setFilterValue(undefined);
-      return;
+      setData([]);
+    } finally {
+      setLoading(false);
     }
-
-    if (statusParam === "pending") {
-      column.setFilterValue("pending");
-      return;
-    }
-
-    if (statusParam === "history") {
-      column.setFilterValue(["approved", "rejected"]);
-      return;
-    }
-  }, [statusParam]);
+  };
 
   React.useEffect(() => {
     loadData();
+  }, [statusParam]);
+
+  React.useEffect(() => {
+    loadSummary();
   }, []);
+
+
+  const loadSummary = async () => {
+    try {
+      const pendingRes = await apiFetch("/requests/approvals/me"); // pending
+      const historyRes = await apiFetch("/requests/approvals/me/history"); // approved + rejected
+
+      const pending = pendingRes.data.length;
+      const approved = historyRes.data.filter(
+        (i: ApprovalItem) => i.approval_status === "approved"
+      ).length;
+
+      const rejected = historyRes.data.filter(
+        (i: ApprovalItem) => i.approval_status === "rejected"
+      ).length;
+
+      setSummary({
+        total: pending + approved + rejected,
+        pending,
+        approved,
+        rejected,
+      });
+    } catch (err) {
+      console.error("LOAD SUMMARY ERROR:", err);
+    }
+  };
 
   const filterByStatus = (
     status?: "pending" | "approved" | "rejected" | "history"
   ) => {
-    const column = table.getColumn("approval_status");
-    if (!column) return;
-
     if (!status) {
-      column.setFilterValue(undefined);
       router.replace("/approvals");
       return;
     }
 
-    if (status === "history") {
-      column.setFilterValue(["approved", "rejected"]);
-      router.replace("/approvals?status=history");
-      return;
-    }
-
-    column.setFilterValue(status);
     router.replace(`/approvals?status=${status}`);
   };
 
@@ -213,38 +238,32 @@ export default function ApprovalTable() {
         }),
       });
 
-      if (res?.success === false) {
-        throw new Error(res?.message || "Approval failed");
+      if (!res || res.success === false) {
+        throw new Error(res?.message || "Approval API failed");
       }
 
       await Swal.fire({
         icon: "success",
         title: "Success",
-        text:
-          action === "approve"
-            ? "Request approved"
-            : "Request rejected",
-        confirmButtonText: "OK",
+        text: action === "approve"
+          ? "Request approved"
+          : "Request rejected",
       });
 
-      await loadData(); 
-
-      // refresh data
-      router.refresh?.(); // Next.js App Router
-      // atau trigger refetch kalau pakai react-query
+      await loadData();
     } catch (err: any) {
-      console.error(err);
+      console.error("APPROVAL ERROR:", err);
 
       Swal.fire({
         icon: "error",
-        title: "Failed",
-        text: err?.message || "Failed to process approval",
+        title: "Approval Failed",
+        text:
+          err?.message ||
+          err?.response?.data?.message ||
+          JSON.stringify(err),
       });
     }
   };
-
-
-
 
   /* ================= COLUMNS ================= */
   const columns: ColumnDef<Request, any>[] = [
@@ -297,7 +316,7 @@ export default function ApprovalTable() {
 
         return (
           <div className="text-sm">
-            <div className="text-muted-foreground">
+            <div>
               {old_role_name ?? "-"} → {new_role_name ?? "-"}
             </div>
           </div>
@@ -351,19 +370,6 @@ export default function ApprovalTable() {
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const res = await apiFetch("/requests/approvals/me");
-      setData(res.data);
-    } catch (err) {
-      console.error(err);
-      setData([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
 
   if (loading) return <RequestTableSkeleton />;
 
@@ -377,12 +383,12 @@ export default function ApprovalTable() {
               Total Requests
             </p>
             <h3 className="text-2xl font-bold">
-              {loading ? <Skeleton className="h-8 w-16" /> : totalRequests}
+              {loading ? <Skeleton className="h-8 w-16" /> : summary.total}
             </h3>
             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3 text-primary" />
               <span>
-                {loading ? '...' : totalRequests} Request
+                {loading ? '...' : summary.total} Request
               </span>
             </p>
           </CardContent>
@@ -396,12 +402,12 @@ export default function ApprovalTable() {
               Pending Approval
             </p>
             <h3 className="text-2xl font-bold text-warning">
-              {loading ? <Skeleton className="h-8 w-16" /> : pendingCount}
+              {loading ? <Skeleton className="h-8 w-16" /> : summary.pending}
             </h3>
             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3 text-primary" />
               <span>
-                {loading ? '...' : pendingCount} Request
+                {loading ? '...' : summary.pending} Request
               </span>
             </p>
           </CardContent>
@@ -415,12 +421,12 @@ export default function ApprovalTable() {
               Approved
             </p>
             <h3 className="text-2xl font-bold text-success">
-              {loading ? <Skeleton className="h-8 w-16" /> : approvedCount}
+              {loading ? <Skeleton className="h-8 w-16" /> : summary.approved}
             </h3>
             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3 text-primary" />
               <span>
-                {loading ? '...' : approvedCount} Request
+                {loading ? '...' : summary.approved} Request
               </span>
             </p>
           </CardContent>
@@ -434,12 +440,12 @@ export default function ApprovalTable() {
               Rejected
             </p>
             <h3 className="text-2xl font-bold text-destructive">
-              {loading ? <Skeleton className="h-8 w-16" /> : rejectedCount}
+              {loading ? <Skeleton className="h-8 w-16" /> : summary.rejected}
             </h3>
             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3 text-primary" />
               <span>
-                {loading ? '...' : rejectedCount} Request
+                {loading ? '...' : summary.rejected} Request
               </span>
             </p>
           </CardContent>

@@ -90,12 +90,12 @@ export const createRequest = async (req, res) => {
     // Ambil nomor terakhir di bulan ini + tipe ini
     const [[last]] = await conn.query(
       `
-  SELECT request_code
-  FROM requests
-  WHERE request_code LIKE ?
-  ORDER BY id DESC
-  LIMIT 1
-  `,
+        SELECT request_code
+        FROM requests
+        WHERE request_code LIKE ?
+        ORDER BY id DESC
+        LIMIT 1
+      `,
       [`${prefix}-${yearMonth}-%`]
     );
 
@@ -124,17 +124,20 @@ export const createRequest = async (req, res) => {
     // Sesuaikan dengan tabelmu, ini cuma template
     // ================================
 
-    const [[atasan]] = await conn.query(
-      `SELECT atasan AS approver_id FROM users WHERE id = ?`,
-      [userId]
-    );
+    // const [[atasan]] = await conn.query(
+    //   `SELECT atasan AS approver_id FROM users WHERE id = ?`,
+    //   [userId]
+    // );
+    const atasan = {
+      approver_id: 'KT-23031284'   // pastikan user ID ini ADA di tabel users
+    };
 
     const kadiv = {
-      approver_id: 'KADIV'   // pastikan user ID ini ADA di tabel users
+      approver_id: 'KT-18040465'   // pastikan user ID ini ADA di tabel users
     };
 
     const [[hrd]] = await conn.query(
-      `SELECT username AS approver_id FROM users WHERE role_id = '3' LIMIT 1`
+      `SELECT username AS approver_id FROM users WHERE role = '3' LIMIT 1`
     );
 
     const [[appOwner]] = await conn.query(
@@ -405,16 +408,16 @@ export const getRequestDetail = async (req, res) => {
 
       old_role: first.old_role_id
         ? {
-            id: first.old_role_id,
-            name: first.old_role_name,
-          }
+          id: first.old_role_id,
+          name: first.old_role_name,
+        }
         : null,
 
       new_role: first.new_role_id
         ? {
-            id: first.new_role_id,
-            name: first.new_role_name,
-          }
+          id: first.new_role_id,
+          name: first.new_role_name,
+        }
         : null,
 
       approvals: [],
@@ -472,43 +475,54 @@ export const getMyApprovals = async (req, res) => {
 
     const [rows] = await db.query(
       `
-      SELECT
-        ap.id AS approval_id,
-        ap.level,
-        ap.status AS approval_status,
+        SELECT
+          ap.id AS approval_id,
+          ap.level,
+          ap.status AS approval_status,
 
-        r.id AS id,
-        r.request_code,     -- ⬅️ tampilkan code
-        r.type,
-        r.justification,
-        r.status,
-        r.created_at,
+          r.id AS id,
+          r.request_code,
+          r.type,
+          r.justification,
+          r.status,
+          r.created_at,
 
-        a.id AS application_id,
-        a.name AS application_name,
+          a.id AS application_id,
+          a.name AS application_name,
 
-        old_role.id AS old_role_id,
-        old_role.name AS old_role_name,
+          old_role.id AS old_role_id,
+          old_role.name AS old_role_name,
 
-        new_role.id AS new_role_id,
-        new_role.name AS new_role_name
+          new_role.id AS new_role_id,
+          new_role.name AS new_role_name
 
-      FROM approvals ap
+        FROM approvals ap
 
-      JOIN requests r
-        ON r.request_code = ap.request_code   -- ⬅️ GANTI DI SINI
+        JOIN requests r
+          ON r.request_code = ap.request_code
 
-      JOIN applications a
-        ON a.id = r.application_id
+        JOIN applications a
+          ON a.id = r.application_id
 
-      LEFT JOIN application_roles old_role
-        ON old_role.id = r.old_role_id
+        LEFT JOIN application_roles old_role
+          ON old_role.id = r.old_role_id
 
-      LEFT JOIN application_roles new_role
-        ON new_role.id = r.new_role_id
+        LEFT JOIN application_roles new_role
+          ON new_role.id = r.new_role_id
 
-      WHERE ap.approver_id = ?
-      ORDER BY r.created_at DESC
+        WHERE ap.approver_id = ?
+        AND ap.status = 'pending'
+
+        AND NOT EXISTS (
+          SELECT 1
+          FROM approvals prev
+          WHERE prev.request_code = ap.request_code
+            AND prev.level < ap.level
+            AND prev.status != 'approved'
+        )
+
+        ORDER BY r.created_at DESC
+
       `,
       [username]
     );
@@ -658,14 +672,64 @@ export const approvalAction = async (req, res) => {
     // kalau tidak ada pending → request approved
     if (pending.total === 0) {
       await conn.query(
+        `UPDATE requests SET status = 'approved' WHERE request_code = ?`,
+        [approval.request_code]
+      );
+
+      const [[request]] = await conn.query(
         `
-        UPDATE requests
-        SET status = 'approved'
+        SELECT
+          user_id,
+          application_id,
+          old_role_id,
+          new_role_id,
+          type
+        FROM requests
         WHERE request_code = ?
         `,
         [approval.request_code]
       );
+
+      if (request.type === "application_access") {
+        // INSERT akses baru
+        await conn.query(
+          `
+          INSERT INTO user_applications
+            (user_id, application_id, application_roles_id, created_at)
+          VALUES (?, ?, ?, NOW())
+          `,
+          [
+            request.user_id,
+            request.application_id,
+            request.new_role_id
+          ]
+        );
+      }
+
+      if (request.type === "change_role") {
+        // UPDATE role existing
+        const [result] = await conn.query(
+          `
+          UPDATE user_applications
+          SET application_roles_id = ?, updated_at = NOW()
+          WHERE user_id = ?
+            AND application_id = ?
+            AND application_roles_id = ?
+          `,
+          [
+            request.new_role_id,
+            request.user_id,
+            request.application_id,
+            request.old_role_id
+          ]
+        );
+
+        if (result.affectedRows === 0) {
+          throw new Error("User application tidak ditemukan untuk change role");
+        }
+      }
     }
+
 
     await conn.commit();
 
@@ -682,6 +746,64 @@ export const approvalAction = async (req, res) => {
     });
   } finally {
     conn.release();
+  }
+};
+
+export const getMyApprovalHistory = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const [[user]] = await db.query(
+      `SELECT username FROM users WHERE id = ?`,
+      [userId]
+    );
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User tidak ditemukan",
+      });
+    }
+
+    const [rows] = await db.query(
+      `
+      SELECT
+        ap.id AS approval_id,
+        ap.level,
+        ap.status AS approval_status,
+        ap.approved_at,
+
+        r.request_code,
+        r.type,
+        r.justification,
+        r.created_at,
+
+        a.name AS application_name,
+
+        old_role.name AS old_role_name,
+        new_role.name AS new_role_name
+
+      FROM approvals ap
+      JOIN requests r ON r.request_code = ap.request_code
+      JOIN applications a ON a.id = r.application_id
+      LEFT JOIN application_roles old_role ON old_role.id = r.old_role_id
+      LEFT JOIN application_roles new_role ON new_role.id = r.new_role_id
+
+      WHERE ap.approver_id = ?
+        AND ap.status IN ('approved', 'rejected')
+
+      ORDER BY ap.approved_at DESC
+      `,
+      [user.username]
+    );
+
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch approval history",
+    });
   }
 };
 
