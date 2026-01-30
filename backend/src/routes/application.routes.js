@@ -18,8 +18,8 @@ router.get("/", getApplications);
 router.get("/by-code/:code", getApplicationByCode);
 router.get("/:id", getApplicationById);
 
-router.post("/", roleMiddleware(["admin"]), createApplication);
-router.put("/:id", roleMiddleware(["admin"]), updateApplication);
-router.delete("/:id", roleMiddleware(["admin"]), deleteApplication);
+router.post("/", roleMiddleware([1]), createApplication);
+router.put("/:id", roleMiddleware([1]), updateApplication);
+router.delete("/:id", roleMiddleware([1]), deleteApplication);
 
 export default router;
