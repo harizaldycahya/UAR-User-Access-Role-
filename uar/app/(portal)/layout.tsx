@@ -64,15 +64,75 @@ type MenuGroup = {
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
     const [user, setUser] = React.useState<any>(null);
+    const [profile, setProfile] = React.useState<any>(null);
+    const [Foto, setFoto] = React.useState<any>(null);
     const pathname = usePathname();
     const { theme } = useTheme();
     const [mounted, setMounted] = React.useState(false);
 
     React.useEffect(() => setMounted(true), []);
+
     React.useEffect(() => {
         const storedUser = localStorage.getItem("user");
         if (storedUser) setUser(JSON.parse(storedUser));
     }, []);
+
+    React.useEffect(() => {
+        if (!user?.username) return;
+
+        const fetchProfile = async () => {
+            try {
+                const res = await fetch(
+                    `https://personasys.triasmitra.com/api/auth/get-profile-uar?nik=${user.username}`
+
+                );
+
+                const result = await res.json();
+
+                if (result.Success) {
+                    const d = result.data;
+
+                    setProfile({
+                        name: d.nama,
+                        email: d.email,
+                        phone: d.telp,
+                        department: d.nama_divisi,
+                        position: d.jabatan,
+                        photo: d.foto,
+                        nik: d.nik,
+                    });
+                }
+            } catch (error) {
+                console.error("Failed fetch profile:", error);
+            }
+        };
+
+        fetchProfile();
+    }, [user]);
+
+    React.useEffect(() => {
+        if (!profile?.nik) return;
+
+        const fetchPhoto = async () => {
+            try {
+                const res = await fetch(
+                    `https://personasys.triasmitra.com/api/aas-gateway/get-photo-url?nik=${profile.nik}`
+                );
+
+                const result = await res.json();
+
+                if (result.Success) {
+                    setFoto(result.photo_url);
+                }
+            } catch (err) {
+                console.error("Failed fetch photo:", err);
+            }
+        };
+
+        fetchPhoto();
+    }, [profile]);
+
+
 
     const segments = React.useMemo(() => pathname?.split("/").filter(Boolean) || [], [pathname]);
 
@@ -127,11 +187,20 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 ],
             },
         ],
+        hrd: [
+            {
+                label: "Request Approval",
+                items: [
+                    { label: "Approval Pending", icon: <Clock className="h-5 w-5" />, href: "/approvals?status=pending" },
+                    { label: "History Approvals", icon: <CheckCircle className="h-5 w-5" />, href: "/approvals?status=history" },
+                ],
+            },
+        ],
     };
 
     const renderMenu = () => {
         if (!user) return null;
-        const groups = menuByRole[user.role] || [];
+        const groups = menuByRole[user.role_name] || [];
         return groups.map((group, idx) => (
             <SidebarGroup key={idx}>
                 {group.label && (
@@ -217,24 +286,39 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Avatar className="h-11 w-11 cursor-pointer ring-2 ring-border">
-                                            <AvatarImage src="/avatar.png" />
-                                            <AvatarFallback>Z</AvatarFallback>
+                                            <AvatarImage
+                                                src={Foto || undefined}
+                                                alt={profile?.name || "User"}
+                                            />
+                                            <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+                                                {profile?.name
+                                                    ?.split(" ")
+                                                    .map((n: string) => n[0])
+                                                    .join("") || "U"}
+                                            </AvatarFallback>
                                         </Avatar>
                                     </DropdownMenuTrigger>
 
                                     <DropdownMenuContent align="end" className="w-64 p-2">
                                         <DropdownMenuLabel className="p-3">
                                             <div className="flex flex-col">
-                                                <span className="text-lg font-semibold">Zaldy</span>
-                                                <span className="text-sm text-muted-foreground">example@company.com</span>
+                                                <span className="text-lg font-semibold">
+                                                    {profile?.name || "Loading..."}
+                                                </span>
+
+                                                <span className="text-sm text-muted-foreground">
+                                                    {profile?.email || "-"}
+                                                </span>
                                             </div>
                                         </DropdownMenuLabel>
 
                                         <DropdownMenuSeparator />
 
-                                        <DropdownMenuItem className="py-3">
-                                            <User className="mr-3 h-5 w-5" /> Profile
-                                        </DropdownMenuItem>
+                                        <a href='/profile'>
+                                            <DropdownMenuItem className="py-3">
+                                                <User className="mr-3 h-5 w-5" /> Profile
+                                            </DropdownMenuItem>
+                                        </a>
 
                                         <DropdownMenuItem className="py-3">
                                             <Settings className="mr-3 h-5 w-5" /> Settings
@@ -243,10 +327,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                         <DropdownMenuSeparator />
 
                                         <DropdownMenuItem className="py-3 text-destructive " onClick={logout}>
-                                            <DropdownMenuItem
-                                                className="py-3 text-destructive cursor-pointer"
-
-                                            >
+                                            <DropdownMenuItem className="py-3 text-destructive cursor-pointer">
                                                 <LogOut className="mr-3 h-5 w-5" /> Logout
                                             </DropdownMenuItem>
                                         </DropdownMenuItem>

@@ -55,8 +55,6 @@ export default function LoginPage() {
     }
   };
 
-
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && username && password) {
       submit();

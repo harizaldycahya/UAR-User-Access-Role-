@@ -128,6 +128,7 @@ export const createRequest = async (req, res) => {
     //   `SELECT atasan AS approver_id FROM users WHERE id = ?`,
     //   [userId]
     // );
+    
     const atasan = {
       approver_id: 'KT-23031284'   // pastikan user ID ini ADA di tabel users
     };

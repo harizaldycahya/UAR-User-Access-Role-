@@ -13,28 +13,10 @@ export const authMiddleware = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // decoded biasanya cuma { id: ... }
-    const userId = decoded.id;
-
-    if (!userId) {
-      return res.status(401).json({ message: "Token tidak valid" });
-    }
-
-    // ambil username dari DB
-    const [[user]] = await db.query(
-      `SELECT id, username, role FROM users WHERE id = ? LIMIT 1`,
-      [userId]
-    );
-
-    if (!user) {
-      return res.status(401).json({ message: "User tidak ditemukan" });
-    }
-
-    // set user lengkap
     req.user = {
-      id: user.id,
-      username: user.username,
-      role: user.role,
+      id: decoded.id,
+      username: decoded.username,
+      role_id: decoded.role_id,
     };
 
     next();
@@ -43,3 +25,4 @@ export const authMiddleware = async (req, res, next) => {
     return res.status(401).json({ message: "Token tidak valid" });
   }
 };
+
