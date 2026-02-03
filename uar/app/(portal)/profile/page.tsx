@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose
 } from "@/components/ui/dialog";
 
 import { Label } from "@/components/ui/label";
@@ -131,7 +132,6 @@ export default function ProfilePage() {
   const [profile, setProfile] = React.useState<any>(null);
   const [Foto, setFoto] = React.useState<any>(null);
 
-  const [showChangePassword, setShowChangePassword] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -197,7 +197,6 @@ export default function ProfilePage() {
 
       setOldPassword("");
       setNewPassword("");
-      setShowChangePassword(false);
     } catch (err: any) {
       await Swal.fire({
         icon: "error",
@@ -542,7 +541,7 @@ export default function ProfilePage() {
                           <p className="text-foreground text-sm font-medium">Password</p>
                           <p className="text-muted-foreground text-xs">Last changed 3 months ago</p>
                         </div>
-                        <Dialog open={showChangePassword} onOpenChange={setShowChangePassword}>
+                        <Dialog>
                           <DialogTrigger asChild>
                             <Button variant="outline" size="sm">
                               Change Password
@@ -559,7 +558,7 @@ export default function ProfilePage() {
 
                             <div className="space-y-4 py-2">
                               <div>
-                                <Label>Old Password</Label>
+                                <Label className="mb-2">Old Password</Label>
                                 <Input
                                   type="password"
                                   value={oldPassword}
@@ -569,7 +568,7 @@ export default function ProfilePage() {
                               </div>
 
                               <div>
-                                <Label>New Password</Label>
+                                <Label className="mb-2">New Password</Label>
                                 <Input
                                   type="password"
                                   value={newPassword}
@@ -580,24 +579,23 @@ export default function ProfilePage() {
                             </div>
 
                             <DialogFooter>
-                              <Button
-                                variant="outline"
-                                onClick={() => setShowChangePassword(false)}
-                                disabled={isChangingPassword}
-                              >
-                                Cancel
-                              </Button>
+                              <DialogClose asChild>
+                                <Button variant="outline">
+                                  Cancel
+                                </Button>
+                              </DialogClose>
 
-                              <Button
-                                onClick={handleChangePassword}
-                                disabled={isChangingPassword}
-                              >
-                                {isChangingPassword ? "Saving..." : "Save"}
-                              </Button>
+                              <DialogClose asChild>
+                                <Button
+                                  onClick={handleChangePassword}
+                                  disabled={isChangingPassword}
+                                >
+                                  {isChangingPassword ? "Saving..." : "Save"}
+                                </Button>
+                              </DialogClose>
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
-
 
                       </div>
                     </div>
