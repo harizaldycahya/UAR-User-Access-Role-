@@ -10,6 +10,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +29,8 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { User, Mail, Phone, Building, MapPin, Calendar, Camera } from "lucide-react";
 import { Select, SelectContent, SelectValue, SelectTrigger, SelectItem } from "@/components/ui/select";
+import Swal from "sweetalert2";
+import React from "react";
 
 // Skeleton Components
 function ProfileCardSkeleton() {
@@ -114,35 +127,18 @@ function SecuritySettingsSkeleton() {
 export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState({
-    name: "John Doe",
-    email: "john.doe@company.com",
-    phone: "+62 812 3456 7890",
-    department: "Information Technology",
-    position: "Senior Developer",
-    location: "Jakarta, Indonesia",
-    joinDate: "2022-01-15",
+  const [user, setUser] = React.useState<any>(null);
+  const [profile, setProfile] = React.useState<any>(null);
+  const [Foto, setFoto] = React.useState<any>(null);
 
-    supervisor_id: "spv-001",
-    supervisor: {
-      id: "spv-001",
-      name: "Michael Scott",
-    },
-  });
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  useEffect(() => {
-    async function fetchProfile() {
-      try {
-        // const res = await fetch("/api/profile");
-        // const data = await res.json();
-        // setProfile(data);
-
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchProfile();
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) setUser(JSON.parse(storedUser));
   }, []);
 
   const handleSave = () => {
@@ -150,7 +146,134 @@ export default function ProfilePage() {
     setIsEditing(false);
     alert("Profile updated successfully!");
   };
-  
+
+  const handleChangePassword = async () => {
+    if (!oldPassword || !newPassword) {
+      await Swal.fire({
+        icon: "warning",
+        title: "Validation",
+        text: "Password lama dan baru wajib diisi",
+      });
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      await Swal.fire({
+        icon: "warning",
+        title: "Validation",
+        text: "Password baru minimal 8 karakter",
+      });
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        "http://localhost:5000/api/auth/change-password",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ oldPassword, newPassword }),
+        }
+      );
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.message || "Gagal ganti password");
+      }
+
+      await Swal.fire({
+        icon: "success",
+        title: "Success",
+        text: "Password berhasil diubah",
+      });
+
+      setOldPassword("");
+      setNewPassword("");
+      setShowChangePassword(false);
+    } catch (err: any) {
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: err.message || "Gagal mengganti password",
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+
+
+
+  React.useEffect(() => {
+    if (!user?.username) return;
+
+    const fetchProfile = async () => {
+      try {
+        setIsLoading(true);
+
+        const res = await fetch(
+          `https://personasys.triasmitra.com/api/auth/get-profile-uar?nik=${user.username}`
+        );
+
+        const result = await res.json();
+
+        if (result.Success) {
+          const d = result.data;
+
+          setProfile({
+            name: d.nama,
+            email: d.email,
+            phone: d.telp,
+            department: d.nama_divisi,
+            position: d.posisi,
+            photo: d.foto,
+            nik: d.nik,
+            joined: d.tanggal_masuk,
+            location: d.lokasi_kerja,
+          });
+        }
+      } catch (error) {
+        console.error("Failed fetch profile:", error);
+      } finally {
+        setIsLoading(false); // ✅ WAJIB
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
+
+
+  React.useEffect(() => {
+    if (!profile?.nik) return;
+
+    const fetchPhoto = async () => {
+      try {
+        const res = await fetch(
+          `https://personasys.triasmitra.com/api/aas-gateway/get-photo-url?nik=${profile.nik}`
+        );
+
+        const result = await res.json();
+
+        if (result.Success) {
+          setFoto(result.photo_url);
+        }
+      } catch (err) {
+        console.error("Failed fetch photo:", err);
+      }
+    };
+
+    fetchPhoto();
+  }, [profile]);
+
+
 
   return (
     <main className="min-h-screen bg-background p-6">
@@ -176,9 +299,15 @@ export default function ProfilePage() {
                   <div className="flex flex-col items-center text-center">
                     <div className="relative mb-4">
                       <Avatar className="w-32 h-32">
-                        <AvatarImage src="" />
+                        <AvatarImage
+                          src={Foto || undefined}
+                          alt={profile?.name || "User"}
+                        />
                         <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-                          {profile.name.split(" ").map(n => n[0]).join("")}
+                          {profile?.name
+                            ?.split(" ")
+                            .map((n: string) => n[0])
+                            .join("") || "U"}
                         </AvatarFallback>
                       </Avatar>
                       <button className="absolute bottom-0 right-0 w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center hover:bg-primary/90 transition-colors">
@@ -187,13 +316,13 @@ export default function ProfilePage() {
                     </div>
 
                     <h2 className="text-xl font-semibold text-foreground mb-1">
-                      {profile.name}
+                      {profile?.name}
                     </h2>
                     <p className="text-sm text-muted-foreground mb-1">
-                      {profile.position}
+                      {profile.location}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {profile.department}
+                      {profile.department || "-"}
                     </p>
 
                     <Separator className="my-4" />
@@ -213,7 +342,7 @@ export default function ProfilePage() {
                       </div>
                       <div className="flex items-center text-sm">
                         <Calendar className="w-4 h-4 mr-3 text-muted-foreground" />
-                        <span className="text-foreground">Joined {profile.joinDate}</span>
+                        <span className="text-foreground">Joined {profile.joined} </span>
                       </div>
                     </div>
                   </div>
@@ -238,7 +367,7 @@ export default function ProfilePage() {
                       <CardDescription>Manage your personal details</CardDescription>
                     </div>
 
-                    {!isEditing && (
+                    {/* {!isEditing && (
                       <Button
                         onClick={() => setIsEditing(true)}
                         variant="outline"
@@ -246,7 +375,7 @@ export default function ProfilePage() {
                       >
                         Edit Profile
                       </Button>
-                    )}
+                    )} */}
                   </CardHeader>
 
                   <CardContent className="p-6">
@@ -413,9 +542,63 @@ export default function ProfilePage() {
                           <p className="text-foreground text-sm font-medium">Password</p>
                           <p className="text-muted-foreground text-xs">Last changed 3 months ago</p>
                         </div>
-                        <Button variant="outline" size="sm">
-                          Change Password
-                        </Button>
+                        <Dialog open={showChangePassword} onOpenChange={setShowChangePassword}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              Change Password
+                            </Button>
+                          </DialogTrigger>
+
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Change Password</DialogTitle>
+                              <DialogDescription>
+                                Enter your old password and a new password.
+                              </DialogDescription>
+                            </DialogHeader>
+
+                            <div className="space-y-4 py-2">
+                              <div>
+                                <Label>Old Password</Label>
+                                <Input
+                                  type="password"
+                                  value={oldPassword}
+                                  onChange={(e) => setOldPassword(e.target.value)}
+                                  placeholder="Old password"
+                                />
+                              </div>
+
+                              <div>
+                                <Label>New Password</Label>
+                                <Input
+                                  type="password"
+                                  value={newPassword}
+                                  onChange={(e) => setNewPassword(e.target.value)}
+                                  placeholder="New password"
+                                />
+                              </div>
+                            </div>
+
+                            <DialogFooter>
+                              <Button
+                                variant="outline"
+                                onClick={() => setShowChangePassword(false)}
+                                disabled={isChangingPassword}
+                              >
+                                Cancel
+                              </Button>
+
+                              <Button
+                                onClick={handleChangePassword}
+                                disabled={isChangingPassword}
+                              >
+                                {isChangingPassword ? "Saving..." : "Save"}
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+
+
                       </div>
                     </div>
                   </CardContent>
