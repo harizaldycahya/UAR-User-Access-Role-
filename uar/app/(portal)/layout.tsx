@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from "next/link";
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import {
@@ -212,10 +213,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                     {group.items.map((item, i) => (
                         <SidebarMenuItem key={i}>
                             <SidebarMenuButton asChild className="h-12 rounded-lg hover:bg-accent">
-                                <a href={item.href} className="flex gap-3 px-4 items-center">
+                                <Link href={item.href} className="flex gap-3 px-4 items-center">
                                     {item.icon}
                                     {item.label}
-                                </a>
+                                </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     ))}

@@ -1,6 +1,8 @@
 import bcrypt from "bcrypt";
 import { db } from "../config/db.js";
 import { signToken } from "../utils/jwt.js";
+import axios from "axios";
+
 
 export const login = async (req, res) => {
   const { username, password } = req.body;
@@ -62,6 +64,83 @@ export const login = async (req, res) => {
   });
 };
 
+export const me = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const [[user]] = await db.query(
+      `SELECT 
+        u.id,
+        u.username,
+        u.nama_user,
+        u.is_active,
+        u.role_id,
+        r.code AS role_name,
+        u.created_at,
+        u.updated_at,
+        u.last_password_changed_at,
+        u.current_login_at,
+        u.current_login_ip,
+        u.prev_login_at,
+        u.prev_login_ip
+       FROM users u
+       JOIN roles r ON r.id = u.role_id
+       WHERE u.id = ? AND u.is_active = 1
+       LIMIT 1`,
+      [userId]
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User tidak ditemukan",
+      });
+    }
+
+    const nik = user.username;
+
+    let hrProfile = null;
+    let photoUrl = null;
+
+    try {
+      const hrRes = await axios.get(
+        "https://personasys.triasmitra.com/api/auth/get-profile-uar",
+        { params: { nik }, timeout: 5000 }
+      );
+
+      if (hrRes.data?.Success) {
+        hrProfile = hrRes.data.data;
+
+        // ambil foto kalau HR profile sukses
+        try {
+          const photoRes = await axios.get(
+            "https://personasys.triasmitra.com/api/aas-gateway/get-photo-url",
+            { params: { nik }, timeout: 5000 }
+          );
+
+          if (photoRes.data?.Success) {
+            photoUrl = photoRes.data.photo_url;
+          }
+        } catch (photoErr) {
+          console.error("PHOTO API ERROR:", photoErr.message);
+        }
+      }
+    } catch (apiErr) {
+      console.error("HR API ERROR:", apiErr.message);
+    }
+
+    return res.json({
+      user,
+      hr_profile: hrProfile,
+      photo_url: photoUrl,
+    });
+  } catch (err) {
+    console.error("AUTH ME ERROR:", err);
+    return res.status(500).json({
+      message: "Gagal mengambil data user",
+    });
+  }
+};
+
 export const changePassword = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -104,9 +183,14 @@ export const changePassword = async (req, res) => {
 
     // update password
     await db.query(
-      `UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?`,
+      `UPDATE users 
+      SET password = ?, 
+          updated_at = NOW(),
+          last_password_changed_at = NOW()
+      WHERE id = ?`,
       [hashedPassword, userId]
     );
+
 
     return res.json({
       success: true,

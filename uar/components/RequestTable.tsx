@@ -69,6 +69,7 @@ type Approval = {
   id: number;
   level: number;
   approver_id: string;
+  approver_name: string;
   status: "pending" | "approved" | "rejected";
   created_at: string;
 };
@@ -540,7 +541,7 @@ export default function RequestTable() {
                       className="flex justify-between border rounded p-2"
                     >
                       <span>
-                        Level {a.level} - {a.approver_id}
+                        Level {a.level} ( {a.approver_id} ) {a.approver_name}
                       </span>
 
                       <span

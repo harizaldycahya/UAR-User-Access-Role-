@@ -24,6 +24,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import * as Icons from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
+interface Role {
+  id: number;
+  name: string;
+}
+
 interface Application {
   id: number;
   code: string;
@@ -33,6 +38,7 @@ interface Application {
   color: string;
   has_access: boolean;
   granted_at: string | null;
+  role: Role | null;
 }
 
 interface Notification {
@@ -43,6 +49,8 @@ interface Notification {
   date: string;
   active: string;
 }
+
+
 
 export default function DashboardPage() {
   const [applications, setApplications] = React.useState<Application[]>([]);
@@ -59,8 +67,15 @@ export default function DashboardPage() {
   React.useEffect(() => {
     const load = async () => {
       try {
-          const res = await apiFetch("/application-users");
-          setApplications(Array.isArray(res) ? res : []);
+        const res = await apiFetch("/application-users");
+
+        const apps =
+          Array.isArray(res) ? res :
+            Array.isArray(res?.data) ? res.data :
+              Array.isArray(res?.data?.data) ? res.data.data :
+                [];
+
+        setApplications(apps);
       } catch (err) {
         console.error(err);
         setApplications([]);
@@ -74,6 +89,14 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-background p-6">
+
+      <h1 className="text-3xl font-semibold text-foreground mb-2">
+        Dashboard
+      </h1>
+      <p className="text-muted-foreground text-sm">
+        Overview of request status, approvals, and system activity
+      </p>
+      <div className="min-h-8"></div>
       {/* Quick Insights */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         {/* Total Applications */}
@@ -297,7 +320,9 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={app.id}
-                      className="rounded-lg border border-border/40 hover:border-border hover:shadow-lg transition p-4 bg-card"
+                      className={`rounded-lg border border-border/40 transition p-4 bg-card
+                        ${!app.has_access ? "opacity-60 grayscale cursor-not-allowed" : "hover:border-border hover:shadow-lg"}
+                      `}
                     >
                       <div className="flex items-start gap-3 mb-4">
                         <div
@@ -320,17 +345,24 @@ export default function DashboardPage() {
                           <p className="text-xs text-muted-foreground truncate">
                             {app.name}
                           </p>
+                          {app.role ? (
+                            <span className="text-xs text-muted-foreground">
+                              Role: {app.role.name}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              <div className="min-h-4"></div>
+                            </span>
+                          )}
                         </div>
                       </div>
-
                       <Button
                         className="w-full h-9 text-xs"
                         variant={app.has_access ? "default" : "outline"}
+                        disabled={!app.has_access}
                         onClick={() => {
                           if (app.has_access) {
                             window.open(app.url, "_blank");
-                          } else {
-                            router.push(`/request-access?appId=${app.id}`);
                           }
                         }}
                       >
@@ -343,11 +375,12 @@ export default function DashboardPage() {
                           ) : (
                             <>
                               <Lock className="h-3.5 w-3.5" />
-                              <span>Request Access</span>
+                              <span>No Access</span>
                             </>
                           )}
                         </span>
                       </Button>
+
                     </div>
                   );
                 })

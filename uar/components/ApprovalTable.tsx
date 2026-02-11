@@ -185,7 +185,7 @@ export default function ApprovalTable() {
 
   React.useEffect(() => {
     loadSummary();
-  }, []);
+  }, [statusParam]);
 
 
   const loadSummary = async () => {
@@ -250,7 +250,17 @@ export default function ApprovalTable() {
           : "Request rejected",
       });
 
+      // 🔥 Redirect ke page yang sesuai
+      if (action === "approve") {
+        router.replace("/approvals?status=approved");
+      } else {
+        router.replace("/approvals?status=rejected");
+      }
+
+      // 🔄 Reload data + summary biar card update
       await loadData();
+      await loadSummary();
+
     } catch (err: any) {
       console.error("APPROVAL ERROR:", err);
 
@@ -264,6 +274,7 @@ export default function ApprovalTable() {
       });
     }
   };
+
 
   /* ================= COLUMNS ================= */
   const columns: ColumnDef<Request, any>[] = [
@@ -322,6 +333,10 @@ export default function ApprovalTable() {
           </div>
         );
       },
+    },
+    {
+      accessorKey: "justification",
+      header: "Justification",
     },
     {
       id: "actions",

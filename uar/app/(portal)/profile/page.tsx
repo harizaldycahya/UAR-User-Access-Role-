@@ -135,11 +135,63 @@ export default function ProfilePage() {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [lastPasswordChangedAt, setLastPasswordChangedAt] = useState<string | null>(null);
+
+  // React.useEffect(() => {
+  //   const storedUser = localStorage.getItem("user");
+  //   if (storedUser) setUser(JSON.parse(storedUser));
+  // }, []);
 
   React.useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) setUser(JSON.parse(storedUser));
+    fetchMe();
   }, []);
+
+
+  const fetchMe = async () => {
+    try {
+      setIsLoading(true);
+
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("http://localhost:5000/api/auth/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.message || "Gagal ambil profile");
+      }
+
+      const hr = result.hr_profile;
+      const u = result.user;
+
+      if (hr) {
+        setProfile({
+          name: hr.nama,
+          email: hr.email,
+          phone: hr.telp,
+          department: hr.nama_divisi,
+          position: hr.posisi,
+          nik: hr.nik,
+          joined: hr.tanggal_masuk,
+          location: hr.lokasi_kerja,
+        });
+      } else {
+        setProfile(null);
+      }
+
+      setFoto(result.photo_url || null);
+      setLastPasswordChangedAt(u.last_password_changed_at);
+    } catch (error) {
+      console.error("Failed fetch /me:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   const handleSave = () => {
     console.log("Saving profile:", profile);
@@ -197,6 +249,9 @@ export default function ProfilePage() {
 
       setOldPassword("");
       setNewPassword("");
+
+      await fetchMe();
+
     } catch (err: any) {
       await Swal.fire({
         icon: "error",
@@ -208,69 +263,28 @@ export default function ProfilePage() {
     }
   };
 
+  function timeAgo(dateString?: string | null) {
+    if (!dateString) return "Not available";
+
+    const past = new Date(dateString).getTime();
+    const now = Date.now();
+
+    const diffMs = now - past;
+    const diffMinutes = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    const diffMonths = Math.floor(diffDays / 30);
+
+    if (diffMonths > 0) return `${diffMonths} month${diffMonths > 1 ? "s" : ""} ago`;
+    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    if (diffMinutes > 0) return `${diffMinutes} minute${diffMinutes > 1 ? "s" : ""} ago`;
+
+    return "Just now";
+  }
 
 
 
-  React.useEffect(() => {
-    if (!user?.username) return;
-
-    const fetchProfile = async () => {
-      try {
-        setIsLoading(true);
-
-        const res = await fetch(
-          `https://personasys.triasmitra.com/api/auth/get-profile-uar?nik=${user.username}`
-        );
-
-        const result = await res.json();
-
-        if (result.Success) {
-          const d = result.data;
-
-          setProfile({
-            name: d.nama,
-            email: d.email,
-            phone: d.telp,
-            department: d.nama_divisi,
-            position: d.posisi,
-            photo: d.foto,
-            nik: d.nik,
-            joined: d.tanggal_masuk,
-            location: d.lokasi_kerja,
-          });
-        }
-      } catch (error) {
-        console.error("Failed fetch profile:", error);
-      } finally {
-        setIsLoading(false); // ✅ WAJIB
-      }
-    };
-
-    fetchProfile();
-  }, [user]);
-
-
-  React.useEffect(() => {
-    if (!profile?.nik) return;
-
-    const fetchPhoto = async () => {
-      try {
-        const res = await fetch(
-          `https://personasys.triasmitra.com/api/aas-gateway/get-photo-url?nik=${profile.nik}`
-        );
-
-        const result = await res.json();
-
-        if (result.Success) {
-          setFoto(result.photo_url);
-        }
-      } catch (err) {
-        console.error("Failed fetch photo:", err);
-      }
-    };
-
-    fetchPhoto();
-  }, [profile]);
 
 
 
@@ -280,13 +294,13 @@ export default function ProfilePage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-semibold text-foreground mb-2">
-            Profile
+            My Profile
           </h1>
           <p className="text-muted-foreground text-sm">
             Manage your personal information and preferences
           </p>
         </div>
-
+        <div className="min-h-8"></div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Profile Card */}
           <div className="lg:col-span-1">
@@ -539,7 +553,9 @@ export default function ProfilePage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-foreground text-sm font-medium">Password</p>
-                          <p className="text-muted-foreground text-xs">Last changed 3 months ago</p>
+                          <p className="text-muted-foreground text-xs">
+                            Last password change: {timeAgo(lastPasswordChangedAt)}
+                          </p>
                         </div>
                         <Dialog>
                           <DialogTrigger asChild>

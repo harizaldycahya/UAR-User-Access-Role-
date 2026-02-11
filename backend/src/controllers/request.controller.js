@@ -1,4 +1,5 @@
 import { db } from "../config/db.js";
+import axios from "axios";
 
 export const createRequest = async (req, res) => {
   const conn = await db.getConnection();
@@ -6,7 +7,7 @@ export const createRequest = async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    const userId = req.user.id;
+    const username = req.user.username; // 👈 sumber kebenaran
     const {
       application_id,
       type,
@@ -31,18 +32,20 @@ export const createRequest = async (req, res) => {
       });
     }
 
-    // cek pending dulu, biar nggak spam
+    // =========================
+    // 0) Cek pending
+    // =========================
     const [[existing]] = await conn.query(
       `
       SELECT id
       FROM requests
-      WHERE user_id = ?
+      WHERE username = ?
         AND application_id = ?
         AND status = 'pending'
         AND deleted_at IS NULL
       LIMIT 1
       `,
-      [userId, application_id]
+      [username, application_id]
     );
 
     if (existing) {
@@ -53,15 +56,17 @@ export const createRequest = async (req, res) => {
       });
     }
 
-    // 1) Insert request dulu
+    // =========================
+    // 1) Insert request
+    // =========================
     const [result] = await conn.query(
       `
       INSERT INTO requests
-        (user_id, application_id, type, old_role_id, new_role_id, justification)
+        (username, application_id, type, old_role_id, new_role_id, justification)
       VALUES (?, ?, ?, ?, ?, ?)
       `,
       [
-        userId,
+        username,
         application_id,
         type,
         old_role_id || null,
@@ -72,90 +77,112 @@ export const createRequest = async (req, res) => {
 
     const requestId = result.insertId;
 
-
     // =========================
-    // Generate Request Code
+    // 2) Generate Request Code
     // =========================
-
     const now = new Date();
-
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0"); // 01 - 12
-
+    const month = String(now.getMonth() + 1).padStart(2, "0");
     const yearMonth = `${year}${month}`;
-
-    // Tentuin prefix dari type
     const prefix = type === "change_role" ? "CR" : "AR";
 
-    // Ambil nomor terakhir di bulan ini + tipe ini
     const [[last]] = await conn.query(
       `
-        SELECT request_code
-        FROM requests
-        WHERE request_code LIKE ?
-        ORDER BY id DESC
-        LIMIT 1
+      SELECT request_code
+      FROM requests
+      WHERE request_code LIKE ?
+      ORDER BY id DESC
+      LIMIT 1
       `,
       [`${prefix}-${yearMonth}-%`]
     );
 
     let sequence = 1;
-
     if (last?.request_code) {
-      const lastSeq = last.request_code.split("-")[2]; // 000123
+      const lastSeq = last.request_code.split("-")[2];
       sequence = parseInt(lastSeq) + 1;
     }
 
-    // Pad jadi 4 digit
     const paddedSeq = String(sequence).padStart(4, "0");
-
-    // Final code
     const requestCode = `${prefix}-${yearMonth}-${paddedSeq}`;
 
-    // Simpan ke DB
     await conn.query(
       `UPDATE requests SET request_code = ? WHERE id = ?`,
       [requestCode, requestId]
     );
 
+    // =========================
+    // 3) Personasys (pakai username sebagai NIK)
+    // =========================
+    const nik = username; // 👈 FIXED
 
-    // ================================
-    // 2) Ambil 4 approver (contoh logika)
-    // Sesuaikan dengan tabelmu, ini cuma template
-    // ================================
-
-    // const [[atasan]] = await conn.query(
-    //   `SELECT atasan AS approver_id FROM users WHERE id = ?`,
-    //   [userId]
-    // );
-    
-    const atasan = {
-      approver_id: 'KT-23031284'   // pastikan user ID ini ADA di tabel users
-    };
-
-    const kadiv = {
-      approver_id: 'KT-18040465'   // pastikan user ID ini ADA di tabel users
-    };
-
-    const [[hrd]] = await conn.query(
-      `SELECT username AS approver_id FROM users WHERE role = '3' LIMIT 1`
+    const personaRes = await axios.get(
+      "https://personasys.triasmitra.com/api/auth/get-atasan-uar",
+      {
+        params: { nik },
+        timeout: 10000,
+      }
     );
 
+    if (!personaRes.data?.Success) {
+      await conn.rollback();
+      return res.status(500).json({
+        success: false,
+        message: "Failed to get approver data from personasys",
+      });
+    }
+
+    const approvalData = personaRes.data.data;
+
+    // =========================
+    // 4) Tentukan approver
+    // =========================
+    const atasanId =
+      approvalData.subsi_approval ||
+      approvalData.kasie_approval ||
+      approvalData.kadept_approval ||
+      null;
+
+    const kadivId = approvalData.kadiv_approval || null;
+
+    if (!atasanId) {
+      await conn.rollback();
+      return res.status(500).json({
+        success: false,
+        message: "Atasan (subsi/kasie/kadept) not found from personasys",
+      });
+    }
+
+    if (!kadivId) {
+      await conn.rollback();
+      return res.status(500).json({
+        success: false,
+        message: "Kadiv not found from personasys",
+      });
+    }
+
+    // HRD
+    const [[hrd]] = await conn.query(
+      `SELECT username AS approver_id FROM users WHERE role_id = '3' LIMIT 1`
+    );
+
+    // App Owner
     const [[appOwner]] = await conn.query(
-      `SELECT owner AS approver_id 
-       FROM applications 
-       WHERE id = ?`,
+      `
+      SELECT owner AS approver_id
+      FROM applications
+      WHERE id = ?
+      `,
       [application_id]
     );
 
     const approvers = [
-      { level: 1, approver_id: atasan?.approver_id },
-      { level: 2, approver_id: kadiv?.approver_id },
+      { level: 1, approver_id: atasanId },
+      { level: 2, approver_id: kadivId },
       { level: 3, approver_id: hrd?.approver_id },
       { level: 4, approver_id: appOwner?.approver_id },
     ];
 
-    // cek kalau ada yang kosong, biar nggak nabrak
     for (const a of approvers) {
       if (!a.approver_id) {
         await conn.rollback();
@@ -166,7 +193,9 @@ export const createRequest = async (req, res) => {
       }
     }
 
-    // 3) Insert ke approvals (4 baris)
+    // =========================
+    // 5) Insert approvals
+    // =========================
     const approvalQuery = `
       INSERT INTO approvals
       (request_code, level, approver_id, status, created_at)
@@ -181,7 +210,9 @@ export const createRequest = async (req, res) => {
       ]);
     }
 
-    // 4) Ambil request final
+    // =========================
+    // 6) Final response
+    // =========================
     const [[request]] = await conn.query(
       `SELECT * FROM requests WHERE id = ?`,
       [requestId]
@@ -209,10 +240,9 @@ export const createRequest = async (req, res) => {
   }
 };
 
-
 export const getMyRequests = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const username = req.user.username; // 👈 sumber kebenaran
 
     const [rows] = await db.query(
       `
@@ -253,19 +283,17 @@ export const getMyRequests = async (req, res) => {
       LEFT JOIN approvals ap
         ON ap.request_code = r.request_code
 
-      WHERE r.user_id = ?
+      WHERE r.username = ?
 
       ORDER BY r.created_at DESC, ap.level ASC
       `,
-      [userId]
+      [username]
     );
 
     // =========================
     // GROUPING DI NODEJS
     // =========================
-
     const result = [];
-
     const map = new Map();
 
     for (const row of rows) {
@@ -302,7 +330,6 @@ export const getMyRequests = async (req, res) => {
         result.push(request);
       }
 
-      // Kalau ada approval → push
       if (row.approval_id) {
         map.get(row.request_code).approvals.push({
           id: row.approval_id,
@@ -328,10 +355,12 @@ export const getMyRequests = async (req, res) => {
   }
 };
 
+
+
 // GET /api/requests/:code
 export const getRequestDetail = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const username = req.user.username;
     const { code } = req.params;
 
     const [rows] = await db.query(
@@ -344,23 +373,23 @@ export const getRequestDetail = async (req, res) => {
         r.status,
         r.created_at,
 
-        a.id AS application_id,
+        a.id   AS application_id,
         a.name AS application_name,
 
-        old_role.id AS old_role_id,
+        old_role.id   AS old_role_id,
         old_role.name AS old_role_name,
 
-        new_role.id AS new_role_id,
+        new_role.id   AS new_role_id,
         new_role.name AS new_role_name,
 
-        ap.id AS approval_id,
-        ap.level AS approval_level,
+        ap.id          AS approval_id,
+        ap.level       AS approval_level,
         ap.approver_id,
-        ap.status AS approval_status,
-        ap.created_at AS approval_created_at
+        u.nama_user    AS approver_name,
+        ap.status      AS approval_status,
+        ap.created_at  AS approval_created_at
 
       FROM requests r
-
       JOIN applications a
         ON a.id = r.application_id
 
@@ -373,24 +402,24 @@ export const getRequestDetail = async (req, res) => {
       LEFT JOIN approvals ap
         ON ap.request_code = r.request_code
 
-      WHERE r.user_id = ?
+      LEFT JOIN users u
+        ON u.username COLLATE utf8mb4_general_ci
+         = ap.approver_id COLLATE utf8mb4_general_ci
+
+      WHERE r.username COLLATE utf8mb4_general_ci = ?
         AND r.request_code = ?
 
       ORDER BY ap.level ASC
       `,
-      [userId, code]
+      [username, code]
     );
 
-    if (!rows.length) {
+    if (!rows || rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Request not found",
       });
     }
-
-    // ======================
-    // FORMAT RESPONSE
-    // ======================
 
     const first = rows[0];
 
@@ -408,17 +437,11 @@ export const getRequestDetail = async (req, res) => {
       },
 
       old_role: first.old_role_id
-        ? {
-          id: first.old_role_id,
-          name: first.old_role_name,
-        }
+        ? { id: first.old_role_id, name: first.old_role_name }
         : null,
 
       new_role: first.new_role_id
-        ? {
-          id: first.new_role_id,
-          name: first.new_role_name,
-        }
+        ? { id: first.new_role_id, name: first.new_role_name }
         : null,
 
       approvals: [],
@@ -430,25 +453,27 @@ export const getRequestDetail = async (req, res) => {
           id: row.approval_id,
           level: row.approval_level,
           approver_id: row.approver_id,
+          approver_name: row.approver_name,
           status: row.approval_status,
           created_at: row.approval_created_at,
         });
       }
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: result,
     });
-
   } catch (err) {
     console.error("GET REQUEST DETAIL ERROR:", err);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Failed to fetch request detail",
+      message: err.message,
+      sqlMessage: err.sqlMessage,
     });
   }
 };
+
 
 export const getMyApprovals = async (req, res) => {
   try {
@@ -676,17 +701,20 @@ export const approvalAction = async (req, res) => {
         `UPDATE requests SET status = 'approved' WHERE request_code = ?`,
         [approval.request_code]
       );
-
+      
       const [[request]] = await conn.query(
         `
         SELECT
-          user_id,
-          application_id,
-          old_role_id,
-          new_role_id,
-          type
-        FROM requests
-        WHERE request_code = ?
+          u.id AS user_id,
+          r.application_id,
+          r.old_role_id,
+          r.new_role_id,
+          r.type
+        FROM requests r
+        JOIN users u 
+          ON u.username COLLATE utf8mb4_unicode_ci
+          = r.username COLLATE utf8mb4_unicode_ci
+        WHERE r.request_code = ?
         `,
         [approval.request_code]
       );
