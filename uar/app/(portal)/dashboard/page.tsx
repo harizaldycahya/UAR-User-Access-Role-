@@ -42,14 +42,14 @@ interface Application {
   role: Role | null;
 }
 
-interface Notification {
-  id: string;
-  application: string;
-  title: string;
-  description: string;
-  date: string;
-  active: string;
-}
+type Notification = {
+  id: number;
+  app_code: string;
+  content: string;
+  url?: string | null;
+  notification_date: string;
+  is_read: number; // 0 | 1
+};
 
 
 
@@ -57,6 +57,7 @@ export default function DashboardPage() {
   const [prevLoginAt, setPrevLoginAt] = React.useState<string | null>(null);
   const [applications, setApplications] = React.useState<Application[]>([]);
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
+  const [markingId, setMarkingId] = React.useState<number | null>(null);
   const [loading, setLoading] = React.useState(true);
   const router = useRouter();
 
@@ -71,8 +72,8 @@ export default function DashboardPage() {
         const res = await apiAxios.get("/application-users");
         const apps =
           Array.isArray(res.data) ? res.data :
-          Array.isArray(res.data?.data) ? res.data.data :
-          [];
+            Array.isArray(res.data?.data) ? res.data.data :
+              [];
 
         setApplications(apps);
       } catch (err) {
@@ -104,6 +105,57 @@ export default function DashboardPage() {
 
     load();
   }, []);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setLoading(true);
+
+        const res = await apiAxios.get("/notifications/me");
+
+        setNotifications(res.data.data || []);
+      } catch (err) {
+        console.error("Failed to fetch notifications", err);
+        setNotifications([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
+
+  const normalizeUrl = (url: string) => {
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      return url;
+    }
+    return `https://${url}`;
+  };
+
+  const markAsRead = async (id: number) => {
+    await apiAxios.patch(`/notifications/${id}/read`);
+  };
+
+  const markAllAsRead = async () => {
+    const unread = notifications.filter((n) => n.is_read === 0);
+
+    // Optimistic UI
+    setNotifications((prev) =>
+      prev.map((n) => ({ ...n, is_read: 1 }))
+    );
+
+    try {
+      await Promise.all(
+        unread.map((n) =>
+          apiAxios.patch(`/notifications/${n.id}/read`)
+        )
+      );
+    } catch (err) {
+      console.error("Failed to mark all as read", err);
+      // Optional: refetch kalau mau super strict
+    }
+  };
 
 
 
@@ -219,13 +271,13 @@ export default function DashboardPage() {
                 </h3>
                 <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                   <Clock className="h-3 w-3 text-primary" />
-                    <span>
-                      {loading
-                        ? "..."
-                        : prevLoginAt
+                  <span>
+                    {loading
+                      ? "..."
+                      : prevLoginAt
                         ? "Previous login"
                         : "No previous activity"}
-                    </span>
+                  </span>
                 </p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -259,7 +311,7 @@ export default function DashboardPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem>Mark all as read</DropdownMenuItem>
+                  <DropdownMenuItem onClick={markAllAsRead}>Mark all as read</DropdownMenuItem>
                   <DropdownMenuItem>Settings</DropdownMenuItem>
                   <DropdownMenuItem>Clear all</DropdownMenuItem>
                 </DropdownMenuContent>
@@ -269,7 +321,6 @@ export default function DashboardPage() {
 
           <CardContent className="flex-1 space-y-1.5">
             {loading ? (
-              // Skeleton placeholder
               Array.from({ length: 5 }).map((_, idx) => (
                 <div key={idx} className="rounded-lg border border-border/40 p-3">
                   <div className="flex items-start gap-3">
@@ -285,27 +336,77 @@ export default function DashboardPage() {
               notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className="group rounded-lg border border-border/40 hover:border-border hover:bg-accent/50 transition-all duration-200 p-3 cursor-pointer"
+                  className={`
+                    group rounded-lg border border-border/40 transition-all duration-200 p-3 cursor-pointer
+                    hover:border-border hover:bg-accent/50
+                    ${notification.is_read === 0 ? "bg-accent/30" : "opacity-70"}
+                  `}
+                  onClick={async () => {
+                    if (markingId === notification.id) return; // prevent double click
+
+                    setMarkingId(notification.id);
+
+                    // Optimistic UI
+                    setNotifications((prev) =>
+                      prev.map((n) =>
+                        n.id === notification.id
+                          ? { ...n, is_read: 1 }
+                          : n
+                      )
+                    );
+
+                    try {
+                      await markAsRead(notification.id);
+                    } catch (err) {
+                      console.error("Failed to mark as read", err);
+                      // Optional: revert UI kalau mau super strict
+                    } finally {
+                      setMarkingId(null);
+                    }
+
+                    // Redirect
+                    if (notification.url) {
+                      window.location.href = normalizeUrl(notification.url);
+                    }
+                  }}
+
+
                 >
                   <div className="flex items-start gap-3">
                     <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center text-primary text-xs font-semibold shrink-0">
-                      {notification.application}
+                      {notification.app_code}
                     </div>
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <p className="text-sm font-medium text-foreground truncate">
-                          {notification.title}
+                        <p
+                          className={`text-sm truncate ${notification.is_read === 0
+                            ? "font-semibold text-foreground"
+                            : "font-normal text-muted-foreground"
+                            }`}
+                        >
+                          {notification.app_code}
                         </p>
-                        {notification.active === "true" && (
+
+                        {notification.is_read === 0 && (
                           <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
-                        {notification.description}
+
+                      <p
+                        className={`text-xs line-clamp-2 mb-2 ${notification.is_read === 0
+                            ? "text-muted-foreground"
+                            : "text-muted-foreground/70"
+                          }`}
+                      >
+                        {notification.content}
                       </p>
+
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        <span>{notification.date}</span>
+                        <span>
+                          {new Date(notification.notification_date).toLocaleString()}
+                        </span>
                       </div>
                     </div>
                   </div>

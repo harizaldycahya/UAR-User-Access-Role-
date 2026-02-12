@@ -6,6 +6,7 @@ export const createNotification = async (req, res) => {
     username,
     app_code,
     content,
+    url,                // ⬅️ NEW
     notification_date,
   } = req.body;
 
@@ -22,10 +23,16 @@ export const createNotification = async (req, res) => {
   await db.query(
     `
     INSERT INTO notifications
-      (username, app_code, content, notification_date)
-    VALUES (?, ?, ?, ?)
+      (username, app_code, content, url, notification_date)
+    VALUES (?, ?, ?, ?, ?)
     `,
-    [username, app_code, content, date]
+    [
+      username,
+      app_code,
+      content,
+      url || null,      // ⬅️ aman kalau nggak dikirim
+      date
+    ]
   );
 
   return res.json({
@@ -42,6 +49,7 @@ export const getMyNotifications = async (req, res) => {
       id,
       app_code,
       content,
+      url,                -- ⬅️ NEW
       notification_date,
       is_read
     FROM notifications
@@ -72,5 +80,3 @@ export const markNotificationRead = async (req, res) => {
 
   res.json({ message: "Marked as read" });
 };
-
-
