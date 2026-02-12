@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/card";
 import {
   MoreVertical, Calendar, ExternalLink,
-  Bell, CheckCircle2, Lock, Clock
+  Bell, CheckCircle2, Lock, Clock,
+  ChevronRight
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import * as Icons from "lucide-react";
 import { LucideIcon } from "lucide-react";
 import { apiAxios } from "@/lib/api";
+import Link from "next/link";
 
 interface Role {
   id: number;
@@ -51,6 +53,37 @@ type Notification = {
   is_read: number; // 0 | 1
 };
 
+interface MyRequest {
+  id: number;
+  request_code: string;
+  type: string;
+  status: string;
+  created_at: string;
+  application: {
+    id: number;
+    name: string;
+  };
+  old_role: any;
+  new_role: {
+    id: number;
+    name: string;
+  } | null;
+}
+
+interface MyApproval {
+  approval_id: number;
+  level: number;
+  approval_status: string;
+  id: number;
+  request_code: string;
+  type: string;
+  status: string;
+  created_at: string;
+  application_id: number;
+  application_name: string;
+  new_role_name: string | null;
+}
+
 
 
 export default function DashboardPage() {
@@ -58,12 +91,41 @@ export default function DashboardPage() {
   const [applications, setApplications] = React.useState<Application[]>([]);
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [markingId, setMarkingId] = React.useState<number | null>(null);
+  const [myRequests, setMyRequests] = React.useState<MyRequest[]>([]);
+  const [myApprovals, setMyApprovals] = React.useState<MyApproval[]>([]);
+
+
   const [loading, setLoading] = React.useState(true);
   const router = useRouter();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) router.replace("/login");
+  }, []);
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        setLoading(true);
+
+        const [reqRes, apprRes] = await Promise.all([
+          apiAxios.get("/requests/me"),
+          apiAxios.get("/requests/approvals/me"),
+        ]);
+
+        setMyRequests(reqRes.data.data || []);
+        setMyApprovals(apprRes.data.data || []);
+
+      } catch (err) {
+        console.error("Dashboard load error:", err);
+        setMyRequests([]);
+        setMyApprovals([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
   }, []);
 
   React.useEffect(() => {
@@ -157,7 +219,20 @@ export default function DashboardPage() {
     }
   };
 
+  const accessibleApplications = React.useMemo(
+    () => applications.filter((app) => app.has_access),
+    [applications]
+  );
 
+  const accessibleCount = accessibleApplications.length;
+
+  const myPendingRequests = myRequests.filter(
+    (r) => r.status === "pending"
+  ).length;
+
+  const myPendingApprovals = myApprovals.filter(
+    (a) => a.approval_status === "pending"
+  ).length;
 
   function timeAgo(dateString?: string | null) {
     if (!dateString) return "Not available";
@@ -198,10 +273,17 @@ export default function DashboardPage() {
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-1">Total Applications</p>
+                <p className="text-xs font-medium text-muted-foreground mb-1">Accessable Application</p>
                 <h3 className="text-2xl font-bold text-foreground">
-                  {loading ? <Skeleton className="h-8 w-16" /> : applications.length}
+                  {loading ? <Skeleton className="h-8 w-16" /> : accessibleCount}
                 </h3>
+                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                  <Clock className="h-3 w-3 text-primary" />
+                  <span>
+                    Applications
+                  </span>
+                </p>
+
               </div>
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
                 <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -212,49 +294,112 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Active Notifications */}
-        <Card className="border-border/40 hover:border-border transition-colors">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-1">Active Notifications</p>
-                <h3 className="text-2xl font-bold text-foreground">
-                  {loading ? <Skeleton className="h-8 w-16" /> : notifications.filter(n => n.active === "true").length}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                  <Bell className="h-3 w-3 text-primary" />
-                  <span>
-                    {loading ? '...' : notifications?.length ?? 0} total updates
-                  </span>
-                </p>
-              </div>
-              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Bell className="h-6 w-6 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* My Pending Approval */}
+        <Link href="/approvals" className="block">
+          <Card
+            className="
+                border-border/40 
+                hover:border-border 
+                hover:shadow-sm 
+                transition-all
+                cursor-pointer
+                focus-within:ring-2 
+                focus-within:ring-primary
+                group
+              "
+          >
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
+                    My Pending Approval
+                  </p>
 
-        {/* Pending Access */}
-        <Card className="border-border/40 hover:border-border transition-colors">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-1">Pending Access</p>
-                <h3 className="text-2xl font-bold text-foreground">
-                  {loading ? <Skeleton className="h-8 w-16" /> : '0'}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                  <Lock className="h-3 w-3 text-muted-foreground" />
-                  <span>Awaiting approval</span>
-                </p>
+                  <h3 className="text-2xl font-bold text-foreground">
+                    {loading ? <Skeleton className="h-8 w-16" /> : myPendingApprovals}
+                  </h3>
+
+                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <Clock className="h-3 w-3 text-primary" />
+                    <span>Approvals</span>
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Clock className="h-6 w-6 text-primary" />
+                  </div>
+
+                  {/* Visual hint kalau ini navigasi */}
+                  <ChevronRight
+                    className="
+                        h-5 w-5 
+                        text-muted-foreground
+                        opacity-0 
+                        -translate-x-1
+                        group-hover:opacity-100 
+                        group-hover:translate-x-0
+                        transition-all
+                      "
+                  />
+                </div>
               </div>
-              <div className="h-12 w-12 rounded-lg bg-muted/50 flex items-center justify-center">
-                <Lock className="h-6 w-6 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* My Pending Requests */}
+        <Link href="/requests" className="block">
+          <Card
+            className="
+                border-border/40 
+                hover:border-border 
+                hover:shadow-sm 
+                transition-all
+                cursor-pointer
+                focus-within:ring-2 
+                focus-within:ring-primary
+                group
+              "
+          >
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
+                    My On Going Requests
+                  </p>
+
+                  <h3 className="text-2xl font-bold text-foreground">
+                    {loading ? <Skeleton className="h-8 w-16" /> : myPendingRequests}
+                  </h3>
+
+                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <Clock className="h-3 w-3 text-primary" />
+                    <span>Requests</span>
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Clock className="h-6 w-6 text-primary" />
+                  </div>
+
+                  <ChevronRight
+                    className="
+                      h-5 w-5 
+                      text-muted-foreground
+                      opacity-0 
+                      -translate-x-1
+                      group-hover:opacity-100 
+                      group-hover:translate-x-0
+                      transition-all
+                    "
+                  />
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Last Activity */}
         <Card className="border-border/40 hover:border-border transition-colors">
@@ -395,8 +540,8 @@ export default function DashboardPage() {
 
                       <p
                         className={`text-xs line-clamp-2 mb-2 ${notification.is_read === 0
-                            ? "text-muted-foreground"
-                            : "text-muted-foreground/70"
+                          ? "text-muted-foreground"
+                          : "text-muted-foreground/70"
                           }`}
                       >
                         {notification.content}
@@ -464,7 +609,7 @@ export default function DashboardPage() {
                 ))
               ) : applications.length > 0 ? (
                 applications.map((app) => {
-                  const Icon = (Icons as Record<string, LucideIcon>)[
+                  const Icon = (Icons as unknown as Record<string, LucideIcon>)[
                     app.icon?.charAt(0).toUpperCase() + app.icon?.slice(1)
                   ];
 

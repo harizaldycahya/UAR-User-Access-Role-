@@ -277,7 +277,7 @@ export default function RequestTable() {
         >
           <CardContent className="p-5">
             <p className="text-xs font-medium text-muted-foreground mb-1">
-              Pending Approval
+              On Going Requests
             </p>
             <h3 className="text-2xl font-bold text-warning">
               {loading ? <Skeleton className="h-8 w-16" /> : pendingCount}
@@ -296,7 +296,7 @@ export default function RequestTable() {
         >
           <CardContent className="p-5">
             <p className="text-xs font-medium text-muted-foreground mb-1">
-              Approved
+              Approved Requests
             </p>
             <h3 className="text-2xl font-bold text-success">
               {loading ? <Skeleton className="h-8 w-16" /> : approvedCount}
@@ -315,7 +315,7 @@ export default function RequestTable() {
         >
           <CardContent className="p-5">
             <p className="text-xs font-medium text-muted-foreground mb-1">
-              Rejected
+              Rejected Requests
             </p>
             <h3 className="text-2xl font-bold text-destructive">
               {loading ? <Skeleton className="h-8 w-16" /> : rejectedCount}
@@ -329,6 +329,7 @@ export default function RequestTable() {
           </CardContent>
         </Card>
       </div>
+      
       <Card>
         <CardHeader className="flex flex-row justify-between">
           <div>

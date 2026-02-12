@@ -169,7 +169,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 label: "Account",
                 items: [
                     { label: "My Profile", icon: <User className="h-5 w-5" />, href: "/profile" },
-                    { label: "Guide Book", icon: <Book className="h-5 w-5" />, href: "/change_password" },
+                    { label: "Guide Book", icon: <Book className="h-5 w-5" />, href: "/profile" },
                 ],
             },
         ],
