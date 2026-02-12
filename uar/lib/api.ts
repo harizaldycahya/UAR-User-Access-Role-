@@ -1,3 +1,5 @@
+import axios from "axios";
+
 const API_URL = "http://localhost:5000/api";
 
 export async function apiFetch(
@@ -44,3 +46,38 @@ export async function apiFetch(
 
   return data;
 }
+
+export const apiAxios = axios.create({
+  baseURL: API_URL,
+});
+
+apiAxios.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
+// Optional: normalisasi error biar mirip apiFetch
+apiAxios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      "Unknown API error";
+
+    console.error("AXIOS API ERROR:", {
+      url: error.config?.url,
+      status: error.response?.status,
+      message,
+      data: error.response?.data,
+    });
+
+    return Promise.reject(new Error(message));
+  }
+);
+

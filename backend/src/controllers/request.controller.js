@@ -493,12 +493,7 @@ export const getMyApprovals = async (req, res) => {
     }
 
     const username = user.username;
-
-
-
-    console.log("APPROVER USER:", user);
-    console.log("APPROVER_ID PARAM:", username);
-
+    
     const [rows] = await db.query(
       `
         SELECT

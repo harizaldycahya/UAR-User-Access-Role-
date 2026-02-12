@@ -17,14 +17,15 @@ export const login = async (req, res) => {
       u.username,
       u.password,
       u.role_id,
+      u.current_login_at,
+      u.current_login_ip,
       r.code AS role_name
-   FROM users u
-   JOIN roles r ON r.id = u.role_id
-   WHERE u.username = ? AND u.is_active = 1
-   LIMIT 1`,
+     FROM users u
+     JOIN roles r ON r.id = u.role_id
+     WHERE u.username = ? AND u.is_active = 1
+     LIMIT 1`,
     [username]
   );
-
 
   if (rows.length === 0) {
     return res.status(401).json({ message: "User tidak ditemukan" });
@@ -40,6 +41,34 @@ export const login = async (req, res) => {
   if (!match) {
     return res.status(401).json({ message: "Password salah" });
   }
+
+  // =========================
+  // LOGIN TRACKING
+  // =========================
+
+  const now = new Date();
+  const currentIp =
+    req.headers["x-forwarded-for"]?.toString().split(",")[0] ||
+    req.socket.remoteAddress ||
+    null;
+
+  // pindahkan current -> prev, lalu set current baru
+  await db.query(
+    `
+    UPDATE users
+    SET
+      prev_login_at = current_login_at,
+      prev_login_ip = current_login_ip,
+      current_login_at = ?,
+      current_login_ip = ?
+    WHERE id = ?
+    `,
+    [now, currentIp, user.id]
+  );
+
+  // =========================
+  // TOKEN
+  // =========================
 
   const token = signToken({
     id: user.id,
@@ -63,6 +92,7 @@ export const login = async (req, res) => {
     },
   });
 };
+
 
 export const me = async (req, res) => {
   try {

@@ -23,6 +23,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import * as Icons from "lucide-react";
 import { LucideIcon } from "lucide-react";
+import { apiAxios } from "@/lib/api";
 
 interface Role {
   id: number;
@@ -53,9 +54,9 @@ interface Notification {
 
 
 export default function DashboardPage() {
+  const [prevLoginAt, setPrevLoginAt] = React.useState<string | null>(null);
   const [applications, setApplications] = React.useState<Application[]>([]);
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
-
   const [loading, setLoading] = React.useState(true);
   const router = useRouter();
 
@@ -67,13 +68,11 @@ export default function DashboardPage() {
   React.useEffect(() => {
     const load = async () => {
       try {
-        const res = await apiFetch("/application-users");
-
+        const res = await apiAxios.get("/application-users");
         const apps =
-          Array.isArray(res) ? res :
-            Array.isArray(res?.data) ? res.data :
-              Array.isArray(res?.data?.data) ? res.data.data :
-                [];
+          Array.isArray(res.data) ? res.data :
+          Array.isArray(res.data?.data) ? res.data.data :
+          [];
 
         setApplications(apps);
       } catch (err) {
@@ -86,6 +85,49 @@ export default function DashboardPage() {
 
     load();
   }, []);
+
+  React.useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await apiAxios.get("/auth/me");
+
+        const prev_login_at = res.data.user?.prev_login_at;
+
+        setPrevLoginAt(prev_login_at);
+      } catch (err) {
+        console.error(err);
+        setPrevLoginAt(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+
+
+  function timeAgo(dateString?: string | null) {
+    if (!dateString) return "Not available";
+
+    const past = new Date(dateString).getTime();
+    const now = Date.now();
+
+    const diffMs = now - past;
+    const diffMinutes = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    const diffMonths = Math.floor(diffDays / 30);
+
+    if (diffMonths > 0) return `${diffMonths} month${diffMonths > 1 ? "s" : ""} ago`;
+    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    if (diffMinutes > 0) return `${diffMinutes} minute${diffMinutes > 1 ? "s" : ""} ago`;
+
+    return "Just now";
+  }
+
+
 
   return (
     <main className="min-h-screen bg-background p-6">
@@ -169,13 +211,21 @@ export default function DashboardPage() {
               <div className="flex-1">
                 <p className="text-xs font-medium text-muted-foreground mb-1">Last Activity</p>
                 <h3 className="text-2xl font-bold text-foreground">
-                  {loading ? <Skeleton className="h-8 w-16" /> : 'Today'}
+                  {loading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    timeAgo(prevLoginAt)
+                  )}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                   <Clock className="h-3 w-3 text-primary" />
-                  <span>
-                    {loading ? '...' : notifications.length > 0 ? notifications[0].date : 'No activity'}
-                  </span>
+                    <span>
+                      {loading
+                        ? "..."
+                        : prevLoginAt
+                        ? "Previous login"
+                        : "No previous activity"}
+                    </span>
                 </p>
               </div>
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
