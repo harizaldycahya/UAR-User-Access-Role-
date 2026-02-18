@@ -115,6 +115,40 @@ function PersonalInfoSkeleton() {
   );
 }
 
+function RoleTableSkeleton() {
+  return (
+    <Card className="bg-card border-border shadow-none">
+      <CardHeader>
+        <div className="space-y-2">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-4 w-56" />
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        {/* table header */}
+        <div className="grid grid-cols-4 gap-4">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+        </div>
+
+        {/* rows */}
+        {[1, 2, 3, 4, 5].map((row) => (
+          <div key={row} className="grid grid-cols-4 gap-4">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+
 
 export default function DetailApplicationPage() {
   const params = useParams()
@@ -200,7 +234,7 @@ export default function DetailApplicationPage() {
             Detail Application
           </h1>
           <p className="text-muted-foreground text-sm">
-            Lorem, ipsum dolor sit amet consectetur adipisicing elit. Fugiat, beatae?
+            View detailed information about this application.
           </p>
         </div>
 
@@ -392,9 +426,11 @@ export default function DetailApplicationPage() {
           {/* Right Column - Details Form */}
           <div className="lg:col-span-2">
             <div className="lg:col-span-2">
-              {application && (
+              {isLoading ? (
+                <RoleTableSkeleton />
+              ) : application ? (
                 <RoleTable applicationId={String(application.id)} />
-              )}
+              ) : null}
             </div>
           </div>
         </div>

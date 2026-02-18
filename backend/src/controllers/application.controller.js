@@ -91,16 +91,24 @@ export const createApplication = async (req, res) => {
   try {
     const { owner, code, name, url, color, icon } = req.body;
 
-    await db.query(
+    const [result] = await db.query(
       `INSERT INTO applications
        (owner, code, name, url, color, icon)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [owner, code, name, url, color, icon]
     );
 
+    const insertedId = result.insertId;
+
+    const [rows] = await db.query(
+      `SELECT * FROM applications WHERE id = ?`,
+      [insertedId]
+    );
+
     res.status(201).json({
       success: true,
       message: "Application created",
+      data: rows[0],
     });
   } catch (err) {
     console.error("CREATE APPLICATION ERROR:", err);

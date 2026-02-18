@@ -101,13 +101,32 @@ export const createApplicationRole = async (req, res) => {
     const { applicationId } = req.params;
     const { name, description } = req.body;
 
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: "Role name is required",
+      });
+    }
+
+    const [[app]] = await db.query(
+      "SELECT id FROM applications WHERE id = ?",
+      [applicationId]
+    );
+
+    if (!app) {
+      return res.status(404).json({
+        success: false,
+        message: "Application not found",
+      });
+    }
+
     const [result] = await db.query(
       `
       INSERT INTO application_roles
         (application_id, name, description)
       VALUES (?, ?, ?)
       `,
-      [applicationId, name, description]
+      [applicationId, name.trim(), description || null]
     );
 
     const [[role]] = await db.query(
@@ -125,12 +144,14 @@ export const createApplicationRole = async (req, res) => {
     });
   } catch (err) {
     console.error("CREATE APPLICATION ROLE ERROR:", err);
+
     res.status(500).json({
       success: false,
       message: "Failed to create application role",
     });
   }
 };
+
 
 
 /* ================= UPDATE ================= */

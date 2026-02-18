@@ -42,12 +42,15 @@ export default function LoginPage() {
 
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // ⬇️ REDIRECT
-      if (data.user.role === 'admin') {
-        window.location.href = "/applications";
-      } else {
-        window.location.href = "/dashboard";
-      }
+      const roleRedirectMap: Record<string, string> = {
+        admin: "/applications",
+        hrd: "/approvals",
+      };
+
+      const redirectTo =
+        roleRedirectMap[data.user.role_name] || "/dashboard";
+
+      window.location.href = redirectTo;
     } catch (err: any) {
       setError(err.message || "Login gagal");
     } finally {

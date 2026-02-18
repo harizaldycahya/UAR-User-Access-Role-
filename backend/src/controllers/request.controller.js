@@ -355,8 +355,6 @@ export const getMyRequests = async (req, res) => {
   }
 };
 
-
-
 // GET /api/requests/:code
 export const getRequestDetail = async (req, res) => {
   try {

@@ -178,13 +178,13 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 label: "Applications",
                 items: [
                     { label: "Applications", icon: <FilePlus className="h-5 w-5" />, href: "/applications" },
-                    { label: "Create Application", icon: <ClipboardList className="h-5 w-5" />, href: "/create_application" },
+                    { label: "Create Application", icon: <ClipboardList className="h-5 w-5" />, href: "/applications/create" },
                 ],
             },
             {
                 label: "Users",
                 items: [
-                    { label: "Users", icon: <FilePlus className="h-5 w-5" />, href: "/applications" },
+                    { label: "Users", icon: <FilePlus className="h-5 w-5" />, href: "/users" },
                 ],
             },
         ],
