@@ -51,6 +51,7 @@ import {
     CheckCircle,
     Book,
 } from 'lucide-react';
+import { apiAxios } from '@/lib/api';
 
 type MenuItem = {
     label: string;
@@ -137,10 +138,16 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
     const segments = React.useMemo(() => pathname?.split("/").filter(Boolean) || [], [pathname]);
 
-    const logout = () => {
-        document.cookie = "token=; path=/; max-age=0";
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+    const logout = async () => {
+        try {
+            await apiAxios.post("/auth/logout");
+        } catch (err) {
+            console.error("Logout error:", err);
+        } finally {
+            document.cookie = "token=; path=/; max-age=0";
+            localStorage.removeItem("token");
+            window.location.href = "/login";
+        }
     };
 
     // Menu berdasarkan role

@@ -35,6 +35,7 @@ import { ChevronsUpDown } from "lucide-react";
 
 import RequestTableSkeleton from "./RequestTableSkeleton";
 import { apiFetch } from "@/lib/api";
+import Link from "next/link";
 
 /* ================= TYPES ================= */
 interface User {
@@ -45,10 +46,8 @@ interface User {
     role_id: number;
     role_name: string;
     created_at: string;
-    current_login_at: string | null;
-    current_login_ip: string | null;
-    prev_login_at: string | null;
-    prev_login_ip: string | null;
+    last_login_at: string | null;
+    last_login_ip: string | null;
 }
 
 /* ================= COMPONENT ================= */
@@ -93,7 +92,22 @@ export default function UsersTable() {
 
     /* ================= COLUMNS ================= */
     const columns: ColumnDef<User>[] = [
-        { header: "Username", accessorKey: "username" },
+        {
+            header: "Username",
+            accessorKey: "username",
+            cell: ({ row }) => {
+                const username = row.original.username;
+
+                return (
+                    <Link
+                        href={`/users/${username}`}
+                        className="text-primary hover:underline font-medium"
+                    >
+                        {username}
+                    </Link>
+                );
+            },
+        },
         { header: "Nama", accessorKey: "nama_user" },
         { header: "Role", accessorKey: "role_name" },
         {
@@ -114,26 +128,10 @@ export default function UsersTable() {
             },
         },
         {
-            header: "Current Login",
-            cell: ({ row }) => {
-                const date = row.original.current_login_at;
-                const ip = row.original.current_login_ip;
-
-                return (
-                    <div className="text-sm leading-tight">
-                        <div>{formatDate(date)}</div>
-                        <div className="text-muted-foreground text-xs">
-                            {formatIP(ip)}
-                        </div>
-                    </div>
-                );
-            },
-        },
-        {
             header: "Last Login",
             cell: ({ row }) => {
-                const date = row.original.prev_login_at;
-                const ip = row.original.prev_login_ip;
+                const date = row.original.last_login_at;
+                const ip = row.original.last_login_ip;
 
                 return (
                     <div className="text-sm leading-tight">
@@ -216,7 +214,7 @@ export default function UsersTable() {
                     <CardDescription>List of registered users</CardDescription>
                 </div>
             </CardHeader>
-
+            
             <CardContent>
                 <div className="mb-4">
                     <input

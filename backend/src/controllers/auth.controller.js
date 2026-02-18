@@ -17,8 +17,8 @@ export const login = async (req, res) => {
       u.username,
       u.password,
       u.role_id,
-      u.current_login_at,
-      u.current_login_ip,
+      u.last_login_at,
+      u.last_login_ip,
       r.code AS role_name
      FROM users u
      JOIN roles r ON r.id = u.role_id
@@ -33,42 +33,10 @@ export const login = async (req, res) => {
 
   const user = rows[0];
 
-  if (!user.password) {
-    return res.status(500).json({ message: "Password user rusak" });
-  }
-
   const match = await bcrypt.compare(password, user.password);
   if (!match) {
     return res.status(401).json({ message: "Password salah" });
   }
-
-  // =========================
-  // LOGIN TRACKING
-  // =========================
-
-  const now = new Date();
-  const currentIp =
-    req.headers["x-forwarded-for"]?.toString().split(",")[0] ||
-    req.socket.remoteAddress ||
-    null;
-
-  // pindahkan current -> prev, lalu set current baru
-  await db.query(
-    `
-    UPDATE users
-    SET
-      prev_login_at = current_login_at,
-      prev_login_ip = current_login_ip,
-      current_login_at = ?,
-      current_login_ip = ?
-    WHERE id = ?
-    `,
-    [now, currentIp, user.id]
-  );
-
-  // =========================
-  // TOKEN
-  // =========================
 
   const token = signToken({
     id: user.id,
@@ -89,9 +57,45 @@ export const login = async (req, res) => {
       username: user.username,
       role_id: user.role_id,
       role_name: user.role_name,
+      last_login_at: user.last_login_at,
+      last_login_ip: user.last_login_ip,
     },
   });
 };
+
+export const logout = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const now = new Date();
+    const currentIp =
+      req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() ||
+      req.socket.remoteAddress ||
+      null;
+
+    const [result] = await db.query(
+      `
+      UPDATE users
+      SET last_login_at = ?,
+          last_login_ip = ?
+      WHERE id = ?
+      `,
+      [now, currentIp, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(400).json({ message: "User tidak ditemukan saat logout" });
+    }
+
+    res.clearCookie("token");
+
+    return res.json({ message: "Logout berhasil" });
+  } catch (err) {
+    console.error("LOGOUT ERROR:", err);
+    return res.status(500).json({ message: "Gagal logout" });
+  }
+};
+
 
 
 export const me = async (req, res) => {
@@ -109,10 +113,8 @@ export const me = async (req, res) => {
         u.created_at,
         u.updated_at,
         u.last_password_changed_at,
-        u.current_login_at,
-        u.current_login_ip,
-        u.prev_login_at,
-        u.prev_login_ip
+        u.last_login_at,
+        u.last_login_ip
        FROM users u
        JOIN roles r ON r.id = u.role_id
        WHERE u.id = ? AND u.is_active = 1

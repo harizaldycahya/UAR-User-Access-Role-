@@ -332,7 +332,7 @@ export default function ProfilePage() {
                       {profile?.name}
                     </h2>
                     <p className="text-sm text-muted-foreground mb-1">
-                      {profile.location}
+                      {profile.nik}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {profile.department || "-"}

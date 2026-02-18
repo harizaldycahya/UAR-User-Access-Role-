@@ -87,7 +87,7 @@ interface MyApproval {
 
 
 export default function DashboardPage() {
-  const [prevLoginAt, setPrevLoginAt] = React.useState<string | null>(null);
+  const [lastLoginAt, setlastLoginAt] = React.useState<string | null>(null);
   const [applications, setApplications] = React.useState<Application[]>([]);
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [markingId, setMarkingId] = React.useState<number | null>(null);
@@ -154,12 +154,12 @@ export default function DashboardPage() {
       try {
         const res = await apiAxios.get("/auth/me");
 
-        const prev_login_at = res.data.user?.prev_login_at;
+        const last_login_at = res.data.user?.last_login_at;
 
-        setPrevLoginAt(prev_login_at);
+        setlastLoginAt(last_login_at);
       } catch (err) {
         console.error(err);
-        setPrevLoginAt(null);
+        setlastLoginAt(null);
       } finally {
         setLoading(false);
       }
@@ -411,7 +411,7 @@ export default function DashboardPage() {
                   {loading ? (
                     <Skeleton className="h-8 w-24" />
                   ) : (
-                    timeAgo(prevLoginAt)
+                    timeAgo(lastLoginAt)
                   )}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
@@ -419,7 +419,7 @@ export default function DashboardPage() {
                   <span>
                     {loading
                       ? "..."
-                      : prevLoginAt
+                      : lastLoginAt
                         ? "Previous login"
                         : "No previous activity"}
                   </span>

@@ -1,6 +1,6 @@
 import { db } from "../config/db.js";
 import axios from "axios";
-
+import bcrypt from "bcrypt";
 
 export const getUsers = async (req, res) => {
   try {
@@ -14,10 +14,8 @@ export const getUsers = async (req, res) => {
         u.role_id,
         r.code AS role_name,
         u.created_at,
-        u.current_login_at,
-        u.current_login_ip,
-        u.prev_login_at,
-        u.prev_login_ip
+        u.last_login_at,
+        u.last_login_ip
       FROM users u
       JOIN roles r ON r.id = u.role_id
       ORDER BY u.created_at DESC
@@ -54,10 +52,8 @@ export const getUserByUsername = async (req, res) => {
         u.created_at,
         u.updated_at,
         u.last_password_changed_at,
-        u.current_login_at,
-        u.current_login_ip,
-        u.prev_login_at,
-        u.prev_login_ip
+        u.last_login_at,
+        u.last_login_ip
       FROM users u
       JOIN roles r ON r.id = u.role_id
       WHERE u.username = ?
@@ -120,4 +116,61 @@ export const getUserByUsername = async (req, res) => {
     });
   }
 };
+
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { username } = req.params;
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Password minimal 8 karakter",
+      });
+    }
+
+    // cek user ada atau tidak
+    const [[user]] = await db.query(
+      "SELECT id FROM users WHERE username = ? LIMIT 1",
+      [username]
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User tidak ditemukan",
+      });
+    }
+
+    // hash password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // update password
+    await db.query(
+      `
+      UPDATE users 
+      SET password = ?, 
+          last_password_changed_at = NOW(),
+          updated_at = NOW()
+      WHERE username = ?
+      `,
+      [hashedPassword, username]
+    );
+
+    return res.json({
+      success: true,
+      message: `Password user ${username} berhasil direset`,
+    });
+
+  } catch (err) {
+    console.error("RESET PASSWORD ERROR:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Gagal reset password",
+    });
+  }
+};
+
 
