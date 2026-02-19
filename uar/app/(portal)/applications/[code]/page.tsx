@@ -34,6 +34,7 @@ interface Application {
 }
 
 
+
 function LucideIcon({
   name,
   className,
@@ -148,8 +149,6 @@ function RoleTableSkeleton() {
   );
 }
 
-
-
 export default function DetailApplicationPage() {
   const params = useParams()
   const code = params.code as string
@@ -157,9 +156,21 @@ export default function DetailApplicationPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [showIconPicker, setShowIconPicker] = useState(false)
-
   const [application, setApplication] = useState<Application | null>(null)
-  const [form, setForm] = useState({
+
+  const [externalRoles, setExternalRoles] = useState<
+    { id: string; name: string }[]
+  >([])
+  const [loadingExternalRoles, setLoadingExternalRoles] = useState(false)
+
+  const [form, setForm] = useState<{
+    code: string
+    name: string
+    url: string
+    owner: string
+    icon: string
+    color: string
+  }>({
     code: "",
     name: "",
     url: "",
@@ -185,6 +196,7 @@ export default function DetailApplicationPage() {
           icon: data.icon || "",
           color: data.color || "#000000",
         })
+
       } catch (error) {
         console.error("Failed to fetch application", error)
       } finally {
@@ -194,6 +206,47 @@ export default function DetailApplicationPage() {
 
     fetchApplication()
   }, [code])
+
+  useEffect(() => {
+    if (!application) return
+
+    const fetchExternalRoles = async () => {
+      if (application.code !== "AMS" && application.code !== "IMS") {
+        return
+      }
+
+      setLoadingExternalRoles(true)
+
+      try {
+        let endpoint = ""
+
+        if (application.code === "AMS") {
+          endpoint = "/applications/integrations/ams/roles"
+        }
+
+        if (application.code === "IMS") {
+          endpoint = "/applications/integrations/ims/roles"
+        }
+
+        const res = await apiFetch(endpoint)
+        const roles = (res.data?.result?.data || []).map((item: any) => ({
+          id: item.id,
+          name: item.name,
+        }))
+
+        setExternalRoles(roles)
+      } catch (err) {
+        console.error("Failed to fetch external roles", err)
+      } finally {
+        setLoadingExternalRoles(false)
+      }
+    }
+
+    fetchExternalRoles()
+  }, [application])
+
+
+
 
   useEffect(() => {
     console.log("showIconPicker", showIconPicker)
@@ -210,6 +263,7 @@ export default function DetailApplicationPage() {
       color: form.color,
     }
 
+
     try {
       await apiFetch(`/applications/${application.id}`, {
         method: "PUT",
@@ -218,8 +272,6 @@ export default function DetailApplicationPage() {
     } catch (err) {
       console.error(err)
     }
-
-
 
     setApplication({ ...application, ...payload })
     setIsEditing(false)
@@ -329,6 +381,7 @@ export default function DetailApplicationPage() {
                           )}
                         </div>
                       </div>
+
                       <div className="grid grid-cols-1 gap-4 relative">
                         <div>
                           <Label>Application Icon</Label>
@@ -428,9 +481,43 @@ export default function DetailApplicationPage() {
             <div className="lg:col-span-2">
               {isLoading ? (
                 <RoleTableSkeleton />
+              ) : application?.code === "AMS" || application?.code === "IMS" ? (
+                <Card className="bg-card border-border shadow-none">
+                  <CardHeader>
+                    <CardTitle className="text-lg">External Roles</CardTitle>
+                    <CardDescription>
+                      Roles fetched directly from external API (read-only)
+                    </CardDescription>
+                  </CardHeader>
+
+                  <CardContent>
+                    {loadingExternalRoles ? (
+                      <p className="text-sm text-muted-foreground">Loading roles...</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {externalRoles.map((role) => (
+                          <div
+                            key={role.id}
+                            className="flex justify-between bg-muted/30 px-3 py-2 rounded-md text-sm"
+                          >
+                            <span className="font-mono text-xs">{role.id}</span>
+                            <span>{role.name}</span>
+                          </div>
+                        ))}
+
+                        {externalRoles.length === 0 && (
+                          <p className="text-sm text-muted-foreground">
+                            No roles found.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               ) : application ? (
                 <RoleTable applicationId={String(application.id)} />
               ) : null}
+
             </div>
           </div>
         </div>

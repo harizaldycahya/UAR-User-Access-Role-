@@ -94,7 +94,6 @@ export const getApplicationByCode = async (req, res) => {
   }
 };
 
-
 /* ================= CREATE ================= */
 export const createApplicationRole = async (req, res) => {
   try {
@@ -151,8 +150,6 @@ export const createApplicationRole = async (req, res) => {
     });
   }
 };
-
-
 
 /* ================= UPDATE ================= */
 export const updateApplicationRole = async (req, res) => {

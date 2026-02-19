@@ -1,10 +1,11 @@
 import { db } from "../config/db.js";
+import axios from "axios";
 
 /* ================= GET ALL ================= */
 export const getApplications = async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT * FROM applications WHERE deleted_at IS NULL"
+      "SELECT * FROM applications WHERE deleted_at IS NULL ORDER BY code ASC"
     );
 
     res.json({
@@ -85,7 +86,6 @@ export const getApplicationByCode = async (req, res) => {
   }
 };
 
-
 /* ================= CREATE ================= */
 export const createApplication = async (req, res) => {
   try {
@@ -93,8 +93,8 @@ export const createApplication = async (req, res) => {
 
     const [result] = await db.query(
       `INSERT INTO applications
-       (owner, code, name, url, color, icon)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      (owner, code, name, url, color, icon)
+      VALUES (?, ?, ?, ?, ?, ?)`,
       [owner, code, name, url, color, icon]
     );
 
@@ -127,7 +127,13 @@ export const updateApplication = async (req, res) => {
     const fields = [];
     const values = [];
 
-    const allowedFields = ["owner", "name", "url", "color", "icon"];
+    const allowedFields = [
+      "owner",
+      "name",
+      "url",
+      "color",
+      "icon",
+    ];
 
     for (const key of allowedFields) {
       if (req.body[key] !== undefined) {
@@ -203,3 +209,59 @@ export const deleteApplication = async (req, res) => {
     });
   }
 };
+
+
+export const getImsRoles = async (req, res) => {
+  try {
+    const response = await axios.get(
+      process.env.IMS_URL + "/get-hierarchy",
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.IMS_API_KEY}`,
+        },
+      }
+    );
+
+    res.json({
+      success: true,
+      data: response.data,
+    });
+
+  } catch (err) {
+    console.error("IMS ERROR STATUS:", err.response?.status);
+    console.error("IMS ERROR DATA:", err.response?.data);
+    console.error("IMS ERROR MESSAGE:", err.message);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch IMS roles",
+    });
+  }
+};
+
+export const getAmsRoles = async (req, res) => {
+  try {
+    const response = await axios.get(
+      process.env.AMS_URL + "/get-role",
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.AMS_API_KEY}`,
+        },
+      }
+    );
+
+    res.json({
+      success: true,
+      data: response.data,
+    });
+
+  } catch (err) {
+    console.error("GET AMS ROLES ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch AMS roles",
+    });
+  }
+};
+
+

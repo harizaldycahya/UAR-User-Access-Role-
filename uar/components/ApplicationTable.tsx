@@ -81,15 +81,29 @@ export default function ApplicationTable() {
   /* ================= HANDLERS ================= */
   const handleOpenDetail = (code: string) => {
     // Navigate to detail page
-     router.push(`/applications/${code}`);
+    router.push(`/applications/${code}`);
     // Or if using Next.js router:
     // router.push(`/applications/${id}`);
   };
-  
+
   /* ================= COLUMNS ================= */
   const columns: ColumnDef<Application>[] = [
     { header: "Code", accessorKey: "code" },
-    { header: "Application", accessorKey: "name" },
+    {
+      header: "Application",
+      accessorKey: "name",
+      cell: ({ row, getValue }) => {
+        const app = row.original;
+        return (
+          <button
+            onClick={() => handleOpenDetail(app.code)}
+            className="text-primary underline underline-offset-2 hover:opacity-80 text-left"
+          >
+            {getValue<string>()}
+          </button>
+        );
+      },
+    },
     {
       header: "URL",
       accessorKey: "url",
@@ -134,23 +148,8 @@ export default function ApplicationTable() {
         </div>
       ),
     },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => {
-        const app = row.original;
-        return (
-            <Button
-              size="icon"
-              onClick={() => handleOpenDetail(app.code)}
-              className="min-w-20"
-            >
-              Detail
-          </Button>
-        );
-      },
-    },
   ];
+
 
   const table = useReactTable({
     data,
@@ -183,12 +182,26 @@ export default function ApplicationTable() {
               {table.getHeaderGroups().map(hg => (
                 <TableRow key={hg.id}>
                   {hg.headers.map(h => (
-                    <TableHead key={h.id}>
+                    <TableHead
+                      key={h.id}
+                      onClick={h.column.getToggleSortingHandler()}
+                      className="cursor-pointer select-none"
+                    >
                       <div className="flex items-center gap-1">
                         {flexRender(h.column.columnDef.header, h.getContext())}
-                        <ChevronsUpDown className="h-3 w-3" />
+
+                        {h.column.getIsSorted() === "asc" && (
+                          <span>▲</span>
+                        )}
+                        {h.column.getIsSorted() === "desc" && (
+                          <span>▼</span>
+                        )}
+                        {!h.column.getIsSorted() && (
+                          <ChevronsUpDown className="h-3 w-3 opacity-50" />
+                        )}
                       </div>
                     </TableHead>
+
                   ))}
                 </TableRow>
               ))}

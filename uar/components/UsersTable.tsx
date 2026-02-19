@@ -129,6 +129,7 @@ export default function UsersTable() {
         },
         {
             header: "Last Login",
+            accessorKey: "last_login_at",
             cell: ({ row }) => {
                 const date = row.original.last_login_at;
                 const ip = row.original.last_login_ip;
@@ -214,7 +215,7 @@ export default function UsersTable() {
                     <CardDescription>List of registered users</CardDescription>
                 </div>
             </CardHeader>
-            
+
             <CardContent>
                 <div className="mb-4">
                     <input
@@ -231,19 +232,24 @@ export default function UsersTable() {
                         {table.getHeaderGroups().map((hg) => (
                             <TableRow key={hg.id}>
                                 {hg.headers.map((h) => (
-                                    <TableHead key={h.id}>
-                                        {h.isPlaceholder ? null : (
-                                            <div
-                                                className="flex items-center gap-1 cursor-pointer select-none"
-                                                onClick={h.column.getToggleSortingHandler()}
-                                            >
-                                                {flexRender(
-                                                    h.column.columnDef.header,
-                                                    h.getContext()
-                                                )}
-                                                <ChevronsUpDown className="h-3 w-3" />
-                                            </div>
-                                        )}
+                                    <TableHead
+                                        key={h.id}
+                                        onClick={h.column.getToggleSortingHandler()}
+                                        className="cursor-pointer select-none"
+                                    >
+                                        <div className="flex items-center gap-1">
+                                            {flexRender(h.column.columnDef.header, h.getContext())}
+
+                                            {h.column.getIsSorted() === "asc" && (
+                                                <span>▲</span>
+                                            )}
+                                            {h.column.getIsSorted() === "desc" && (
+                                                <span>▼</span>
+                                            )}
+                                            {!h.column.getIsSorted() && (
+                                                <ChevronsUpDown className="h-3 w-3 opacity-50" />
+                                            )}
+                                        </div>
                                     </TableHead>
 
                                 ))}
