@@ -128,17 +128,39 @@ export default function CreateRequestsPage() {
     const loadRoles = async () => {
       try {
         setLoadingRoles(true);
-        const res = await apiFetch(
-          `/applications/${form.application}/roles`
+
+        const selectedApp = applications.find(
+          (a) => String(a.id) === String(form.application)
         );
-        setRoles(res?.data ?? []);
+
+        if (!selectedApp) return;
+
+        let res;
+
+        // khusus IMS & AMS
+        if (selectedApp.code === "IMS") {
+          res = await apiFetch("/applications/integrations/ims/roles");
+          setRoles(res?.data?.result?.data ?? []);
+        }
+        else if (selectedApp.code === "AMS") {
+          res = await apiFetch("/applications/integrations/ams/roles");
+          setRoles(res?.data?.result?.data ?? []);
+        }
+        else {
+          res = await apiFetch(`/applications/${form.application}/roles`);
+          setRoles(res?.data ?? []);
+        }
+
+      } catch (err) {
+        console.error(err);
+        setRoles([]);
       } finally {
         setLoadingRoles(false);
       }
     };
 
     loadRoles();
-  }, [form.application]);
+  }, [form.application, applications]);
 
   useEffect(() => {
     if (!form.application) return;
@@ -429,7 +451,7 @@ export default function CreateRequestsPage() {
                           <SelectValue placeholder="Select role" />
                         </SelectTrigger>
 
-                        <SelectContent>
+                        <SelectContent className="max-h-60 overflow-y-auto">
                           {loadingRoles && (
                             <div className="px-3 py-2 text-sm text-muted-foreground">
                               Loading roles...
