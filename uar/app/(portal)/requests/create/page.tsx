@@ -57,10 +57,10 @@ interface Application {
 }
 
 interface ApplicationRole {
-  id: number;
-  application_id: number;
+  id: string;
+  application_id?: number;
   name: string;
-  description: string;
+  description?: string;
 }
 
 export default function CreateRequestsPage() {
@@ -190,28 +190,48 @@ export default function CreateRequestsPage() {
   const getRoleName = (roleId?: string) => {
     if (!roleId) return "-";
     return roles.find((r) => String(r.id) === roleId)?.name ?? "-";
-
   };
 
 
   const submitRequest = async () => {
     try {
+      const selectedNewRoleId =
+        form.requestType === "application_access"
+          ? form.role
+          : form.newRole;
+
+      const selectedNewRole = roles.find(
+        (r) => String(r.id) === String(selectedNewRoleId)
+      );
+
+      const selectedOldRole =
+        form.requestType === "change_role"
+          ? app?.role
+          : null;
+
       const res = await apiFetch("/requests", {
         method: "POST",
         body: JSON.stringify({
           application_id: form.application,
           type: form.requestType,
+
           old_role_id:
-            form.requestType === "change_role" ? form.oldRole : null,
-          new_role_id:
-            form.requestType === "application_access"
-              ? form.role
-              : form.newRole,
+            form.requestType === "change_role"
+              ? form.oldRole
+              : null,
+
+          old_role_name:
+            form.requestType === "change_role"
+              ? selectedOldRole?.name || null
+              : null,
+
+          new_role_id: selectedNewRoleId,
+          new_role_name: selectedNewRole?.name || null,
+
           justification: form.justification,
         }),
       });
 
-      // kalau backend kamu pakai { success: true }
       if (res?.success === false) {
         throw new Error(res?.message || "Request failed");
       }
@@ -224,6 +244,7 @@ export default function CreateRequestsPage() {
       });
 
       router.push("/requests");
+
     } catch (err: any) {
       console.error(err);
 
@@ -232,10 +253,10 @@ export default function CreateRequestsPage() {
         title: "Failed",
         text: err?.message || "Failed to submit request",
       });
+
+      router.push("/requests");
     }
   };
-
-
 
   return (
     <main className="min-h-screen bg-background p-6">

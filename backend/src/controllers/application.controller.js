@@ -1,6 +1,22 @@
 import { db } from "../config/db.js";
 import axios from "axios";
 
+const APP_CONFIG = {
+  HRIS: {
+    token: process.env.HRIS_TOKEN,
+    base_url: "https://personasys.triasmitra.com",
+  },
+  AMS: {
+    token: process.env.AMS_TOKEN,
+    base_url: "https://ams.triasmitra.com",
+  },
+  IMS: {
+    token: process.env.IMS_TOKEN,
+    base_url: "https://ims.triasmitra.com",
+  },
+};
+
+
 /* ================= GET ALL ================= */
 export const getApplications = async (req, res) => {
   try {
@@ -210,7 +226,6 @@ export const deleteApplication = async (req, res) => {
   }
 };
 
-
 export const getImsRoles = async (req, res) => {
   try {
     const response = await axios.get(
@@ -264,4 +279,209 @@ export const getAmsRoles = async (req, res) => {
   }
 };
 
+// export const redirectToApplication = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const { code } = req.params;
+
+//     const [[app]] = await db.query(
+//       `
+//       SELECT a.url
+//       FROM applications a
+//       JOIN user_applications ua
+//         ON ua.application_id = a.id
+//       WHERE ua.user_id = ?
+//         AND a.code = ?
+//       LIMIT 1
+//       `,
+//       [userId, code]
+//     );
+
+//     if (!app) {
+//       return res.status(403).json({
+//         success: false,
+//         message: "Akses aplikasi ditolak",
+//       });
+//     }
+
+//     return res.json({
+//       success: true,
+//       redirect_url: app.url,
+//     });
+//   } catch (err) {
+//     console.error("REDIRECT ERROR:", err);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Gagal melakukan redirect",
+//     });
+//   }
+// };
+
+// export const redirectToApplication = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const nik = req.user.nik;
+//     const { code } = req.params;
+
+//     const config = APP_CONFIG[code];
+
+//     if (!config) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Application not supported",
+//       });
+//     }
+
+//     // cek akses + ambil role
+//     const [[access]] = await db.query(
+//       `
+//       SELECT ar.id AS role_id, ar.name AS role_name
+//       FROM user_applications ua
+//       JOIN application_roles ar 
+//         ON ar.id = ua.application_roles_id
+//       JOIN applications a 
+//         ON a.id = ua.application_id
+//       WHERE ua.user_id = ?
+//         AND a.code = ?
+//       LIMIT 1
+//       `,
+//       [userId, code]
+//     );
+
+//     if (!access) {
+//       return res.status(403).json({
+//         success: false,
+//         message: "Akses aplikasi ditolak",
+//       });
+//     }
+
+//     // call external SSO API
+//     const response = await axios.get(
+//       `${config.base_url}/api/public/get-token/${nik}`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${config.token}`,
+//         },
+//       }
+//     );
+
+//     const accessToken = response.data?.result?.access_token;
+
+//     if (!accessToken) {
+//       return res.status(403).json({
+//         success: false,
+//         message: "User tidak memiliki akun di aplikasi tujuan",
+//       });
+//     }
+
+//     return res.json({
+//       success: true,
+//       data: {
+//         redirect_url: `${config.base_url}/sso/${accessToken}`,
+//         application: code.toUpperCase(),
+//         role: {
+//           id: access.role_id,
+//           name: access.role_name,
+//         },
+//       },
+//     });
+//   } catch (err) {
+//     console.error("SSO REDIRECT ERROR:", err.message);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: "Gagal melakukan redirect SSO",
+//     });
+//   }
+// };
+
+export const redirectToApplication = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const nik = String(req.user.username).trim();
+    const rawCode = req.params.code;
+    const code = rawCode.trim().toLowerCase();
+
+    // mapping hardcode sementara
+    let baseUrl = "";
+    let token = "";
+
+    if (code === "hris" || code === "hrisnew") {
+      baseUrl = "https://personasys.triasmitra.com";
+      token = "9592fabb0d0a7f63c913c3828ba0c895472e14668720a5018662390829c085c9";
+    } else if (code === "ams") {
+      baseUrl = "https://ams.triasmitra.com";
+      token = "iCI0YUAb0hu+2HF62lR_xs9FUsguF3OI6BqU2O33vP46fq$AO42UAE647vCeu4Shxfw";
+    } else if (code === "ims") {
+      baseUrl = "https://ims.triasmitra.com";
+      token = "KFhNebzV8EvLWTyWYZ0XPKafNGDwtANTN7WzZtka_TfGTqPQtmANLiRfMtCI8JKyxg9";
+    } else {
+      return res.status(404).json({
+        success: false,
+        message: "Application not supported",
+      });
+    }
+
+    // cek akses user
+    const [[access]] = await db.query(
+      `
+      SELECT ar.id AS role_id, ar.name AS role_name
+      FROM user_applications ua
+      JOIN application_roles ar 
+        ON ar.id = ua.application_roles_id
+      JOIN applications a 
+        ON a.id = ua.application_id
+      WHERE ua.user_id = ?
+        AND LOWER(a.code) = ?
+      LIMIT 1
+      `,
+      [userId, code]
+    );
+
+    if (!access) {
+      return res.status(403).json({
+        success: false,
+        message: "Akses aplikasi ditolak",
+      });
+    }
+
+    // call external SSO API
+    const response = await axios.get(
+      `${baseUrl}/api/public/get-token/${nik}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const accessToken = response.data?.result?.access_token;
+
+    if (!accessToken) {
+      return res.status(403).json({
+        success: false,
+        message: "User tidak memiliki akun di aplikasi tujuan",
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        redirect_url: `${baseUrl}/sso/${accessToken}`,
+        application: code.toUpperCase(),
+        role: {
+          id: access.role_id,
+          name: access.role_name,
+        },
+      },
+    });
+  } catch (err) {
+    console.error("SSO REDIRECT ERROR:", err.response?.data || err.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Gagal melakukan redirect SSO",
+    });
+  }
+};
 

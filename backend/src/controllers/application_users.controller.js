@@ -6,27 +6,29 @@ export const getApplicationsByUser = async (req, res) => {
 
     const [rows] = await db.query(
       `
-      SELECT
-        a.id,
-        a.code,
-        a.name,
-        a.url,
-        a.color,
-        a.icon,
+        SELECT
+          a.id,
+          a.code,
+          a.name,
+          a.url,
+          a.color,
+          a.icon,
 
-        ua.id AS user_app_id,
-        ua.created_at AS granted_at,
-        ua.application_roles_id,
+          ua.id AS user_app_id,
+          ua.created_at AS granted_at,
+          ua.application_roles_id,
 
-        ar.name AS role_name
-      FROM applications a
-      LEFT JOIN user_applications ua
-        ON ua.application_id = a.id
-        AND ua.user_id = ?
-      LEFT JOIN application_roles ar
-        ON ar.id = ua.application_roles_id
-        AND ar.deleted_at IS NULL
-      ORDER BY a.name ASC
+          ar.name AS role_name
+        FROM applications a
+        LEFT JOIN user_applications ua
+          ON ua.application_id = a.id
+          AND ua.user_id = ?
+        LEFT JOIN application_roles ar
+          ON ar.id = ua.application_roles_id
+          AND ar.deleted_at IS NULL
+        ORDER BY 
+          (ua.id IS NOT NULL) DESC,
+          a.name ASC
       `,
       [userId]
     );
@@ -44,9 +46,9 @@ export const getApplicationsByUser = async (req, res) => {
 
       role: app.application_roles_id
         ? {
-            id: app.application_roles_id,
-            name: app.role_name,
-          }
+          id: app.application_roles_id,
+          name: app.role_name,
+        }
         : null,
     }));
 

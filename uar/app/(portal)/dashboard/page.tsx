@@ -187,6 +187,26 @@ export default function DashboardPage() {
     fetchNotifications();
   }, []);
 
+  const openApplication = async (code: string) => {
+    try {
+      const res = await apiAxios.get(`/applications/${code}/redirect`);
+
+      const redirectUrl = res.data?.data?.redirect_url;
+
+      if (redirectUrl) {
+        window.open(redirectUrl, "_blank", "noopener,noreferrer");
+      } else {
+        console.error("Redirect URL tidak ditemukan:", res.data);
+      }
+    } catch (err: any) {
+      console.error("Redirect failed:", err);
+
+      if (err.response?.status === 403) {
+        alert("Anda tidak memiliki akses ke aplikasi ini");
+      }
+    }
+  };
+
 
   const normalizeUrl = (url: string) => {
     if (url.startsWith("http://") || url.startsWith("https://")) {
@@ -656,11 +676,7 @@ export default function DashboardPage() {
                         className="w-full h-9 text-xs"
                         variant={app.has_access ? "default" : "outline"}
                         disabled={!app.has_access}
-                        onClick={() => {
-                          if (app.has_access) {
-                            window.open(app.url, "_blank");
-                          }
-                        }}
+                        onClick={() => openApplication(app.code)}
                       >
                         <span className="flex items-center gap-1.5">
                           {app.has_access ? (

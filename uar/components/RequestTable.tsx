@@ -86,8 +86,11 @@ type Request = {
 
   application: Application;
 
-  old_role: Role | null;
-  new_role: Role | null;
+  old_role_id: string | null;
+  old_role_name: string | null;
+
+  new_role_id: string | null;
+  new_role_name: string | null;
 
   approvals: Approval[];
 };
@@ -201,18 +204,20 @@ export default function RequestTable() {
       id: "role",
       header: "Role",
       cell: ({ row }) => {
-        const { type, old_role, new_role } = row.original;
+        const {
+          type,
+          old_role_name,
+          new_role_name,
+        } = row.original;
 
-        // Application access → cuma new role
         if (type === "application_access") {
-          return new_role?.name ?? "-";
+          return new_role_name ?? "-";
         }
 
-        // Change role → old → new
         return (
           <div className="text-sm">
             <div>
-              {old_role?.name ?? "-"} → {new_role?.name ?? "-"}
+              {old_role_name ?? "-"} → {new_role_name ?? "-"}
             </div>
           </div>
         );
@@ -329,7 +334,7 @@ export default function RequestTable() {
           </CardContent>
         </Card>
       </div>
-      
+
       <Card>
         <CardHeader className="flex flex-row justify-between">
           <div>
@@ -515,10 +520,10 @@ export default function RequestTable() {
                 <p className="text-muted-foreground mb-1">Role</p>
 
                 {detail.type === "application_access" ? (
-                  <p>{detail.new_role?.name}</p>
+                  <p>{detail.new_role_name ?? "-"}</p>
                 ) : (
                   <p>
-                    {detail.old_role?.name} → {detail.new_role?.name}
+                    {detail.old_role_name ?? "-"} → {detail.new_role_name ?? "-"}
                   </p>
                 )}
               </div>
@@ -547,10 +552,10 @@ export default function RequestTable() {
 
                       <span
                         className={`capitalize font-medium ${a.status === "approved"
-                            ? "text-success"
-                            : a.status === "rejected"
-                              ? "text-danger"
-                              : "text-warning"
+                          ? "text-success"
+                          : a.status === "rejected"
+                            ? "text-danger"
+                            : "text-warning"
                           }`}
                       >
                         {a.status}
@@ -565,8 +570,6 @@ export default function RequestTable() {
 
         </DialogContent>
       </Dialog>
-
-
     </>
   );
 

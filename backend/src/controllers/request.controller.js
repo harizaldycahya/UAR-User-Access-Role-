@@ -7,16 +7,28 @@ export const createRequest = async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    const username = req.user.username; // 👈 sumber kebenaran
+    const username = req.user.username;
+
     const {
       application_id,
       type,
       old_role_id,
+      old_role_name,
       new_role_id,
+      new_role_name,
       justification,
     } = req.body;
 
-    if (!application_id || !type || !new_role_id || !justification) {
+    // =========================
+    // 1) Basic Validation
+    // =========================
+    if (
+      !application_id ||
+      !type ||
+      !new_role_id ||
+      !new_role_name ||
+      !justification
+    ) {
       await conn.rollback();
       return res.status(400).json({
         success: false,
@@ -32,8 +44,19 @@ export const createRequest = async (req, res) => {
       });
     }
 
+    if (
+      type === "change_role" &&
+      (!old_role_id || !old_role_name)
+    ) {
+      await conn.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Old role data is required for change role request",
+      });
+    }
+
     // =========================
-    // 0) Cek pending
+    // 2) Check Existing Pending
     // =========================
     const [[existing]] = await conn.query(
       `
@@ -57,20 +80,31 @@ export const createRequest = async (req, res) => {
     }
 
     // =========================
-    // 1) Insert request
+    // 3) Insert Request (WITH SNAPSHOT ROLE NAME)
     // =========================
     const [result] = await conn.query(
       `
       INSERT INTO requests
-        (username, application_id, type, old_role_id, new_role_id, justification)
-      VALUES (?, ?, ?, ?, ?, ?)
+        (
+          username,
+          application_id,
+          type,
+          old_role_id,
+          old_role_name,
+          new_role_id,
+          new_role_name,
+          justification
+        )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         username,
         application_id,
         type,
         old_role_id || null,
+        old_role_name || null,
         new_role_id,
+        new_role_name,
         justification,
       ]
     );
@@ -78,7 +112,7 @@ export const createRequest = async (req, res) => {
     const requestId = result.insertId;
 
     // =========================
-    // 2) Generate Request Code
+    // 4) Generate Request Code
     // =========================
     const now = new Date();
     const year = now.getFullYear();
@@ -112,9 +146,9 @@ export const createRequest = async (req, res) => {
     );
 
     // =========================
-    // 3) Personasys (pakai username sebagai NIK)
+    // 5) Personasys (username = NIK)
     // =========================
-    const nik = username; // 👈 FIXED
+    const nik = username;
 
     const personaRes = await axios.get(
       "https://personasys.triasmitra.com/api/auth/get-atasan-uar",
@@ -134,9 +168,6 @@ export const createRequest = async (req, res) => {
 
     const approvalData = personaRes.data.data;
 
-    // =========================
-    // 4) Tentukan approver
-    // =========================
     const atasanId =
       approvalData.subsi_approval ||
       approvalData.kasie_approval ||
@@ -145,19 +176,11 @@ export const createRequest = async (req, res) => {
 
     const kadivId = approvalData.kadiv_approval || null;
 
-    if (!atasanId) {
+    if (!atasanId || !kadivId) {
       await conn.rollback();
       return res.status(500).json({
         success: false,
-        message: "Atasan (subsi/kasie/kadept) not found from personasys",
-      });
-    }
-
-    if (!kadivId) {
-      await conn.rollback();
-      return res.status(500).json({
-        success: false,
-        message: "Kadiv not found from personasys",
+        message: "Approver hierarchy not complete from personasys",
       });
     }
 
@@ -194,7 +217,7 @@ export const createRequest = async (req, res) => {
     }
 
     // =========================
-    // 5) Insert approvals
+    // 6) Insert Approvals
     // =========================
     const approvalQuery = `
       INSERT INTO approvals
@@ -211,7 +234,7 @@ export const createRequest = async (req, res) => {
     }
 
     // =========================
-    // 6) Final response
+    // 7) Final Response
     // =========================
     const [[request]] = await conn.query(
       `SELECT * FROM requests WHERE id = ?`,
@@ -257,11 +280,11 @@ export const getMyRequests = async (req, res) => {
         a.id AS application_id,
         a.name AS application_name,
 
-        old_role.id AS old_role_id,
-        old_role.name AS old_role_name,
+        r.old_role_id,
+        r.old_role_name,
 
-        new_role.id AS new_role_id,
-        new_role.name AS new_role_name,
+        r.new_role_id,
+        r.new_role_name,
 
         ap.id AS approval_id,
         ap.level AS approval_level,
@@ -311,17 +334,12 @@ export const getMyRequests = async (req, res) => {
             name: row.application_name,
           },
 
-          old_role: row.old_role_id
-            ? {
-              id: row.old_role_id,
-              name: row.old_role_name,
-            }
-            : null,
+          // SNAPSHOT FIELD (bukan nested object lagi)
+          old_role_id: row.old_role_id,
+          old_role_name: row.old_role_name,
 
-          new_role: {
-            id: row.new_role_id,
-            name: row.new_role_name,
-          },
+          new_role_id: row.new_role_id,
+          new_role_name: row.new_role_name,
 
           approvals: [],
         };
@@ -374,11 +392,12 @@ export const getRequestDetail = async (req, res) => {
         a.id   AS application_id,
         a.name AS application_name,
 
-        old_role.id   AS old_role_id,
-        old_role.name AS old_role_name,
+        -- SNAPSHOT FIELD
+        r.old_role_id,
+        r.old_role_name,
 
-        new_role.id   AS new_role_id,
-        new_role.name AS new_role_name,
+        r.new_role_id,
+        r.new_role_name,
 
         ap.id          AS approval_id,
         ap.level       AS approval_level,
@@ -390,12 +409,6 @@ export const getRequestDetail = async (req, res) => {
       FROM requests r
       JOIN applications a
         ON a.id = r.application_id
-
-      LEFT JOIN application_roles old_role
-        ON old_role.id = r.old_role_id
-
-      LEFT JOIN application_roles new_role
-        ON new_role.id = r.new_role_id
 
       LEFT JOIN approvals ap
         ON ap.request_code = r.request_code
@@ -434,13 +447,12 @@ export const getRequestDetail = async (req, res) => {
         name: first.application_name,
       },
 
-      old_role: first.old_role_id
-        ? { id: first.old_role_id, name: first.old_role_name }
-        : null,
+      // SNAPSHOT RESPONSE (flat, sesuai frontend)
+      old_role_id: first.old_role_id,
+      old_role_name: first.old_role_name,
 
-      new_role: first.new_role_id
-        ? { id: first.new_role_id, name: first.new_role_name }
-        : null,
+      new_role_id: first.new_role_id,
+      new_role_name: first.new_role_name,
 
       approvals: [],
     };
@@ -472,7 +484,6 @@ export const getRequestDetail = async (req, res) => {
   }
 };
 
-
 export const getMyApprovals = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -491,7 +502,7 @@ export const getMyApprovals = async (req, res) => {
     }
 
     const username = user.username;
-    
+
     const [rows] = await db.query(
       `
         SELECT
@@ -541,11 +552,9 @@ export const getMyApprovals = async (req, res) => {
         )
 
         ORDER BY r.created_at DESC
-
       `,
       [username]
     );
-
 
     res.json({
       success: true,
@@ -694,7 +703,7 @@ export const approvalAction = async (req, res) => {
         `UPDATE requests SET status = 'approved' WHERE request_code = ?`,
         [approval.request_code]
       );
-      
+
       const [[request]] = await conn.query(
         `
         SELECT
@@ -828,6 +837,3 @@ export const getMyApprovalHistory = async (req, res) => {
     });
   }
 };
-
-
-
