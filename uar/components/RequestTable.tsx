@@ -81,10 +81,11 @@ type Request = {
   status: "pending" | "approved" | "rejected";
 
   justification: string | null;
+  notes: string | null;           // ← tambah
 
   created_at: string;
 
-  application: Application;
+  application: Application & { role_mode: "static" | "dynamic" }; // ← tambah role_mode
 
   old_role_id: string | null;
   old_role_name: string | null;
@@ -147,9 +148,6 @@ export default function RequestTable() {
     }
   };
 
-
-
-
   /* ================= COLUMNS ================= */
   const columns: ColumnDef<Request, any>[] = [
     {
@@ -186,15 +184,14 @@ export default function RequestTable() {
       cell: ({ row }) => {
         const status = row.original.status;
 
-        const color =
-          status === "approved"
-            ? "text-success"
-            : status === "rejected"
-              ? "text-danger"
-              : "text-warning";
+        const styles = {
+          approved: "bg-success/10 text-success border-success/30",
+          rejected: "bg-destructive/10 text-destructive border-destructive/30",
+          pending: "bg-warning/10 text-warning border-warning/30",
+        };
 
         return (
-          <span className={`font-medium capitalize ${color}`}>
+          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium capitalize ${styles[status as keyof typeof styles] ?? styles.pending}`}>
             {status}
           </span>
         );
@@ -202,13 +199,21 @@ export default function RequestTable() {
     },
     {
       id: "role",
-      header: "Role",
+      header: ({ table }) => {
+        const rows = table.getRowModel().rows;
+        const isDynamic = rows[0]?.original.application?.role_mode === "dynamic";
+        return isDynamic ? "Notes" : "Role";
+      },
       cell: ({ row }) => {
-        const {
-          type,
-          old_role_name,
-          new_role_name,
-        } = row.original;
+        const { type, old_role_name, new_role_name, notes, application } = row.original;
+        const isDynamic = application?.role_mode === "dynamic";
+        if (isDynamic) {
+          return (
+            <span className="text-muted-foreground italic truncate block max-w-96" title={notes ?? "-"}>
+              {notes ?? "-"}
+            </span>
+          );
+        }
 
         if (type === "application_access") {
           return new_role_name ?? "-";
@@ -216,13 +221,13 @@ export default function RequestTable() {
 
         return (
           <div className="text-sm">
-            <div>
-              {old_role_name ?? "-"} → {new_role_name ?? "-"}
-            </div>
+            {old_role_name ?? "-"} → {new_role_name ?? "-"}
           </div>
         );
       },
     },
+
+
   ];
 
 
@@ -502,7 +507,12 @@ export default function RequestTable() {
 
                 <div>
                   <p className="text-muted-foreground">Status</p>
-                  <p className="font-medium capitalize">
+                  <p className={`font-medium capitalize ${detail.status === "approved"
+                    ? "text-success"
+                    : detail.status === "rejected"
+                      ? "text-destructive"
+                      : "text-warning"
+                    }`}>
                     {detail.status}
                   </p>
                 </div>
@@ -515,16 +525,18 @@ export default function RequestTable() {
                 </div>
               </div>
 
-              {/* ROLE */}
+              {/* ROLE / NOTES */}
               <div>
-                <p className="text-muted-foreground mb-1">Role</p>
+                <p className="text-muted-foreground mb-1">
+                  {detail.application?.role_mode === "dynamic" ? "Notes" : "Role"}
+                </p>
 
-                {detail.type === "application_access" ? (
+                {detail.application?.role_mode === "dynamic" ? (
+                  <p className="bg-muted p-3 rounded">{detail.notes ?? "-"}</p>
+                ) : detail.type === "application_access" ? (
                   <p>{detail.new_role_name ?? "-"}</p>
                 ) : (
-                  <p>
-                    {detail.old_role_name ?? "-"} → {detail.new_role_name ?? "-"}
-                  </p>
+                  <p>{detail.old_role_name ?? "-"} → {detail.new_role_name ?? "-"}</p>
                 )}
               </div>
 
@@ -554,7 +566,7 @@ export default function RequestTable() {
                         className={`capitalize font-medium ${a.status === "approved"
                           ? "text-success"
                           : a.status === "rejected"
-                            ? "text-danger"
+                            ? "text-destructive"
                             : "text-warning"
                           }`}
                       >

@@ -45,13 +45,21 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import Swal from "sweetalert2";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+
 
 
 
 /* ================= TYPES ================= */
 type Request = {
   id: number; // request id
-
+  request_code: string;
   approval_id: number;
   level: number;
   approval_status: "pending" | "approved" | "rejected";
@@ -59,9 +67,12 @@ type Request = {
   type: "application_access" | "change_role";
 
   application_name: string;
+  application_role_mode: "static" | "dynamic";
 
   old_role_name: string | null;
   new_role_name: string | null;
+
+  notes: string | null;
 
   justification: string | null;
   created_at: string;
@@ -100,6 +111,9 @@ export default function ApprovalTable() {
   const [loading, setLoading] = React.useState(true);
   const [columnFilters, setColumnFilters] = React.useState<any[]>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [openDetail, setOpenDetail] = React.useState(false);
+  const [selectedRequest, setSelectedRequest] = React.useState<Request | null>(null);
+
 
   const [summary, setSummary] = React.useState({
     total: 0,
@@ -138,8 +152,6 @@ export default function ApprovalTable() {
         return "Filter Status";
     }
   }, [statusParam]);
-
-
 
   const pageTitle = pageTitleMap[statusParam ?? ""] ?? "All Approvals";
 
@@ -314,12 +326,21 @@ export default function ApprovalTable() {
         <StatusBadge status={row.original.approval_status} />
       ),
     },
-
     {
       id: "role",
-      header: "Role",
+      header: "Role / Notes",
       cell: ({ row }) => {
-        const { type, old_role_name, new_role_name } = row.original;
+        const { type, old_role_name, new_role_name, notes, application_role_mode } = row.original;
+        const isDynamic = application_role_mode === "dynamic";
+
+        if (isDynamic) {
+          return (
+            <div className="flex items-center gap-1 max-w-50">
+              <span className="text-xs text-muted-foreground shrink-0">[Notes]</span>
+              <span className="italic truncate block" title={notes ?? "-"}>{notes ?? "-"}</span>
+            </div>
+          );
+        }
 
         if (type === "application_access") {
           return new_role_name ?? "-";
@@ -327,9 +348,7 @@ export default function ApprovalTable() {
 
         return (
           <div className="text-sm">
-            <div>
-              {old_role_name ?? "-"} → {new_role_name ?? "-"}
-            </div>
+            {old_role_name ?? "-"} → {new_role_name ?? "-"}
           </div>
         );
       },
@@ -368,9 +387,7 @@ export default function ApprovalTable() {
         );
       },
     }
-
   ];
-
 
   /* ================= TABLE ================= */
   const table = useReactTable({
@@ -548,7 +565,11 @@ export default function ApprovalTable() {
 
               <TableBody>
                 {table.getRowModel().rows.map(row => (
-                  <TableRow key={row.id}>
+                  <TableRow
+                    key={row.id}
+                    onClick={() => { setSelectedRequest(row.original); setOpenDetail(true); }}
+                    className="cursor-pointer hover:bg-muted/50"
+                  >
                     {row.getVisibleCells().map(cell => (
                       <TableCell key={cell.id}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -576,7 +597,73 @@ export default function ApprovalTable() {
           </span>
         </CardFooter>
       </Card>
+      <Dialog open={openDetail} onOpenChange={setOpenDetail}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Approval Detail</DialogTitle>
+            <DialogDescription>{selectedRequest?.request_code}</DialogDescription>
+          </DialogHeader>
 
+          {selectedRequest && (
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-muted-foreground">Application</p>
+                  <p className="font-medium">{selectedRequest.application_name}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Type</p>
+                  <p className="capitalize">{selectedRequest.type.replace("_", " ")}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Status</p>
+                  <StatusBadge status={selectedRequest.approval_status} />
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Date</p>
+                  <p>{new Date(selectedRequest.created_at).toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-muted-foreground mb-1">
+                  {selectedRequest.application_role_mode === "dynamic" ? "Notes" : "Role"}
+                </p>
+                {selectedRequest.application_role_mode === "dynamic" ? (
+                  <p className="bg-muted p-3 rounded">{selectedRequest.notes ?? "-"}</p>
+                ) : selectedRequest.type === "application_access" ? (
+                  <p>{selectedRequest.new_role_name ?? "-"}</p>
+                ) : (
+                  <p>{selectedRequest.old_role_name ?? "-"} → {selectedRequest.new_role_name ?? "-"}</p>
+                )}
+              </div>
+
+              <div>
+                <p className="text-muted-foreground mb-1">Justification</p>
+                <p className="bg-muted p-3 rounded">{selectedRequest.justification ?? "-"}</p>
+              </div>
+
+              {selectedRequest.approval_status === "pending" && (
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); submitApproval(selectedRequest.approval_id, "approve"); }}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={(e) => { e.stopPropagation(); submitApproval(selectedRequest.approval_id, "reject"); }}
+                  >
+                    Reject
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

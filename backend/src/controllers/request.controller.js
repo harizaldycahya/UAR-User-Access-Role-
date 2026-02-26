@@ -1,6 +1,16 @@
 import { db } from "../config/db.js";
 import axios from "axios";
 
+import {
+  getApprovalWithLock,
+  getMinPendingLevel,
+  handleReject,
+  getPendingCount,
+  getRequestInfo,
+  applyRoleChanges,
+  notifyExternalApp,
+} from "../helpers/approvalHelpers.js";
+
 export const createRequest = async (req, res) => {
   const conn = await db.getConnection();
 
@@ -16,19 +26,24 @@ export const createRequest = async (req, res) => {
       old_role_name,
       new_role_id,
       new_role_name,
+      notes,
       justification,
     } = req.body;
 
     // =========================
-    // 1) Basic Validation
+    // 1) Check role_mode aplikasi
     // =========================
-    if (
-      !application_id ||
-      !type ||
-      !new_role_id ||
-      !new_role_name ||
-      !justification
-    ) {
+    const [[appData]] = await conn.query(
+      `SELECT role_mode FROM applications WHERE id = ?`,
+      [application_id]
+    );
+
+    const isDynamic = appData?.role_mode === "dynamic";
+
+    // =========================
+    // 2) Basic Validation
+    // =========================
+    if (!application_id || !type || !justification) {
       await conn.rollback();
       return res.status(400).json({
         success: false,
@@ -44,10 +59,23 @@ export const createRequest = async (req, res) => {
       });
     }
 
-    if (
-      type === "change_role" &&
-      (!old_role_id || !old_role_name)
-    ) {
+    if (isDynamic && !notes) {
+      await conn.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Notes is required for this application",
+      });
+    }
+
+    if (!isDynamic && (!new_role_id || !new_role_name)) {
+      await conn.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Role data is required",
+      });
+    }
+
+    if (type === "change_role" && !isDynamic && (!old_role_id || !old_role_name)) {
       await conn.rollback();
       return res.status(400).json({
         success: false,
@@ -56,7 +84,7 @@ export const createRequest = async (req, res) => {
     }
 
     // =========================
-    // 2) Check Existing Pending
+    // 3) Check Existing Pending
     // =========================
     const [[existing]] = await conn.query(
       `
@@ -80,22 +108,13 @@ export const createRequest = async (req, res) => {
     }
 
     // =========================
-    // 3) Insert Request (WITH SNAPSHOT ROLE NAME)
+    // 4) Insert Request
     // =========================
     const [result] = await conn.query(
       `
       INSERT INTO requests
-        (
-          username,
-          application_id,
-          type,
-          old_role_id,
-          old_role_name,
-          new_role_id,
-          new_role_name,
-          justification
-        )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (username, application_id, type, old_role_id, old_role_name, new_role_id, new_role_name, notes, justification)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         username,
@@ -103,8 +122,9 @@ export const createRequest = async (req, res) => {
         type,
         old_role_id || null,
         old_role_name || null,
-        new_role_id,
-        new_role_name,
+        isDynamic ? null : (new_role_id || null),
+        isDynamic ? null : (new_role_name || null),
+        isDynamic ? notes : null,
         justification,
       ]
     );
@@ -112,7 +132,7 @@ export const createRequest = async (req, res) => {
     const requestId = result.insertId;
 
     // =========================
-    // 4) Generate Request Code
+    // 5) Generate Request Code
     // =========================
     const now = new Date();
     const year = now.getFullYear();
@@ -146,12 +166,12 @@ export const createRequest = async (req, res) => {
     );
 
     // =========================
-    // 5) Personasys (username = NIK)
+    // 6) Personasys (username = NIK)
     // =========================
     const nik = username;
 
     const personaRes = await axios.get(
-      "https://personasys.triasmitra.com/api/auth/get-atasan-uar",
+      "https://personasys.triasmitra.com/api/auth/get-approval-uar",
       {
         params: { nik },
         timeout: 10000,
@@ -166,21 +186,13 @@ export const createRequest = async (req, res) => {
       });
     }
 
-    const approvalData = personaRes.data.data;
+    const atasanId = personaRes.data.data?.atasan1_general || null;
 
-    const atasanId =
-      approvalData.subsi_approval ||
-      approvalData.kasie_approval ||
-      approvalData.kadept_approval ||
-      null;
-
-    const kadivId = approvalData.kadiv_approval || null;
-
-    if (!atasanId || !kadivId) {
+    if (!atasanId) {
       await conn.rollback();
       return res.status(500).json({
         success: false,
-        message: "Approver hierarchy not complete from personasys",
+        message: "Approver not found from personasys",
       });
     }
 
@@ -191,19 +203,14 @@ export const createRequest = async (req, res) => {
 
     // App Owner
     const [[appOwner]] = await conn.query(
-      `
-      SELECT owner AS approver_id
-      FROM applications
-      WHERE id = ?
-      `,
+      `SELECT owner AS approver_id FROM applications WHERE id = ?`,
       [application_id]
     );
 
     const approvers = [
       { level: 1, approver_id: atasanId },
-      { level: 2, approver_id: kadivId },
-      { level: 3, approver_id: hrd?.approver_id },
-      { level: 4, approver_id: appOwner?.approver_id },
+      { level: 2, approver_id: hrd?.approver_id },
+      { level: 3, approver_id: appOwner?.approver_id },
     ];
 
     for (const a of approvers) {
@@ -217,24 +224,19 @@ export const createRequest = async (req, res) => {
     }
 
     // =========================
-    // 6) Insert Approvals
+    // 7) Insert Approvals
     // =========================
     const approvalQuery = `
-      INSERT INTO approvals
-      (request_code, level, approver_id, status, created_at)
+      INSERT INTO approvals (request_code, level, approver_id, status, created_at)
       VALUES (?, ?, ?, 'pending', NOW())
     `;
 
     for (const a of approvers) {
-      await conn.query(approvalQuery, [
-        requestCode,
-        a.level,
-        a.approver_id,
-      ]);
+      await conn.query(approvalQuery, [requestCode, a.level, a.approver_id]);
     }
 
     // =========================
-    // 7) Final Response
+    // 8) Final Response
     // =========================
     const [[request]] = await conn.query(
       `SELECT * FROM requests WHERE id = ?`,
@@ -274,11 +276,13 @@ export const getMyRequests = async (req, res) => {
         r.request_code,
         r.type,
         r.justification,
+        r.notes,
         r.status,
         r.created_at,
 
         a.id AS application_id,
         a.name AS application_name,
+        a.role_mode AS application_role_mode,
 
         r.old_role_id,
         r.old_role_name,
@@ -326,18 +330,18 @@ export const getMyRequests = async (req, res) => {
           request_code: row.request_code,
           type: row.type,
           justification: row.justification,
+          notes: row.notes,
           status: row.status,
           created_at: row.created_at,
 
           application: {
             id: row.application_id,
             name: row.application_name,
+            role_mode: row.application_role_mode,
           },
 
-          // SNAPSHOT FIELD (bukan nested object lagi)
           old_role_id: row.old_role_id,
           old_role_name: row.old_role_name,
-
           new_role_id: row.new_role_id,
           new_role_name: row.new_role_name,
 
@@ -373,7 +377,6 @@ export const getMyRequests = async (req, res) => {
   }
 };
 
-// GET /api/requests/:code
 export const getRequestDetail = async (req, res) => {
   try {
     const username = req.user.username;
@@ -386,11 +389,13 @@ export const getRequestDetail = async (req, res) => {
         r.request_code,
         r.type,
         r.justification,
+        r.notes,
         r.status,
         r.created_at,
 
         a.id   AS application_id,
         a.name AS application_name,
+        a.role_mode AS application_role_mode,
 
         -- SNAPSHOT FIELD
         r.old_role_id,
@@ -439,12 +444,14 @@ export const getRequestDetail = async (req, res) => {
       request_code: first.request_code,
       type: first.type,
       justification: first.justification,
+      notes: first.notes,
       status: first.status,
       created_at: first.created_at,
 
       application: {
         id: first.application_id,
         name: first.application_name,
+        role_mode: first.application_role_mode,
       },
 
       // SNAPSHOT RESPONSE (flat, sesuai frontend)
@@ -514,17 +521,19 @@ export const getMyApprovals = async (req, res) => {
           r.request_code,
           r.type,
           r.justification,
+          r.notes,
           r.status,
           r.created_at,
 
           a.id AS application_id,
           a.name AS application_name,
+          a.role_mode AS application_role_mode,
 
-          old_role.id AS old_role_id,
-          old_role.name AS old_role_name,
+          r.old_role_id,
+          r.old_role_name,
 
-          new_role.id AS new_role_id,
-          new_role.name AS new_role_name
+          r.new_role_id,
+          r.new_role_name
 
         FROM approvals ap
 
@@ -533,12 +542,6 @@ export const getMyApprovals = async (req, res) => {
 
         JOIN applications a
           ON a.id = r.application_id
-
-        LEFT JOIN application_roles old_role
-          ON old_role.id = r.old_role_id
-
-        LEFT JOIN application_roles new_role
-          ON new_role.id = r.new_role_id
 
         WHERE ap.approver_id = ?
         AND ap.status = 'pending'
@@ -571,214 +574,260 @@ export const getMyApprovals = async (req, res) => {
 
 export const approvalAction = async (req, res) => {
   const conn = await db.getConnection();
+
   try {
-    const userId = req.user.id;
+    const username = req.user.username;
     const { approval_id, action } = req.body;
 
     if (!["approve", "reject"].includes(action)) {
-      return res.status(400).json({
-        success: false,
-        message: "Action tidak valid",
-      });
+      return res.status(400).json({ success: false, message: "Action tidak valid" });
     }
-
-    // ambil username approver
-    const [[user]] = await conn.query(
-      `SELECT username FROM users WHERE id = ?`,
-      [userId]
-    );
-
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "User tidak ditemukan",
-      });
-    }
-
-    const username = user.username;
 
     await conn.beginTransaction();
 
-    // ambil approval yang mau diproses
-    const [[approval]] = await conn.query(
-      `
-      SELECT *
-      FROM approvals
-      WHERE id = ?
-        AND approver_id = ?
-      FOR UPDATE
-      `,
-      [approval_id, username]
-    );
-
+    const approval = await getApprovalWithLock(conn, approval_id, username);
     if (!approval) {
       await conn.rollback();
-      return res.status(404).json({
-        success: false,
-        message: "Approval tidak ditemukan",
-      });
+      return res.status(404).json({ success: false, message: "Approval tidak ditemukan" });
     }
 
     if (approval.status !== "pending") {
       await conn.rollback();
-      return res.status(400).json({
-        success: false,
-        message: "Approval sudah diproses",
-      });
+      return res.status(400).json({ success: false, message: "Approval sudah diproses" });
     }
 
-    // cek level terkecil yang masih pending
-    const [[minLevel]] = await conn.query(
-      `
-      SELECT MIN(level) AS min_level
-      FROM approvals
-      WHERE request_code = ?
-        AND status = 'pending'
-      `,
-      [approval.request_code]
-    );
-
-    if (approval.level !== minLevel.min_level) {
+    const minLevel = await getMinPendingLevel(conn, approval.request_code);
+    if (approval.level !== minLevel) {
       await conn.rollback();
-      return res.status(400).json({
-        success: false,
-        message: "Approval harus diproses berurutan",
-      });
+      return res.status(400).json({ success: false, message: "Approval harus diproses berurutan" });
     }
 
-    // update approval
-    const approvalStatus = action === "approve" ? "approved" : "rejected";
-
-    await conn.query(
-      `
-      UPDATE approvals
-      SET status = ?, approved_at = NOW()
-      WHERE id = ?
-      `,
-      [approvalStatus, approval.id]
-    );
-
-    // kalau reject → request langsung rejected + kunci approval lain
     if (action === "reject") {
-      await conn.query(
-        `
-        UPDATE requests
-        SET status = 'rejected'
-        WHERE request_code = ?
-        `,
-        [approval.request_code]
-      );
-
-      await conn.query(
-        `
-        UPDATE approvals
-        SET status = 'rejected'
-        WHERE request_code = ?
-          AND status = 'pending'
-        `,
-        [approval.request_code]
-      );
-
+      await handleReject(conn, approval);
       await conn.commit();
-      return res.json({
-        success: true,
-        message: "Request ditolak",
-      });
+      return res.json({ success: true, message: "Request ditolak" });
     }
 
-    // cek apakah masih ada pending
-    const [[pending]] = await conn.query(
-      `
-      SELECT COUNT(*) AS total
-      FROM approvals
-      WHERE request_code = ?
-        AND status = 'pending'
-      `,
-      [approval.request_code]
+    // approve
+    await conn.query(
+      `UPDATE approvals SET status = 'approved', approved_at = NOW() WHERE id = ?`,
+      [approval.id]
     );
 
-    // kalau tidak ada pending → request approved
-    if (pending.total === 0) {
+    const pendingCount = await getPendingCount(conn, approval.request_code);
+    if (pendingCount === 0) {
       await conn.query(
         `UPDATE requests SET status = 'approved' WHERE request_code = ?`,
         [approval.request_code]
       );
 
-      const [[request]] = await conn.query(
-        `
-        SELECT
-          u.id AS user_id,
-          r.application_id,
-          r.old_role_id,
-          r.new_role_id,
-          r.type
-        FROM requests r
-        JOIN users u 
-          ON u.username COLLATE utf8mb4_unicode_ci
-          = r.username COLLATE utf8mb4_unicode_ci
-        WHERE r.request_code = ?
-        `,
-        [approval.request_code]
-      );
+      const request = await getRequestInfo(conn, approval.request_code);
+      await applyRoleChanges(conn, request);
+      // Hit external API di luar transaksi, supaya kalau gagal tidak rollback DB
+      await notifyExternalApp(request);
 
-      if (request.type === "application_access") {
-        // INSERT akses baru
-        await conn.query(
-          `
-          INSERT INTO user_applications
-            (user_id, application_id, application_roles_id, created_at)
-          VALUES (?, ?, ?, NOW())
-          `,
-          [
-            request.user_id,
-            request.application_id,
-            request.new_role_id
-          ]
-        );
-      }
-
-      if (request.type === "change_role") {
-        // UPDATE role existing
-        const [result] = await conn.query(
-          `
-          UPDATE user_applications
-          SET application_roles_id = ?, updated_at = NOW()
-          WHERE user_id = ?
-            AND application_id = ?
-            AND application_roles_id = ?
-          `,
-          [
-            request.new_role_id,
-            request.user_id,
-            request.application_id,
-            request.old_role_id
-          ]
-        );
-
-        if (result.affectedRows === 0) {
-          throw new Error("User application tidak ditemukan untuk change role");
-        }
-      }
+      await conn.commit();
+    } else {
+      await conn.commit();
     }
 
+    res.json({ success: true, message: "Approval berhasil" });
 
-    await conn.commit();
-
-    res.json({
-      success: true,
-      message: "Approval berhasil",
-    });
   } catch (err) {
     await conn.rollback();
     console.error("APPROVAL ACTION ERROR:", err);
-    res.status(500).json({
-      success: false,
-      message: "Gagal memproses approval",
-    });
+    res.status(500).json({ success: false, message: "Gagal memproses approval" });
   } finally {
     conn.release();
   }
 };
+
+// export const approvalAction = async (req, res) => {
+//   const conn = await db.getConnection();
+
+//   try {
+//     const username = req.user.username;
+//     const { approval_id, action } = req.body;
+
+//     if (!["approve", "reject"].includes(action)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Action tidak valid",
+//       });
+//     }
+
+//     await conn.beginTransaction();
+
+//     // ambil approval yang mau diproses
+//     const [[approval]] = await conn.query(
+//       `
+//       SELECT *
+//       FROM approvals
+//       WHERE id = ?
+//         AND approver_id = ?
+//       FOR UPDATE
+//       `,
+//       [approval_id, username]
+//     );
+
+//     if (!approval) {
+//       await conn.rollback();
+//       return res.status(404).json({
+//         success: false,
+//         message: "Approval tidak ditemukan",
+//       });
+//     }
+
+//     if (approval.status !== "pending") {
+//       await conn.rollback();
+//       return res.status(400).json({
+//         success: false,
+//         message: "Approval sudah diproses",
+//       });
+//     }
+
+//     // cek level terkecil yang masih pending
+//     const [[minLevel]] = await conn.query(
+//       `
+//       SELECT MIN(level) AS min_level
+//       FROM approvals
+//       WHERE request_code = ?
+//         AND status = 'pending'
+//       `,
+//       [approval.request_code]
+//     );
+
+//     if (approval.level !== minLevel.min_level) {
+//       await conn.rollback();
+//       return res.status(400).json({
+//         success: false,
+//         message: "Approval harus diproses berurutan",
+//       });
+//     }
+
+//     const approvalStatus = action === "approve" ? "approved" : "rejected";
+
+//     await conn.query(
+//       `
+//       UPDATE approvals
+//       SET status = ?, approved_at = NOW()
+//       WHERE id = ?
+//       `,
+//       [approvalStatus, approval.id]
+//     );
+
+//     if (action === "reject") {
+//       await conn.query(
+//         `UPDATE requests SET status = 'rejected' WHERE request_code = ?`,
+//         [approval.request_code]
+//       );
+
+//       await conn.query(
+//         `
+//         UPDATE approvals
+//         SET status = 'rejected'
+//         WHERE request_code = ?
+//           AND status = 'pending'
+//         `,
+//         [approval.request_code]
+//       );
+
+//       await conn.commit();
+
+//       return res.json({
+//         success: true,
+//         message: "Request ditolak",
+//       });
+//     }
+
+//     // cek apakah masih ada pending
+//     const [[pending]] = await conn.query(
+//       `
+//       SELECT COUNT(*) AS total
+//       FROM approvals
+//       WHERE request_code = ?
+//         AND status = 'pending'
+//       `,
+//       [approval.request_code]
+//     );
+
+//     if (pending.total === 0) {
+//       await conn.query(
+//         `UPDATE requests SET status = 'approved' WHERE request_code = ?`,
+//         [approval.request_code]
+//       );
+
+//       const [[request]] = await conn.query(
+//         `
+//     SELECT
+//       r.username,
+//       r.application_id,
+//       r.old_role_id,
+//       r.new_role_id,
+//       r.type
+//     FROM requests r
+//     WHERE r.request_code = ?
+//     `,
+//         [approval.request_code]
+//       );
+
+//       if (request.type === "application_access") {
+//         await conn.query(
+//           `
+//       INSERT INTO user_applications
+//         (username, application_id, application_roles_id, created_at)
+//       VALUES (?, ?, ?, NOW())
+//       `,
+//           [
+//             request.username,
+//             request.application_id,
+//             request.new_role_id
+//           ]
+//         );
+//       }
+
+//       if (request.type === "change_role") {
+//         const [result] = await conn.query(
+//           `
+//       UPDATE user_applications
+//       SET application_roles_id = ?, updated_at = NOW()
+//       WHERE username = ?
+//         AND application_id = ?
+//         AND application_roles_id = ?
+//       `,
+//           [
+//             request.new_role_id,
+//             request.username,
+//             request.application_id,
+//             request.old_role_id
+//           ]
+//         );
+
+//         if (result.affectedRows === 0) {
+//           throw new Error("User application tidak ditemukan untuk change role");
+//         }
+//       }
+//     }
+
+//     await conn.commit();
+
+//     res.json({
+//       success: true,
+//       message: "Approval berhasil",
+//     });
+
+//   } catch (err) {
+//     await conn.rollback();
+//     console.error("APPROVAL ACTION ERROR:", err);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Gagal memproses approval",
+//     });
+//   } finally {
+//     conn.release();
+//   }
+// };
 
 export const getMyApprovalHistory = async (req, res) => {
   try {
@@ -807,9 +856,11 @@ export const getMyApprovalHistory = async (req, res) => {
         r.request_code,
         r.type,
         r.justification,
+        r.notes,
         r.created_at,
 
         a.name AS application_name,
+        a.role_mode AS application_role_mode,
 
         old_role.name AS old_role_name,
         new_role.name AS new_role_name

@@ -290,7 +290,7 @@ export const getAmsRoles = async (req, res) => {
 //       FROM applications a
 //       JOIN user_applications ua
 //         ON ua.application_id = a.id
-//       WHERE ua.user_id = ?
+//       WHERE ua.username = ?
 //         AND a.code = ?
 //       LIMIT 1
 //       `,
@@ -341,7 +341,7 @@ export const getAmsRoles = async (req, res) => {
 //         ON ar.id = ua.application_roles_id
 //       JOIN applications a 
 //         ON a.id = ua.application_id
-//       WHERE ua.user_id = ?
+//       WHERE ua.username = ?
 //         AND a.code = ?
 //       LIMIT 1
 //       `,
@@ -397,8 +397,8 @@ export const getAmsRoles = async (req, res) => {
 
 export const redirectToApplication = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const nik = String(req.user.username).trim();
+    const username = String(req.user.username).trim();
+    const nik = username; // kalau memang NIK = username
     const rawCode = req.params.code;
     const code = rawCode.trim().toLowerCase();
 
@@ -422,20 +422,22 @@ export const redirectToApplication = async (req, res) => {
       });
     }
 
-    // cek akses user
+    console.log("=== DEBUG SSO ===");
+    console.log("username from token:", username);
+    console.log("code from params:", code);
+
+    // cek akses user berdasarkan username
     const [[access]] = await db.query(
       `
-      SELECT ar.id AS role_id, ar.name AS role_name
-      FROM user_applications ua
-      JOIN application_roles ar 
-        ON ar.id = ua.application_roles_id
-      JOIN applications a 
-        ON a.id = ua.application_id
-      WHERE ua.user_id = ?
-        AND LOWER(a.code) = ?
-      LIMIT 1
+        SELECT ua.id
+        FROM user_applications ua
+        JOIN applications a 
+          ON a.id = ua.application_id
+        WHERE TRIM(LOWER(ua.username)) = TRIM(LOWER(?))
+          AND TRIM(LOWER(a.code)) = TRIM(LOWER(?))
+        LIMIT 1
       `,
-      [userId, code]
+      [username, code]
     );
 
     if (!access) {

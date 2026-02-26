@@ -50,6 +50,7 @@ interface Application {
   color: string;
   has_access: boolean;
   granted_at: string | null;
+  role_mode: "static" | "dynamic";
   role: {
     id: number;
     name: string;
@@ -78,6 +79,7 @@ export default function CreateRequestsPage() {
     oldRole: "",
     newRole: "",
     justification: "",
+    notes: "",
   });
 
 
@@ -86,10 +88,13 @@ export default function CreateRequestsPage() {
     if (step === 2) return form.application !== "";
     if (step === 3) {
       if (form.requestType === "application_access") {
-        return (
-          form.role !== "" &&
-          form.justification.trim() !== ""
-        );
+        if (app?.role_mode === "dynamic") {
+          return form.notes.trim() !== "" && form.justification.trim() !== "";
+        }
+        return form.role !== "" && form.justification.trim() !== "";
+      }
+      if (app?.role_mode === "dynamic") {
+        return form.notes.trim() !== "" && form.justification.trim() !== "";
       }
       return form.oldRole !== "" && form.newRole !== "" && form.justification.trim() !== "";
     }
@@ -114,7 +119,6 @@ export default function CreateRequestsPage() {
         setLoading(false);
       }
     };
-
     load();
   }, []);
 
@@ -215,18 +219,13 @@ export default function CreateRequestsPage() {
           application_id: form.application,
           type: form.requestType,
 
-          old_role_id:
-            form.requestType === "change_role"
-              ? form.oldRole
-              : null,
+          old_role_id: form.requestType === "change_role" ? form.oldRole : null,
+          old_role_name: form.requestType === "change_role" ? selectedOldRole?.name || null : null,
 
-          old_role_name:
-            form.requestType === "change_role"
-              ? selectedOldRole?.name || null
-              : null,
+          new_role_id: app?.role_mode === "dynamic" ? null : selectedNewRoleId,
+          new_role_name: app?.role_mode === "dynamic" ? null : (selectedNewRole?.name || null),
 
-          new_role_id: selectedNewRoleId,
-          new_role_name: selectedNewRole?.name || null,
+          notes: app?.role_mode === "dynamic" ? form.notes : null,
 
           justification: form.justification,
         }),
@@ -460,50 +459,52 @@ export default function CreateRequestsPage() {
               <div>
                 {form.requestType === "application_access" && (
                   <div className="space-y-5">
-                    <div>
-                      <Label className="text-sm mb-3 block">Requested Role</Label>
-                      <Select
-                        value={form.role}
-                        onValueChange={(value) =>
-                          setForm({ ...form, role: value })
-                        }
-                      >
-                        <SelectTrigger className="w-full px-5 py-8">
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-
-                        <SelectContent className="max-h-60 overflow-y-auto">
-                          {loadingRoles && (
-                            <div className="px-3 py-2 text-sm text-muted-foreground">
-                              Loading roles...
-                            </div>
-                          )}
-
-                          {!loadingRoles && roles.length === 0 && (
-                            <div className="px-3 py-2 text-sm text-muted-foreground">
-                              No roles available
-                            </div>
-                          )}
-
-                          {roles.map((role) => (
-                            <SelectItem key={role.id} value={String(role.id)}>
-                              <div className="flex flex-col">
-                                <span className="font-medium text-left">{role.name}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {app?.role_mode === "dynamic" ? (
+                      <div>
+                        <Label className="text-sm mb-3 block">Notes</Label>
+                        <Textarea
+                          placeholder="Describe the role or access level you need..."
+                          className="p-5"
+                          value={form.notes}
+                          onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <Label className="text-sm mb-3 block">Requested Role</Label>
+                        <Select
+                          value={form.role}
+                          onValueChange={(value) => setForm({ ...form, role: value })}
+                        >
+                          <SelectTrigger className="w-full px-5 py-8">
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60 overflow-y-auto">
+                            {loadingRoles && (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">Loading roles...</div>
+                            )}
+                            {!loadingRoles && roles.length === 0 && (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">No roles available</div>
+                            )}
+                            {roles.map((role) => (
+                              <SelectItem key={role.id} value={String(role.id)}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-left">{role.name}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                     <div>
                       <Label className="text-sm mb-3 block">Justification</Label>
                       <Textarea
-                        placeholder="Explain why you need access to this application..." className="p-5"
+                        placeholder="Explain why you need access to this application..."
+                        className="p-5"
                         value={form.justification}
-                        onChange={(e) =>
-                          setForm({ ...form, justification: e.target.value })
-                        }
+                        onChange={(e) => setForm({ ...form, justification: e.target.value })}
                       />
                     </div>
                   </div>
@@ -521,39 +522,44 @@ export default function CreateRequestsPage() {
                       />
                     </div>
 
-
-                    <div>
-                      <Label className="text-sm mb-3 block">New Role</Label>
-                      <Select
-                        value={form.newRole}
-                        onValueChange={(value) =>
-                          setForm({ ...form, newRole: value })
-                        }
-                      >
-                        <SelectTrigger className="w-full h-12">
-                          <SelectValue placeholder="Select new role" />
-                        </SelectTrigger>
-
-                        <SelectContent>
-                          {roles
-                            .filter((r) => String(r.id) !== String(form.oldRole))
-                            .map((role) => (
-                              <SelectItem key={role.id} value={String(role.id)}>
-                                {role.name}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {app?.role_mode === "dynamic" ? (
+                      <div>
+                        <Label className="text-sm mb-3 block">Notes</Label>
+                        <Textarea
+                          placeholder="Describe the new role you are requesting..."
+                          value={form.notes}
+                          onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <Label className="text-sm mb-3 block">New Role</Label>
+                        <Select
+                          value={form.newRole}
+                          onValueChange={(value) => setForm({ ...form, newRole: value })}
+                        >
+                          <SelectTrigger className="w-full h-12">
+                            <SelectValue placeholder="Select new role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {roles
+                              .filter((r) => String(r.id) !== String(form.oldRole))
+                              .map((role) => (
+                                <SelectItem key={role.id} value={String(role.id)}>
+                                  {role.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                     <div>
                       <Label className="text-foreground text-sm mb-3 block">Justification</Label>
                       <Textarea
                         placeholder="Please provide a detailed explanation for this role change request..."
                         value={form.justification}
-                        onChange={(e) =>
-                          setForm({ ...form, justification: e.target.value })
-                        }
+                        onChange={(e) => setForm({ ...form, justification: e.target.value })}
                         className="w-full min-h-30 resize-none bg-background border-border text-foreground placeholder:text-muted-foreground"
                       />
                     </div>
@@ -587,12 +593,21 @@ export default function CreateRequestsPage() {
 
                     {form.requestType === "application_access" ? (
                       <>
-                        <div className="flex items-start">
-                          <div className="w-32 text-sm text-muted-foreground">Requested Role</div>
-                          <div className="flex-1 text-sm text-foreground">
-                            {getRoleName(form.role)}
+                        {app?.role_mode === "dynamic" ? (
+                          <div className="flex items-start">
+                            <div className="w-32 text-sm text-muted-foreground">Notes</div>
+                            <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">
+                              {form.notes}
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="flex items-start">
+                            <div className="w-32 text-sm text-muted-foreground">Requested Role</div>
+                            <div className="flex-1 text-sm text-foreground">
+                              {getRoleName(form.role)}
+                            </div>
+                          </div>
+                        )}
 
                         <div className="flex items-start">
                           <div className="w-32 text-sm text-muted-foreground">Justification</div>
@@ -610,12 +625,21 @@ export default function CreateRequestsPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-start">
-                          <div className="w-32 text-sm text-muted-foreground">New Role</div>
-                          <div className="flex-1 text-sm text-foreground">
-                            {getRoleName(form.newRole)}
+                        {app?.role_mode === "dynamic" ? (
+                          <div className="flex items-start">
+                            <div className="w-32 text-sm text-muted-foreground">Notes</div>
+                            <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">
+                              {form.notes}
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="flex items-start">
+                            <div className="w-32 text-sm text-muted-foreground">New Role</div>
+                            <div className="flex-1 text-sm text-foreground">
+                              {getRoleName(form.newRole)}
+                            </div>
+                          </div>
+                        )}
 
                         <div className="flex items-start">
                           <div className="w-32 text-sm text-muted-foreground">Justification</div>
@@ -624,7 +648,6 @@ export default function CreateRequestsPage() {
                           </div>
                         </div>
                       </>
-
                     )}
                   </div>
                 </div>

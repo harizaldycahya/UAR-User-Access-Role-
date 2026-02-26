@@ -372,9 +372,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                         <div className="ml-auto flex items-center gap-3">
                             {mounted && <ThemeSwitcher />}
 
-                            <button className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-border/60 dark:border-white/10 hover:bg-accent dark:hover:bg-white/5 transition-colors">
+                            {/* <button className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-border/60 dark:border-white/10 hover:bg-accent dark:hover:bg-white/5 transition-colors">
                                 <Bell className="h-[18px] w-[18px]" />
-                            </button>
+                            </button> */}
 
                             {mounted && (
                                 <DropdownMenu>
