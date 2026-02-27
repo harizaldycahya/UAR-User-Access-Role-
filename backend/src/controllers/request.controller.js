@@ -409,7 +409,8 @@ export const getRequestDetail = async (req, res) => {
         ap.approver_id,
         u.nama_user    AS approver_name,
         ap.status      AS approval_status,
-        ap.created_at  AS approval_created_at
+        ap.created_at  AS approval_created_at,
+        ap.reason      AS approval_reason
 
       FROM requests r
       JOIN applications a
@@ -472,6 +473,7 @@ export const getRequestDetail = async (req, res) => {
           approver_id: row.approver_id,
           approver_name: row.approver_name,
           status: row.approval_status,
+          reason: row.approval_reason,
           created_at: row.approval_created_at,
         });
       }
@@ -516,6 +518,7 @@ export const getMyApprovals = async (req, res) => {
           ap.id AS approval_id,
           ap.level,
           ap.status AS approval_status,
+          ap.reason,
 
           r.id AS id,
           r.request_code,
@@ -577,7 +580,7 @@ export const approvalAction = async (req, res) => {
 
   try {
     const username = req.user.username;
-    const { approval_id, action } = req.body;
+    const { approval_id, action, reason } = req.body;
 
     if (!["approve", "reject"].includes(action)) {
       return res.status(400).json({ success: false, message: "Action tidak valid" });
@@ -603,7 +606,7 @@ export const approvalAction = async (req, res) => {
     }
 
     if (action === "reject") {
-      await handleReject(conn, approval);
+      await handleReject(conn, approval, reason || null);
       await conn.commit();
       return res.json({ success: true, message: "Request ditolak" });
     }
@@ -852,6 +855,7 @@ export const getMyApprovalHistory = async (req, res) => {
         ap.level,
         ap.status AS approval_status,
         ap.approved_at,
+        ap.reason,
 
         r.request_code,
         r.type,

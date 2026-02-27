@@ -17,10 +17,10 @@ export const getMinPendingLevel = async (conn, request_code) => {
   return minLevel.min_level;
 };
 
-export const handleReject = async (conn, approval) => {
+export const handleReject = async (conn, approval, reason = null) => {
   await conn.query(
-    `UPDATE approvals SET status = 'rejected', approved_at = NOW() WHERE id = ?`,
-    [approval.id]
+    `UPDATE approvals SET status = 'rejected', approved_at = NOW(), reason = ? WHERE id = ?`,
+    [reason, approval.id]
   );
   await conn.query(
     `UPDATE requests SET status = 'rejected' WHERE request_code = ?`,

@@ -53,7 +53,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-
+import { Textarea } from "@/components/ui/textarea";
 
 
 /* ================= TYPES ================= */
@@ -76,6 +76,7 @@ type Request = {
 
   justification: string | null;
   created_at: string;
+  reason: string | null;
 };
 
 interface ApprovalItem {
@@ -114,6 +115,9 @@ export default function ApprovalTable() {
   const [openDetail, setOpenDetail] = React.useState(false);
   const [selectedRequest, setSelectedRequest] = React.useState<Request | null>(null);
 
+  const [rejectReason, setRejectReason] = React.useState("");
+  const [openRejectDialog, setOpenRejectDialog] = React.useState(false);
+  const [pendingRejectId, setPendingRejectId] = React.useState<number | null>(null);
 
   const [summary, setSummary] = React.useState({
     total: 0,
@@ -154,6 +158,18 @@ export default function ApprovalTable() {
   }, [statusParam]);
 
   const pageTitle = pageTitleMap[statusParam ?? ""] ?? "All Approvals";
+
+  const handleReject = (approvalId: number) => {
+    setPendingRejectId(approvalId);
+    setRejectReason("");
+    setOpenRejectDialog(true);
+  };
+
+  const confirmReject = async () => {
+    if (!pendingRejectId) return;
+    setOpenRejectDialog(false);
+    await submitApproval(pendingRejectId, "reject", rejectReason);
+  };
 
   /* ================= FETCH DATA ================= */
 
@@ -239,7 +255,8 @@ export default function ApprovalTable() {
 
   const submitApproval = async (
     approvalId: number,
-    action: "approve" | "reject"
+    action: "approve" | "reject",
+    reason?: string 
   ) => {
     try {
       const res = await apiFetch("/requests/approvals/action", {
@@ -247,6 +264,7 @@ export default function ApprovalTable() {
         body: JSON.stringify({
           approval_id: approvalId,
           action,
+          reason: reason || null,
         }),
       });
 
@@ -379,7 +397,7 @@ export default function ApprovalTable() {
             <Button
               size="sm"
               variant="destructive"
-              onClick={() => submitApproval(approval_id, "reject")}
+              onClick={(e) => { e.stopPropagation(); handleReject(approval_id); }}
             >
               Reject
             </Button>
@@ -624,6 +642,15 @@ export default function ApprovalTable() {
                   <p>{new Date(selectedRequest.created_at).toLocaleString()}</p>
                 </div>
               </div>
+              {/* REJECT REASON */}
+              {selectedRequest.approval_status === "rejected" && selectedRequest.reason && (
+                <div>
+                  <p className="text-muted-foreground mb-1">Rejection Reason</p>
+                  <p className="bg-destructive/10 border border-destructive/30 text-destructive p-3 rounded">
+                    {selectedRequest.reason}
+                  </p>
+                </div>
+              )}
 
               <div>
                 <p className="text-muted-foreground mb-1">
@@ -654,7 +681,7 @@ export default function ApprovalTable() {
                   <Button
                     size="sm"
                     variant="destructive"
-                    onClick={(e) => { e.stopPropagation(); submitApproval(selectedRequest.approval_id, "reject"); }}
+                    onClick={(e) => { e.stopPropagation(); handleReject(selectedRequest.approval_id); setOpenDetail(false); }}
                   >
                     Reject
                   </Button>
@@ -664,6 +691,43 @@ export default function ApprovalTable() {
           )}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={openRejectDialog} onOpenChange={setOpenRejectDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reject Request</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting this request.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Textarea
+              placeholder="Enter rejection reason..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              className="min-h-[100px]"
+            />
+
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setOpenRejectDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={!rejectReason.trim()}
+                onClick={confirmReject}
+              >
+                Confirm Reject
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
     </>
   );
 }

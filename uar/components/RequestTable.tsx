@@ -71,6 +71,7 @@ type Approval = {
   approver_id: string;
   approver_name: string;
   status: "pending" | "approved" | "rejected";
+  reason: string | null;
   created_at: string;
 };
 
@@ -556,22 +557,26 @@ export default function RequestTable() {
                   {detail.approvals.map(a => (
                     <div
                       key={a.id}
-                      className="flex justify-between border rounded p-2"
+                      className="flex flex-col border rounded p-3 gap-1"
                     >
-                      <span>
-                        Level {a.level} ( {a.approver_id} ) {a.approver_name}
-                      </span>
+                      <div className="flex justify-between">
+                        <span>Level {a.level} ( {a.approver_id} ) {a.approver_name}</span>
+                        <span className={`capitalize font-medium ${
+                          a.status === "approved"
+                            ? "text-success"
+                            : a.status === "rejected"
+                              ? "text-destructive"
+                              : "text-warning"
+                        }`}>
+                          {a.status}
+                        </span>
+                      </div>
 
-                      <span
-                        className={`capitalize font-medium ${a.status === "approved"
-                          ? "text-success"
-                          : a.status === "rejected"
-                            ? "text-destructive"
-                            : "text-warning"
-                          }`}
-                      >
-                        {a.status}
-                      </span>
+                      {a.status === "rejected" && a.reason && (
+                        <p className="text-xs bg-destructive/10 border border-destructive/30 text-destructive p-2 rounded mt-1">
+                          Reason: {a.reason}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
