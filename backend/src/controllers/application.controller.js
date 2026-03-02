@@ -415,7 +415,11 @@ export const redirectToApplication = async (req, res) => {
     } else if (code === "ims") {
       baseUrl = "https://ims.triasmitra.com";
       token = "KFhNebzV8EvLWTyWYZ0XPKafNGDwtANTN7WzZtka_TfGTqPQtmANLiRfMtCI8JKyxg9";
-    } else {
+    } else if (code === "cms") {
+      baseUrl = "https://devcms.triasmitra.com";
+      token = "f7a3c2e8b1d94f6a2e5c7b3d8f1a4e9c2b6d3f8a1e4c7b2d5f9a3e6c1b4d7f2";
+    }
+     else {
       return res.status(404).json({
         success: false,
         message: "Application not supported",

@@ -259,7 +259,7 @@ export default function CreateRequestsPage() {
 
   return (
     <main className="min-h-screen bg-background p-6">
-      <div className="max-w-5xl">
+      <div className="max-w-7xl">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-semibold text-foreground mb-2">

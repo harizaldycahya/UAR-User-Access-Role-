@@ -3,7 +3,6 @@
 import React from 'react';
 import Link from "next/link";
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useTheme } from 'next-themes';
 import {
     SidebarProvider,
     Sidebar,
@@ -44,7 +43,6 @@ import {
     LayoutDashboard,
     User,
     Settings,
-    Bell,
     LogOut,
     FilePlus,
     ClipboardList,
@@ -52,12 +50,13 @@ import {
     CheckCircle,
     Book,
 } from 'lucide-react';
-import { apiAxios } from '@/lib/api';
+import { apiAxios, apiFetch } from '@/lib/api';
 
 type MenuItem = {
     label: string;
     icon: React.ReactNode;
     href: string;
+    badgeKey?: string;
 };
 
 type MenuGroup = {
@@ -68,11 +67,12 @@ type MenuGroup = {
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
     const [user, setUser] = React.useState<any>(null);
     const [profile, setProfile] = React.useState<any>(null);
-    const [Foto, setFoto] = React.useState<any>(null);
+    const [foto, setFoto] = React.useState<any>(null);
+    const [pendingCount, setPendingCount] = React.useState<number>(0);
+    const [mounted, setMounted] = React.useState(false);
+
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    const { theme } = useTheme();
-    const [mounted, setMounted] = React.useState(false);
 
     React.useEffect(() => setMounted(true), []);
 
@@ -83,102 +83,57 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
     React.useEffect(() => {
         if (!user?.username) return;
-
         const fetchProfile = async () => {
             try {
-                const res = await fetch(
-                    `https://personasys.triasmitra.com/api/auth/get-profile-uar?nik=${user.username}`
-                );
+                const res = await fetch(`https://personasys.triasmitra.com/api/auth/get-profile-uar?nik=${user.username}`);
                 const result = await res.json();
                 if (result.Success) {
                     const d = result.data;
-                    setProfile({
-                        name: d.nama,
-                        email: d.email,
-                        phone: d.telp,
-                        department: d.nama_divisi,
-                        position: d.jabatan,
-                        photo: d.foto,
-                        nik: d.nik,
-                    });
+                    setProfile({ name: d.nama, email: d.email, department: d.nama_divisi, position: d.jabatan, nik: d.nik });
                 }
-            } catch (error) {
-                console.error("Failed fetch profile:", error);
-            }
+            } catch (e) { console.error(e); }
         };
-
         fetchProfile();
     }, [user]);
 
     React.useEffect(() => {
         if (!profile?.nik) return;
-
         const fetchPhoto = async () => {
             try {
-                const res = await fetch(
-                    `https://personasys.triasmitra.com/api/aas-gateway/get-photo-url?nik=${profile.nik}`
-                );
+                const res = await fetch(`https://personasys.triasmitra.com/api/aas-gateway/get-photo-url?nik=${profile.nik}`);
                 const result = await res.json();
-                if (result.Success) {
-                    setFoto(result.photo_url);
-                }
-            } catch (err) {
-                console.error("Failed fetch photo:", err);
-            }
+                if (result.Success) setFoto(result.photo_url);
+            } catch (e) { console.error(e); }
         };
-
         fetchPhoto();
     }, [profile]);
+
+    React.useEffect(() => {
+        if (!user?.username) return;
+        const fetch = async () => {
+            try {
+                const res = await apiFetch("/requests/approvals/me");
+                if (res?.success === false) return;
+                setPendingCount(Array.isArray(res?.data) ? res.data.length : 0);
+            } catch (e) { console.error(e); }
+        };
+        fetch();
+        const interval = setInterval(fetch, 60_000);
+        return () => clearInterval(interval);
+    }, [user]);
 
     const segments = React.useMemo(() => pathname?.split("/").filter(Boolean) || [], [pathname]);
 
     const logout = async () => {
-        try {
-            await apiAxios.post("/auth/logout");
-        } catch (err) {
-            console.error("Logout error:", err);
-        } finally {
+        try { await apiAxios.post("/auth/logout"); }
+        catch (e) { console.error(e); }
+        finally {
             document.cookie = "token=; path=/; max-age=0";
             localStorage.removeItem("token");
             window.location.href = "/login";
         }
     };
 
-    // Helper: cek apakah item sedang aktif
-    const isItemActive = (href: string): boolean => {
-        const [hrefPath, hrefQuery] = href.split("?");
-
-        // Jika href punya query string → harus exact match path DAN query
-        // Contoh: "/approvals?status=pending" hanya aktif kalau pathname="/approvals" DAN searchParams="status=pending"
-        if (hrefQuery) {
-            if (pathname !== hrefPath) return false;
-            const params = new URLSearchParams(hrefQuery);
-            for (const [key, value] of params.entries()) {
-                if (searchParams.get(key) !== value) return false;
-            }
-            return true;
-        }
-
-        // Kumpulkan semua href tanpa query dari role ini yang lebih spesifik dari hrefPath
-        // "Lebih spesifik" = path-nya merupakan sub-path dari hrefPath
-        // Contoh: "/requests/create" lebih spesifik dari "/requests"
-        const allPathHrefs = (menuByRole[user?.role_name] || [])
-            .flatMap(g => g.items.map(i => i.href.split("?")[0]))
-            .filter(h => h !== hrefPath && h.startsWith(hrefPath + "/"));
-
-        // Jika ada sibling yang lebih spesifik yang cocok dengan pathname saat ini,
-        // item ini TIDAK aktif — biarkan yang lebih spesifik menang
-        const moreSpecificIsActive = allPathHrefs.some(
-            h => pathname === h || pathname.startsWith(h + "/")
-        );
-
-        if (moreSpecificIsActive) return false;
-
-        // Cek exact match atau prefix match
-        return pathname === hrefPath || pathname.startsWith(hrefPath + "/");
-    };
-
-    // Menu berdasarkan role
     const menuByRole: Record<string, MenuGroup[]> = {
         user: [
             {
@@ -196,7 +151,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             {
                 label: "Request Approval",
                 items: [
-                    { label: "Approval Pending", icon: <Clock className="h-[18px] w-[18px]" />, href: "/approvals?status=pending" },
+                    { label: "Approval Pending", icon: <Clock className="h-[18px] w-[18px]" />, href: "/approvals?status=pending", badgeKey: "pending_approvals" },
                     { label: "History Approvals", icon: <CheckCircle className="h-[18px] w-[18px]" />, href: "/approvals?status=history" },
                 ],
             },
@@ -227,11 +182,28 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             {
                 label: "Request Approval",
                 items: [
-                    { label: "Approval Pending", icon: <Clock className="h-[18px] w-[18px]" />, href: "/approvals?status=pending" },
+                    { label: "Approval Pending", icon: <Clock className="h-[18px] w-[18px]" />, href: "/approvals?status=pending", badgeKey: "pending_approvals" },
                     { label: "History Approvals", icon: <CheckCircle className="h-[18px] w-[18px]" />, href: "/approvals?status=history" },
                 ],
             },
         ],
+    };
+
+    const isItemActive = (href: string): boolean => {
+        const [hrefPath, hrefQuery] = href.split("?");
+        if (hrefQuery) {
+            if (pathname !== hrefPath) return false;
+            const params = new URLSearchParams(hrefQuery);
+            for (const [key, value] of params.entries()) {
+                if (searchParams.get(key) !== value) return false;
+            }
+            return true;
+        }
+        const allPathHrefs = (menuByRole[user?.role_name] || [])
+            .flatMap(g => g.items.map(i => i.href.split("?")[0]))
+            .filter(h => h !== hrefPath && h.startsWith(hrefPath + "/"));
+        if (allPathHrefs.some(h => pathname === h || pathname.startsWith(h + "/"))) return false;
+        return pathname === hrefPath || pathname.startsWith(hrefPath + "/");
     };
 
     const renderMenu = () => {
@@ -241,67 +213,43 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         return groups.map((group, idx) => (
             <SidebarGroup key={idx} className="mb-2">
                 {group.label && (
-                    <SidebarGroupLabel className="px-3 mb-1 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/40 dark:text-sidebar-foreground/30">
+                    <SidebarGroupLabel className="px-3 mb-1 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/50">
                         {group.label}
                     </SidebarGroupLabel>
                 )}
                 <SidebarMenu className="space-y-0.5">
                     {group.items.map((item, i) => {
                         const active = mounted && isItemActive(item.href);
+                        const badgeCount = item.badgeKey === "pending_approvals" ? pendingCount : 0;
+                        const showBadge = badgeCount > 0;
 
                         return (
                             <SidebarMenuItem key={i}>
                                 <SidebarMenuButton
                                     asChild
                                     isActive={active}
+                                    tooltip={item.label}
                                     className={cn(
-                                        // Base
-                                        "relative h-11 w-full rounded-lg px-3 transition-all duration-150 ease-out",
-                                        "flex items-center gap-3 text-sm font-medium",
-                                        // Inactive state
-                                        !active && [
-                                            "text-sidebar-foreground/60 dark:text-sidebar-foreground/50",
-                                            "hover:text-sidebar-foreground dark:hover:text-sidebar-foreground",
-                                            "hover:bg-sidebar-accent/50 dark:hover:bg-white/5",
-                                        ],
-                                        // Active state
-                                        active && [
-                                            "text-primary dark:text-primary",
-                                            "bg-primary/10 dark:bg-primary/15",
-                                            "font-semibold",
-                                            "shadow-sm",
-                                        ]
+                                        "h-10 rounded-lg text-sm font-medium transition-colors duration-150",
+                                        // Inactive: pakai sidebar-foreground dari CSS var (putih)
+                                        "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent",
+                                        // Active: pill putih dengan teks biru (sidebar-primary)
+                                        active && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary hover:text-sidebar-primary-foreground font-semibold",
                                     )}
                                 >
-                                    <Link href={item.href} className="flex items-center gap-3 w-full">
-                                        {/* Left accent bar */}
-                                        <span
-                                            className={cn(
-                                                "absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200",
-                                                active
-                                                    ? "h-6 bg-primary opacity-100"
-                                                    : "h-0 opacity-0"
-                                            )}
-                                        />
-
-                                        {/* Icon */}
-                                        <span
-                                            className={cn(
-                                                "shrink-0 transition-all duration-150",
-                                                active
-                                                    ? "text-primary scale-110"
-                                                    : "text-sidebar-foreground/50 dark:text-sidebar-foreground/40 group-hover:text-sidebar-foreground"
-                                            )}
-                                        >
-                                            {item.icon}
-                                        </span>
-
-                                        {/* Label */}
+                                    <Link href={item.href} className="flex items-center gap-3 w-full px-3">
+                                        <span className="shrink-0">{item.icon}</span>
                                         <span className="truncate">{item.label}</span>
-
-                                        {/* Active dot */}
-                                        {active && (
-                                            <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shrink-0 opacity-70" />
+                                        {showBadge && (
+                                            <span className={cn(
+                                                "ml-auto shrink-0 inline-flex items-center justify-center",
+                                                "min-w-[20px] h-5 px-1.5 rounded-full",
+                                                "text-[11px] font-bold leading-none tabular-nums",
+                                                "bg-red-500 text-white",
+                                                !active && "animate-pulse"
+                                            )}>
+                                                {badgeCount > 99 ? "99+" : badgeCount}
+                                            </span>
                                         )}
                                     </Link>
                                 </SidebarMenuButton>
@@ -313,33 +261,56 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         ));
     };
 
+    const initials = profile?.name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2) || "U";
+
     return (
         <SidebarProvider>
-            <div className="flex w-full bg-background" suppressHydrationWarning>
-                <Sidebar className="border-r border-sidebar-border dark:border-white/5">
-                    <SidebarHeader>
-                        <div className="px-5 py-5">
+            <div className="flex min-h-screen w-full" suppressHydrationWarning>
+
+                {/* ===== SIDEBAR ===== */}
+                <Sidebar className="border-r-0">
+                    {/* Header */}
+                    <SidebarHeader className="shrink-0">
+                        <div className="px-5 py-6">
                             <div className="flex items-center gap-3 px-2">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20 ring-1 ring-primary/20 dark:ring-primary/30">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-accent ring-1 ring-sidebar-border shrink-0">
                                     <img src="/logo.png" alt="Ketrosden Logo" className="h-6 w-6 object-contain" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-bold tracking-wide text-sidebar-foreground">KETROSDEN</div>
-                                    <div className="text-[10px] text-muted-foreground font-medium tracking-widest uppercase opacity-60">TRIASMITRA</div>
+                                    <p className="text-sm font-bold tracking-wide text-sidebar-foreground">KETROSDEN</p>
+                                    <p className="text-[10px] font-semibold tracking-widest uppercase text-sidebar-foreground/50">TRIASMITRA</p>
                                 </div>
                             </div>
                         </div>
-
-                        {/* Thin separator */}
-                        <div className="mx-4 h-px bg-sidebar-border dark:bg-white/5" />
+                        <div className="mx-4 h-px bg-sidebar-border" />
                     </SidebarHeader>
 
-                    <SidebarContent className="px-3 py-4">{renderMenu()}</SidebarContent>
+                    {/* Menu */}
+                    <SidebarContent className="px-3 py-4">
+                        {renderMenu()}
+                    </SidebarContent>
+
+                    {/* User strip bawah */}
+                    {mounted && profile && (
+                        <div className="mx-3 mb-4 rounded-lg p-3 flex items-center gap-3 bg-sidebar-accent border border-sidebar-border">
+                            <Avatar className="h-8 w-8 shrink-0">
+                                <AvatarImage src={foto || undefined} alt={profile.name} />
+                                <AvatarFallback className="text-xs font-bold bg-sidebar-primary text-sidebar-primary-foreground">
+                                    {initials}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold truncate text-sidebar-foreground">{profile.name}</p>
+                                <p className="text-[10px] truncate text-sidebar-foreground/50">{profile.position || profile.department || ""}</p>
+                            </div>
+                        </div>
+                    )}
                 </Sidebar>
 
-                <SidebarInset>
-                    <header className="flex h-20 items-center gap-6 border-b border-border/60 dark:border-white/5 px-6 bg-card/80 dark:bg-card/50 backdrop-blur-sm">
-                        <SidebarTrigger className="h-10 w-10 rounded-lg hover:bg-accent dark:hover:bg-white/5 transition-colors" />
+                {/* ===== MAIN ===== */}
+                <SidebarInset className="flex flex-col flex-1 min-h-screen">
+                    <header className="shrink-0 flex h-20 items-center gap-6 border-b border-border/60 dark:border-white/5 px-6 bg-card/80 dark:bg-card/50 backdrop-blur-sm">
+                        <SidebarTrigger className="h-10 w-10 rounded-lg hover:bg-accent transition-colors" />
 
                         {mounted && segments.length > 0 && (
                             <Breadcrumb>
@@ -347,19 +318,14 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                     {segments.map((segment, index) => {
                                         const href = "/" + segments.slice(0, index + 1).join("/");
                                         const label = segment.replace(/-/g, " ");
-
                                         return (
                                             <React.Fragment key={href}>
                                                 {index > 0 && <BreadcrumbSeparator />}
                                                 <BreadcrumbItem>
                                                     {index === segments.length - 1 ? (
-                                                        <BreadcrumbPage className="capitalize font-semibold text-foreground">
-                                                            {label}
-                                                        </BreadcrumbPage>
+                                                        <BreadcrumbPage className="capitalize font-semibold text-foreground">{label}</BreadcrumbPage>
                                                     ) : (
-                                                        <BreadcrumbLink href={href} className="capitalize text-muted-foreground hover:text-foreground transition-colors">
-                                                            {label}
-                                                        </BreadcrumbLink>
+                                                        <BreadcrumbLink href={href} className="capitalize text-muted-foreground hover:text-foreground transition-colors">{label}</BreadcrumbLink>
                                                     )}
                                                 </BreadcrumbItem>
                                             </React.Fragment>
@@ -371,55 +337,31 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
                         <div className="ml-auto flex items-center gap-3">
                             {mounted && <ThemeSwitcher />}
-
-                            {/* <button className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-border/60 dark:border-white/10 hover:bg-accent dark:hover:bg-white/5 transition-colors">
-                                <Bell className="h-[18px] w-[18px]" />
-                            </button> */}
-
                             {mounted && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Avatar className="h-10 w-10 cursor-pointer ring-2 ring-border dark:ring-white/10 hover:ring-primary/50 transition-all duration-200">
-                                            <AvatarImage
-                                                src={Foto || undefined}
-                                                alt={profile?.name || "User"}
-                                            />
-                                            <AvatarFallback className="bg-primary/10 dark:bg-primary/20 text-primary text-sm font-semibold">
-                                                {profile?.name
-                                                    ?.split(" ")
-                                                    .map((n: string) => n[0])
-                                                    .join("")
-                                                    .slice(0, 2) || "U"}
+                                        <Avatar className="h-10 w-10 cursor-pointer ring-2 ring-border hover:ring-primary/50 transition-all duration-200">
+                                            <AvatarImage src={foto || undefined} alt={profile?.name || "User"} />
+                                            <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
+                                                {initials}
                                             </AvatarFallback>
                                         </Avatar>
                                     </DropdownMenuTrigger>
-
-                                    <DropdownMenuContent align="end" className="w-64 p-2 dark:bg-card dark:border-white/10">
+                                    <DropdownMenuContent align="end" className="w-64 p-2">
                                         <DropdownMenuLabel className="p-3">
-                                            <div className="flex flex-col gap-0.5">
-                                                <span className="text-base font-semibold text-foreground">
-                                                    {profile?.name || "Loading..."}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {profile?.email || "-"}
-                                                </span>
-                                            </div>
+                                            <p className="text-base font-semibold text-foreground">{profile?.name || "Loading..."}</p>
+                                            <p className="text-xs text-muted-foreground">{profile?.email || "-"}</p>
                                         </DropdownMenuLabel>
-
-                                        <DropdownMenuSeparator className="dark:bg-white/5" />
-
+                                        <DropdownMenuSeparator />
                                         <a href='/profile'>
                                             <DropdownMenuItem className="py-2.5 cursor-pointer rounded-md">
                                                 <User className="mr-3 h-4 w-4" /> Profile
                                             </DropdownMenuItem>
                                         </a>
-
                                         <DropdownMenuItem className="py-2.5 cursor-pointer rounded-md">
                                             <Settings className="mr-3 h-4 w-4" /> Settings
                                         </DropdownMenuItem>
-
-                                        <DropdownMenuSeparator className="dark:bg-white/5" />
-
+                                        <DropdownMenuSeparator />
                                         <DropdownMenuItem
                                             className="py-2.5 text-destructive hover:text-destructive focus:text-destructive cursor-pointer rounded-md"
                                             onClick={logout}
@@ -432,9 +374,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                         </div>
                     </header>
 
-                    <main className="p-8">{children}</main>
+                    <main className="flex-1 p-8">{children}</main>
 
-                    <footer className="border-t border-border/40 dark:border-white/5 bg-card/60 dark:bg-card/30 backdrop-blur-sm">
+                    <footer className="shrink-0 border-t border-border/40 bg-card/60">
                         <div className="flex items-center justify-between px-8 py-4 text-xs text-muted-foreground">
                             <span>© 2025 Ketrosden Triasmitra • Developer Team</span>
                             <div className="flex items-center gap-4">

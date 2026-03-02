@@ -866,14 +866,15 @@ export const getMyApprovalHistory = async (req, res) => {
         a.name AS application_name,
         a.role_mode AS application_role_mode,
 
-        old_role.name AS old_role_name,
-        new_role.name AS new_role_name
+        r.old_role_id,
+        r.old_role_name,     -- ← snapshot langsung dari requests
+
+        r.new_role_id,
+        r.new_role_name      -- ← snapshot langsung dari requests
 
       FROM approvals ap
       JOIN requests r ON r.request_code = ap.request_code
       JOIN applications a ON a.id = r.application_id
-      LEFT JOIN application_roles old_role ON old_role.id = r.old_role_id
-      LEFT JOIN application_roles new_role ON new_role.id = r.new_role_id
 
       WHERE ap.approver_id = ?
         AND ap.status IN ('approved', 'rejected')

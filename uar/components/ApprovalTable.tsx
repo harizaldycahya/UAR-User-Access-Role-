@@ -118,6 +118,7 @@ export default function ApprovalTable() {
   const [rejectReason, setRejectReason] = React.useState("");
   const [openRejectDialog, setOpenRejectDialog] = React.useState(false);
   const [pendingRejectId, setPendingRejectId] = React.useState<number | null>(null);
+  const [pendingAction, setPendingAction] = React.useState<(() => void) | null>(null);
 
   const [summary, setSummary] = React.useState({
     total: 0,
@@ -256,7 +257,7 @@ export default function ApprovalTable() {
   const submitApproval = async (
     approvalId: number,
     action: "approve" | "reject",
-    reason?: string 
+    reason?: string
   ) => {
     try {
       const res = await apiFetch("/requests/approvals/action", {
@@ -374,36 +375,6 @@ export default function ApprovalTable() {
     {
       accessorKey: "justification",
       header: "Justification",
-    },
-    {
-      id: "actions",
-      header: "Action",
-      cell: ({ row }) => {
-        const { approval_status, approval_id } = row.original;
-
-        if (approval_status !== "pending") {
-          return <span className="text-muted-foreground text-sm">-</span>;
-        }
-
-        return (
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              onClick={() => submitApproval(approval_id, "approve")}
-            >
-              Approve
-            </Button>
-
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={(e) => { e.stopPropagation(); handleReject(approval_id); }}
-            >
-              Reject
-            </Button>
-          </div>
-        );
-      },
     }
   ];
 
@@ -615,7 +586,18 @@ export default function ApprovalTable() {
           </span>
         </CardFooter>
       </Card>
-      <Dialog open={openDetail} onOpenChange={setOpenDetail}>
+      <Dialog
+        open={openDetail}
+        onOpenChange={(open) => {
+          setOpenDetail(open);
+          if (!open && pendingAction) {
+            setTimeout(() => {
+              pendingAction();
+              setPendingAction(null);
+            }, 300);
+          }
+        }}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Approval Detail</DialogTitle>
@@ -674,14 +656,22 @@ export default function ApprovalTable() {
                 <div className="flex gap-3 pt-2">
                   <Button
                     size="sm"
-                    onClick={(e) => { e.stopPropagation(); submitApproval(selectedRequest.approval_id, "approve"); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenDetail(false);  // ← tutup dialog dulu
+                      submitApproval(selectedRequest.approval_id, "approve");
+                    }}
                   >
                     Approve
                   </Button>
                   <Button
                     size="sm"
                     variant="destructive"
-                    onClick={(e) => { e.stopPropagation(); handleReject(selectedRequest.approval_id); setOpenDetail(false); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenDetail(false);  // ← sudah ada, pastikan sebelum handleReject
+                      handleReject(selectedRequest.approval_id);
+                    }}
                   >
                     Reject
                   </Button>
@@ -706,7 +696,7 @@ export default function ApprovalTable() {
               placeholder="Enter rejection reason..."
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              className="min-h-[100px]"
+              className="min-h-25"
             />
 
             <div className="flex justify-end gap-3">
@@ -727,7 +717,7 @@ export default function ApprovalTable() {
           </div>
         </DialogContent>
       </Dialog>
-      
+
     </>
   );
 }

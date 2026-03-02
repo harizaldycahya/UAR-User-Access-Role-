@@ -288,26 +288,12 @@ const checkAmsUserExists = async (nik) => {
 
 // IMS HELPER
 
-const IMS_TOKEN = 'iCI0YUAb0hu+2HF62lR_xs9FUsguF3OI6BqU2O33vP46fq$AO42UAE647vCeu4Shxfw';
+const IMS_TOKEN = 'KFhNebzV8EvLWTyWYZ0XPKafNGDwtANTN7WzZtka_TfGTqPQtmANLiRfMtCI8JKyxg9';
 const IMS_BASE_URL = 'https://ims.triasmitra.com/api/public';
 
 const imsHeaders = {
   'Content-Type': 'application/json; charset=UTF-8',
   'Authorization': `Bearer ${IMS_TOKEN}`,
-};
-
-const checkImsUserExists = async (nik) => {
-  const response = await fetch(`${IMS_BASE_URL}/get-user?nik=${nik}`, {
-    method: 'GET',
-    headers: imsHeaders,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Gagal cek user IMS: ${response.status}`);
-  }
-
-  const json = await response.json();
-  return json?.result?.total > 0;
 };
 
 const createImsUser = async (request) => {
@@ -376,6 +362,80 @@ const updateImsUser = async (request) => {
   }
 };
 
+
+const CMS_TOKEN = 'f7a3c2e8b1d94f6a2e5c7b3d8f1a4e9c2b6d3f8a1e4c7b2d5f9a3e6c1b4d7f2';
+const CMS_BASE_URL = 'https://devcms.triasmitra.com/api/public';
+
+const cmsHeaders = {
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${CMS_TOKEN}`,
+};
+
+const checkCmsUserExists = async (nik) => {
+  const response = await fetch(`${CMS_BASE_URL}/get-user?nik=${nik}`, {
+    method: 'GET',
+    headers: cmsHeaders,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Gagal cek user CMS: ${response.status}`);
+  }
+
+  const json = await response.json();
+  return json?.result?.total > 0;
+};
+
+const createCmsUser = async (request) => {
+  const profile = await getPersonasysProfile(request.username);
+  const [[dbUser]] = await db.query(
+    "SELECT * FROM users WHERE username = ? LIMIT 1",
+    [request.username]
+  );
+
+  if (!dbUser) throw new Error("User tidak ditemukan di database");
+
+  const payload = {
+    nik: profile.nik,
+    name: profile.nama,
+    email: profile.email,
+    role: request.new_role_name,
+    encrypted_password: dbUser.password,
+  };
+
+  const response = await fetch(`${CMS_BASE_URL}/create-user`, {
+    method: 'POST',
+    headers: cmsHeaders,
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errBody = await response.text();
+    throw new Error(`CMS create-user error: ${response.status} - ${errBody}`);
+  }
+};
+
+const updateCmsUser = async (request) => {
+  const profile = await getPersonasysProfile(request.username);
+
+  const payload = {
+    nik: profile.nik,
+    name: profile.nama,
+    email: profile.email,
+    role: request.new_role_name,
+  };
+
+  const response = await fetch(`${CMS_BASE_URL}/update-user`, {
+    method: 'PATCH',
+    headers: cmsHeaders,
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errBody = await response.text();
+    throw new Error(`CMS update-user error: ${response.status} - ${errBody}`);
+  }
+};
+
 export const notifyExternalApp = async (request) => {
   const appCode = request.app_code?.toLowerCase();
 
@@ -389,11 +449,19 @@ export const notifyExternalApp = async (request) => {
   }
 
   if (appCode === 'ims') {
-    const userExists = await checkImsUserExists(request.username);
-    if (userExists) {
+    if (request.type === 'change_role') {
       await updateImsUser(request);
     } else {
       await createImsUser(request);
+    }
+  }
+
+  if (appCode === 'cms') {
+    const userExists = await checkCmsUserExists(request.username);
+    if (userExists) {
+      await updateCmsUser(request);
+    } else {
+      await createCmsUser(request);
     }
   }
 };
