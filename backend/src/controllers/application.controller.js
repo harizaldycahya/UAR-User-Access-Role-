@@ -279,6 +279,59 @@ export const getAmsRoles = async (req, res) => {
   }
 };
 
+export const getAmsLocations = async (req, res) => {
+  try {
+    const response = await axios.get(
+      process.env.AMS_URL + "/get-location",
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.AMS_API_KEY}`,
+        },
+      }
+    );
+
+    res.json({
+      success: true,
+      data: response.data,
+    });
+
+  } catch (err) {
+    console.error("GET AMS LOCATIONS ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch AMS locations",
+    });
+  }
+};
+
+export const getCmsRoles = async (req, res) => {
+  try {
+    const response = await axios.get(
+      process.env.CMS_URL + "/get-role",
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.CMS_API_KEY}`,
+          "Accept": "application/json",
+        },
+      }
+    );
+
+    res.json({
+      success: true,
+      data: response.data,
+    });
+
+  } catch (err) {
+    console.error("GET CMS ROLES ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch CMS roles",
+    });
+  }
+};
+
+
+
 // export const redirectToApplication = async (req, res) => {
 //   try {
 //     const userId = req.user.id;

@@ -204,7 +204,7 @@ export default function LoginPage() {
                     Password
                   </Label>
                   <a
-                    href="#"
+                    href="/forgot-password"
                     className="text-xs text-blue-600 dark:text-blue-500 hover:underline font-medium"
                   >
                     Forgot password?

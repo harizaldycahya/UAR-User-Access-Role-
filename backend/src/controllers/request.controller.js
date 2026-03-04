@@ -26,19 +26,24 @@ export const createRequest = async (req, res) => {
       old_role_name,
       new_role_id,
       new_role_name,
+      new_location_id,
+      new_location_name,
+      old_location_id,
+      old_location_name,
       notes,
       justification,
     } = req.body;
 
     // =========================
-    // 1) Check role_mode aplikasi
+    // 1) Check role_mode & code aplikasi
     // =========================
     const [[appData]] = await conn.query(
-      `SELECT role_mode FROM applications WHERE id = ?`,
+      `SELECT role_mode, code FROM applications WHERE id = ?`,
       [application_id]
     );
 
     const isDynamic = appData?.role_mode === "dynamic";
+    const isAms = appData?.code === "AMS";
 
     // =========================
     // 2) Basic Validation
@@ -67,20 +72,30 @@ export const createRequest = async (req, res) => {
       });
     }
 
-    if (!isDynamic && (!new_role_id || !new_role_name)) {
+    // application_access: role wajib
+    if (!isDynamic && type === "application_access" && (!new_role_id || !new_role_name)) {
       await conn.rollback();
-      return res.status(400).json({
-        success: false,
-        message: "Role data is required",
-      });
+      return res.status(400).json({ success: false, message: "Role data is required" });
     }
 
-    if (type === "change_role" && !isDynamic && (!old_role_id || !old_role_name)) {
+    // application_access AMS: location wajib
+    if (isAms && type === "application_access" && (!new_location_id || !new_location_name)) {
       await conn.rollback();
-      return res.status(400).json({
-        success: false,
-        message: "Old role data is required for change role request",
-      });
+      return res.status(400).json({ success: false, message: "Location data is required for this application" });
+    }
+
+    // change_role non-AMS: role wajib
+    if (!isDynamic && type === "change_role" && !isAms && (!new_role_id || !new_role_name)) {
+      await conn.rollback();
+      return res.status(400).json({ success: false, message: "Role data is required" });
+    }
+
+    // change_role AMS: minimal salah satu role atau location harus diisi
+    if (!isDynamic && type === "change_role" && isAms) {
+      if (!new_role_id && !new_location_id) {
+        await conn.rollback();
+        return res.status(400).json({ success: false, message: "Role or location data is required" });
+      }
     }
 
     // =========================
@@ -113,8 +128,8 @@ export const createRequest = async (req, res) => {
     const [result] = await conn.query(
       `
       INSERT INTO requests
-        (username, application_id, type, old_role_id, old_role_name, new_role_id, new_role_name, notes, justification)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (username, application_id, type, old_role_id, old_role_name, new_role_id, new_role_name, new_location_id, new_location_name, old_location_id, old_location_name, notes, justification)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         username,
@@ -124,6 +139,10 @@ export const createRequest = async (req, res) => {
         old_role_name || null,
         isDynamic ? null : (new_role_id || null),
         isDynamic ? null : (new_role_name || null),
+        isAms ? (new_location_id || null) : null,
+        isAms ? (new_location_name || null) : null,
+        isAms ? (old_location_id || null) : null,
+        isAms ? (old_location_name || null) : null,
         isDynamic ? notes : null,
         justification,
       ]
@@ -201,17 +220,21 @@ export const createRequest = async (req, res) => {
       `SELECT username AS approver_id FROM users WHERE role_id = '3' LIMIT 1`
     );
 
-    // App Owner
-    const [[appOwner]] = await conn.query(
-      `SELECT owner AS approver_id FROM applications WHERE id = ?`,
-      [application_id]
-    );
+    const isHris = appData?.code === "HRIS";
 
+    // App Owner - skip untuk HRIS
     const approvers = [
       { level: 1, approver_id: atasanId },
       { level: 2, approver_id: hrd?.approver_id },
-      { level: 3, approver_id: appOwner?.approver_id },
     ];
+
+    if (!isHris) {
+      const [[appOwner]] = await conn.query(
+        `SELECT owner AS approver_id FROM applications WHERE id = ?`,
+        [application_id]
+      );
+      approvers.push({ level: 3, approver_id: appOwner?.approver_id });
+    }
 
     for (const a of approvers) {
       if (!a.approver_id) {

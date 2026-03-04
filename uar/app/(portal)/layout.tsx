@@ -56,7 +56,6 @@ type MenuItem = {
     label: string;
     icon: React.ReactNode;
     href: string;
-    badgeKey?: string;
 };
 
 type MenuGroup = {
@@ -68,7 +67,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     const [user, setUser] = React.useState<any>(null);
     const [profile, setProfile] = React.useState<any>(null);
     const [foto, setFoto] = React.useState<any>(null);
-    const [pendingCount, setPendingCount] = React.useState<number>(0);
     const [mounted, setMounted] = React.useState(false);
 
     const pathname = usePathname();
@@ -108,20 +106,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         fetchPhoto();
     }, [profile]);
 
-    React.useEffect(() => {
-        if (!user?.username) return;
-        const fetch = async () => {
-            try {
-                const res = await apiFetch("/requests/approvals/me");
-                if (res?.success === false) return;
-                setPendingCount(Array.isArray(res?.data) ? res.data.length : 0);
-            } catch (e) { console.error(e); }
-        };
-        fetch();
-        const interval = setInterval(fetch, 60_000);
-        return () => clearInterval(interval);
-    }, [user]);
-
     const segments = React.useMemo(() => pathname?.split("/").filter(Boolean) || [], [pathname]);
 
     const logout = async () => {
@@ -138,20 +122,20 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         user: [
             {
                 items: [
-                    { label: "Dashboard", icon: <LayoutDashboard className="h-[18px] w-[18px]" />, href: "/dashboard" },
+                    { label: "Dashboard", icon: <LayoutDashboard className="h-4.5 w-4.5" />, href: "/dashboard" },
                 ],
             },
             {
                 label: "Application Request",
                 items: [
-                    { label: "Create New Request", icon: <FilePlus className="h-[18px] w-[18px]" />, href: "/requests/create" },
+                    { label: "Create New Request", icon: <FilePlus className="h-4.5 w-4.5" />, href: "/requests/create" },
                     { label: "My Request", icon: <ClipboardList className="h-[18px] w-[18px]" />, href: "/requests" },
                 ],
             },
             {
                 label: "Request Approval",
                 items: [
-                    { label: "Approval Pending", icon: <Clock className="h-[18px] w-[18px]" />, href: "/approvals?status=pending", badgeKey: "pending_approvals" },
+                    { label: "Approval Pending", icon: <Clock className="h-[18px] w-[18px]" />, href: "/approvals?status=pending" },
                     { label: "History Approvals", icon: <CheckCircle className="h-[18px] w-[18px]" />, href: "/approvals?status=history" },
                 ],
             },
@@ -220,9 +204,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 <SidebarMenu className="space-y-0.5">
                     {group.items.map((item, i) => {
                         const active = mounted && isItemActive(item.href);
-                        const badgeCount = item.badgeKey === "pending_approvals" ? pendingCount : 0;
-                        const showBadge = badgeCount > 0;
-
                         return (
                             <SidebarMenuItem key={i}>
                                 <SidebarMenuButton
@@ -240,17 +221,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                     <Link href={item.href} className="flex items-center gap-3 w-full px-3">
                                         <span className="shrink-0">{item.icon}</span>
                                         <span className="truncate">{item.label}</span>
-                                        {showBadge && (
-                                            <span className={cn(
-                                                "ml-auto shrink-0 inline-flex items-center justify-center",
-                                                "min-w-[20px] h-5 px-1.5 rounded-full",
-                                                "text-[11px] font-bold leading-none tabular-nums",
-                                                "bg-red-500 text-white",
-                                                !active && "animate-pulse"
-                                            )}>
-                                                {badgeCount > 99 ? "99+" : badgeCount}
-                                            </span>
-                                        )}
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
@@ -277,8 +247,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                     <img src="/logo.png" alt="Ketrosden Logo" className="h-6 w-6 object-contain" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-bold tracking-wide text-sidebar-foreground">KETROSDEN</p>
-                                    <p className="text-[10px] font-semibold tracking-widest uppercase text-sidebar-foreground/50">TRIASMITRA</p>
+                                    <p className="text-sm font-bold tracking-wide text-sidebar-foreground">TRIASMITRA</p>
+                                    <p className="text-[10px] font-semibold tracking-widest uppercase text-sidebar-foreground/50">User Access Role</p>
                                 </div>
                             </div>
                         </div>

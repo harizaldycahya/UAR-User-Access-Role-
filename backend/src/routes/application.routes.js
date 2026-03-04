@@ -8,6 +8,8 @@ import {
   deleteApplication,
   getImsRoles,
   getAmsRoles,
+  getAmsLocations,
+  getCmsRoles,
   redirectToApplication,
 } from "../controllers/application.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
@@ -22,8 +24,10 @@ router.get("/by-code/:code", getApplicationByCode);
 
 router.get("/:code/redirect", redirectToApplication);
 
+router.get("/integrations/cms/roles", getCmsRoles);
 router.get("/integrations/ims/roles", getImsRoles);
 router.get("/integrations/ams/roles", getAmsRoles);
+router.get("/integrations/ams/locations", getAmsLocations);
 
 router.get("/:id", getApplicationById);
 

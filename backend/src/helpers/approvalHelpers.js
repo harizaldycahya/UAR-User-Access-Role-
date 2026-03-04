@@ -43,7 +43,8 @@ export const getPendingCount = async (conn, request_code) => {
 export const getRequestInfo = async (conn, request_code) => {
   const [[request]] = await conn.query(
     `SELECT r.username, r.application_id, r.old_role_id, r.old_role_name,
-            r.new_role_id, r.new_role_name, r.type, a.code AS app_code
+            r.new_role_id, r.new_role_name, r.new_location_id, r.new_location_name,
+            r.old_location_id, r.old_location_name, r.type, a.code AS app_code
      FROM requests r
      JOIN applications a ON a.id = r.application_id
      WHERE r.request_code = ?`,
@@ -54,48 +55,76 @@ export const getRequestInfo = async (conn, request_code) => {
 
 export const applyRoleChanges = async (conn, request) => {
   const isExternal = ['ams', 'ims'].includes(request.app_code?.toLowerCase());
+  const isAms = request.app_code?.toLowerCase() === 'ams';
 
   if (request.type === 'application_access') {
     await conn.query(
       `INSERT INTO user_applications
-        (username, application_id, application_roles_id, external_application_role_id, role_name, created_at)
-       VALUES (?, ?, ?, ?, ?, NOW())`,
+        (username, application_id, application_roles_id, external_application_role_id, external_application_location_id, role_name, location_name, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         request.username,
         request.application_id,
         isExternal ? null : request.new_role_id,
         isExternal ? request.new_role_id : null,
+        isAms ? request.new_location_id : null,
         request.new_role_name,
+        isAms ? request.new_location_name : null,
       ]
     );
   }
 
   if (request.type === 'change_role') {
-    const whereCondition = isExternal
-      ? `external_application_role_id = ?`
-      : `application_roles_id = ?`;
+    // Build dynamic SET clause - hanya update field yang dikirim
+    const setClauses = [];
+    const values = [];
+
+    if (request.new_role_id) {
+      setClauses.push(
+        `application_roles_id = ?`,
+        `external_application_role_id = ?`,
+        `role_name = ?`
+      );
+      values.push(
+        isExternal ? null : request.new_role_id,
+        isExternal ? request.new_role_id : null,
+        request.new_role_name
+      );
+    }
+
+    if (isAms && request.new_location_id) {
+      setClauses.push(
+        `external_application_location_id = ?`,
+        `location_name = ?`
+      );
+      values.push(request.new_location_id, request.new_location_name);
+    }
+
+    setClauses.push(`updated_at = NOW()`);
+    values.push(request.username, request.application_id);
 
     const [result] = await conn.query(
       `UPDATE user_applications
-       SET application_roles_id = ?,
-           external_application_role_id = ?,
-           role_name = ?,
-           updated_at = NOW()
-       WHERE username = ?
-         AND application_id = ?
-         AND ${whereCondition}`,
-      [
-        isExternal ? null : request.new_role_id,
-        isExternal ? request.new_role_id : null,
-        request.new_role_name,
-        request.username,
-        request.application_id,
-        request.old_role_id,
-      ]
+       SET ${setClauses.join(", ")}
+       WHERE username = ? AND application_id = ?`,
+      values
     );
 
     if (result.affectedRows === 0) {
-      throw new Error('User application tidak ditemukan untuk change role');
+      await conn.query(
+        `INSERT INTO user_applications
+          (username, application_id, application_roles_id, external_application_role_id, external_application_location_id, role_name, location_name, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [
+          request.username,
+          request.application_id,
+          isExternal ? null : request.new_role_id,
+          isExternal ? request.new_role_id : null,
+          isAms ? request.new_location_id : null,
+          request.new_role_name,
+          isAms ? request.new_location_name : null,
+        ]
+      );
     }
   }
 };
@@ -204,7 +233,7 @@ const createAmsUser = async (request) => {
 
   const payload = {
     role_id: request.new_role_id,
-    location_id: "testing",
+    location_id: request.new_location_id,
     nik: profile.nik,
     name: profile.nama,
     email: profile.email,
@@ -241,15 +270,12 @@ const updateAmsUser = async (request) => {
     [request.username]
   );
 
-  if (!rows.length) {
-    throw new Error("User tidak ditemukan di database");
-  }
-
+  if (!rows.length) throw new Error("User tidak ditemukan di database");
   const dbUser = rows[0];
 
   const payload = {
-    role_id: request.new_role_id,
-    location_id: existingUser.location_id,
+    role_id: request.new_role_id || existingUser.role_id,         // ← fallback ke existing
+    location_id: request.new_location_id || existingUser.location_id, // ← fallback ke existing
     nik: existingUser.nik,
     name: existingUser.name,
     email: existingUser.email,
@@ -287,7 +313,6 @@ const checkAmsUserExists = async (nik) => {
 };
 
 // IMS HELPER
-
 const IMS_TOKEN = 'KFhNebzV8EvLWTyWYZ0XPKafNGDwtANTN7WzZtka_TfGTqPQtmANLiRfMtCI8JKyxg9';
 const IMS_BASE_URL = 'https://ims.triasmitra.com/api/public';
 

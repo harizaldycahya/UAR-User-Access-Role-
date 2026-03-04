@@ -55,6 +55,10 @@ interface Application {
     id: number;
     name: string;
   } | null;
+  location?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 interface ApplicationRole {
@@ -62,6 +66,11 @@ interface ApplicationRole {
   application_id?: number;
   name: string;
   description?: string;
+}
+
+interface ApplicationLocation {
+  id: string;
+  name: string;
 }
 
 export default function CreateRequestsPage() {
@@ -80,7 +89,12 @@ export default function CreateRequestsPage() {
     newRole: "",
     justification: "",
     notes: "",
+    location: "",
+    oldLocation: "",
+    newLocation: "",
   });
+
+
 
 
   const canProceed = () => {
@@ -89,17 +103,32 @@ export default function CreateRequestsPage() {
     if (step === 3) {
       if (form.requestType === "application_access") {
         if (app?.role_mode === "dynamic") {
-          return form.notes.trim() !== "" && form.justification.trim() !== "";
+          const baseValid = form.notes.trim() !== "" && form.justification.trim() !== "";
+          if (isAms) return baseValid && form.location !== "";
+          return baseValid;
         }
-        return form.role !== "" && form.justification.trim() !== "";
+        const baseValid = form.role !== "" && form.justification.trim() !== "";
+        if (isAms) return baseValid && form.location !== "";
+        return baseValid;
       }
+
+      // change_role
       if (app?.role_mode === "dynamic") {
-        return form.notes.trim() !== "" && form.justification.trim() !== "";
+        const baseValid = form.notes.trim() !== "" && form.justification.trim() !== "";
+        return baseValid;
       }
-      return form.oldRole !== "" && form.newRole !== "" && form.justification.trim() !== "";
+
+      if (isAms) {
+        // minimal salah satu diisi, dan justification wajib
+        const roleChanged = form.newRole !== "";
+        const locationChanged = form.newLocation !== "";
+        return (roleChanged || locationChanged) && form.justification.trim() !== "";
+      }
+
+      return form.newRole !== "" && form.justification.trim() !== "";
     }
-    return true;
-  };
+  }
+
 
   // auth
   useEffect(() => {
@@ -150,6 +179,10 @@ export default function CreateRequestsPage() {
           res = await apiFetch("/applications/integrations/ams/roles");
           setRoles(res?.data?.result?.data ?? []);
         }
+        else if (selectedApp.code === "CMS") {
+          res = await apiFetch("/applications/integrations/cms/roles");
+          setRoles(res?.data?.result?.data ?? []);
+        }
         else {
           res = await apiFetch(`/applications/${form.application}/roles`);
           setRoles(res?.data ?? []);
@@ -166,9 +199,40 @@ export default function CreateRequestsPage() {
     loadRoles();
   }, [form.application, applications]);
 
+  // load locations for AMS
+  useEffect(() => {
+    if (!form.application) {
+      setLocations([]);
+      return;
+    }
+
+    const selectedApp = applications.find(
+      (a) => String(a.id) === String(form.application)
+    );
+
+    if (selectedApp?.code !== "AMS") {
+      setLocations([]);
+      return;
+    }
+
+    const loadLocations = async () => {
+      try {
+        setLoadingLocations(true);
+        const res = await apiFetch("/applications/integrations/ams/locations");
+        setLocations(res?.data?.result?.data ?? []);
+      } catch (err) {
+        console.error(err);
+        setLocations([]);
+      } finally {
+        setLoadingLocations(false);
+      }
+    };
+
+    loadLocations();
+  }, [form.application, applications]);
+
   useEffect(() => {
     if (!form.application) return;
-
 
     if (!app || !app.has_access) return;
 
@@ -178,6 +242,7 @@ export default function CreateRequestsPage() {
     setForm((prev) => ({
       ...prev,
       oldRole: String(role.id),
+      oldLocation: app.location ? String(app.location.id) : "",
     }));
   }, [form.application, applications]);
 
@@ -187,22 +252,31 @@ export default function CreateRequestsPage() {
   const [roles, setRoles] = useState<ApplicationRole[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
 
+  const [locations, setLocations] = useState<ApplicationLocation[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+
   const app = applications.find(
     (a) => String(a.id) === String(form.application)
   );
+
+  const isAms = app?.code === "AMS";
 
   const getRoleName = (roleId?: string) => {
     if (!roleId) return "-";
     return roles.find((r) => String(r.id) === roleId)?.name ?? "-";
   };
 
+  const getLocationName = (locationId?: string) => {
+    if (!locationId) return "-";
+    return locations.find((l) => String(l.id) === locationId)?.name ?? "-";
+  };
 
   const submitRequest = async () => {
     try {
       const selectedNewRoleId =
         form.requestType === "application_access"
           ? form.role
-          : form.newRole;
+          : form.newRole || null; // ← boleh null kalau hanya ganti location
 
       const selectedNewRole = roles.find(
         (r) => String(r.id) === String(selectedNewRoleId)
@@ -213,6 +287,20 @@ export default function CreateRequestsPage() {
           ? app?.role
           : null;
 
+      // location
+      const newLocationId = isAms
+        ? (form.requestType === "application_access" ? form.location : form.newLocation)
+        : null;
+      const newLocationName = isAms
+        ? getLocationName(newLocationId ?? "")
+        : null;
+      const oldLocationId = isAms && form.requestType === "change_role"
+        ? form.oldLocation
+        : null;
+      const oldLocationName = isAms && form.requestType === "change_role"
+        ? (app?.location?.name ?? null)
+        : null;
+
       const res = await apiFetch("/requests", {
         method: "POST",
         body: JSON.stringify({
@@ -222,8 +310,13 @@ export default function CreateRequestsPage() {
           old_role_id: form.requestType === "change_role" ? form.oldRole : null,
           old_role_name: form.requestType === "change_role" ? selectedOldRole?.name || null : null,
 
-          new_role_id: app?.role_mode === "dynamic" ? null : selectedNewRoleId,
+          new_role_id: app?.role_mode === "dynamic" ? null : (selectedNewRoleId || null),
           new_role_name: app?.role_mode === "dynamic" ? null : (selectedNewRole?.name || null),
+
+          new_location_id: newLocationId,
+          new_location_name: newLocationName,
+          old_location_id: oldLocationId,
+          old_location_name: oldLocationName,
 
           notes: app?.role_mode === "dynamic" ? form.notes : null,
 
@@ -498,6 +591,34 @@ export default function CreateRequestsPage() {
                       </div>
                     )}
 
+                    {/* Location field - AMS only */}
+                    {isAms && (
+                      <div>
+                        <Label className="text-sm mb-3 block">Location</Label>
+                        <Select
+                          value={form.location}
+                          onValueChange={(value) => setForm({ ...form, location: value })}
+                        >
+                          <SelectTrigger className="w-full px-5 py-8">
+                            <SelectValue placeholder="Select location" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60 overflow-y-auto">
+                            {loadingLocations && (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">Loading locations...</div>
+                            )}
+                            {!loadingLocations && locations.length === 0 && (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">No locations available</div>
+                            )}
+                            {locations.map((loc) => (
+                              <SelectItem key={loc.id} value={String(loc.id)}>
+                                <span className="font-medium">{loc.name}</span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
                     <div>
                       <Label className="text-sm mb-3 block">Justification</Label>
                       <Textarea
@@ -533,15 +654,23 @@ export default function CreateRequestsPage() {
                       </div>
                     ) : (
                       <div>
-                        <Label className="text-sm mb-3 block">New Role</Label>
+                        <Label className="text-sm mb-3 block">
+                          New Role
+                          {isAms && <span className="text-muted-foreground text-xs ml-1">(optional)</span>}
+                        </Label>
                         <Select
-                          value={form.newRole}
-                          onValueChange={(value) => setForm({ ...form, newRole: value })}
+                          value={form.newRole || "__none__"}
+                          onValueChange={(value) => setForm({ ...form, newRole: value === "__clear__" ? "" : value === "__none__" ? "" : value })}
                         >
                           <SelectTrigger className="w-full h-12">
                             <SelectValue placeholder="Select new role" />
                           </SelectTrigger>
                           <SelectContent>
+                            {isAms && (
+                              <SelectItem value={form.newRole !== "" ? "__clear__" : "__none__"} className="text-muted-foreground italic">
+                                {form.newRole !== "" ? "— Clear selection —" : "— No change —"}
+                              </SelectItem>
+                            )}
                             {roles
                               .filter((r) => String(r.id) !== String(form.oldRole))
                               .map((role) => (
@@ -551,7 +680,61 @@ export default function CreateRequestsPage() {
                               ))}
                           </SelectContent>
                         </Select>
+                        {isAms && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Leave empty if you only want to change location
+                          </p>
+                        )}
                       </div>
+                    )}
+
+                    {/* Location field - AMS only */}
+                    {isAms && (
+                      <>
+                        <div>
+                          <Label className="text-sm mb-3 block">Current Location</Label>
+                          <Input
+                            value={app?.location?.name ?? "-"}
+                            disabled
+                            className="bg-muted cursor-not-allowed"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm mb-3 block">
+                            New Location
+                            <span className="text-muted-foreground text-xs ml-1">(optional)</span>
+                          </Label>
+                          <Select
+                            value={form.newLocation || "__none__"}
+                            onValueChange={(value) => setForm({ ...form, newLocation: value === "__clear__" ? "" : value === "__none__" ? "" : value })}
+                          >
+                            <SelectTrigger className="w-full px-5 py-8">
+                              <SelectValue placeholder="Select new location" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60 overflow-y-auto">
+                              {loadingLocations && (
+                                <div className="px-3 py-2 text-sm text-muted-foreground">Loading locations...</div>
+                              )}
+                              {!loadingLocations && locations.length === 0 && (
+                                <div className="px-3 py-2 text-sm text-muted-foreground">No locations available</div>
+                              )}
+                              <SelectItem value={form.newLocation !== "" ? "__clear__" : "__none__"} className="text-muted-foreground italic">
+                                {form.newLocation !== "" ? "— Clear selection —" : "— No change —"}
+                              </SelectItem>
+                              {locations
+                                .filter((l) => String(l.id) !== String(form.oldLocation))
+                                .map((loc) => (
+                                  <SelectItem key={loc.id} value={String(loc.id)}>
+                                    {loc.name}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Leave empty if you only want to change role
+                          </p>
+                        </div>
+                      </>
                     )}
 
                     <div>
@@ -609,6 +792,16 @@ export default function CreateRequestsPage() {
                           </div>
                         )}
 
+                        {/* Location summary - AMS only */}
+                        {isAms && (
+                          <div className="flex items-start">
+                            <div className="w-32 text-sm text-muted-foreground">Location</div>
+                            <div className="flex-1 text-sm text-foreground">
+                              {getLocationName(form.location)}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex items-start">
                           <div className="w-32 text-sm text-muted-foreground">Justification</div>
                           <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">
@@ -639,6 +832,24 @@ export default function CreateRequestsPage() {
                               {getRoleName(form.newRole)}
                             </div>
                           </div>
+                        )}
+
+                        {/* Location summary - AMS only */}
+                        {isAms && (
+                          <>
+                            <div className="flex items-start">
+                              <div className="w-32 text-sm text-muted-foreground">Current Location</div>
+                              <div className="flex-1 text-sm text-foreground">
+                                {app?.location?.name ?? "-"}
+                              </div>
+                            </div>
+                            <div className="flex items-start">
+                              <div className="w-32 text-sm text-muted-foreground">New Location</div>
+                              <div className="flex-1 text-sm text-foreground">
+                                {getLocationName(form.newLocation)}
+                              </div>
+                            </div>
+                          </>
                         )}
 
                         <div className="flex items-start">

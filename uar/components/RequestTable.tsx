@@ -47,24 +47,14 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-import { MoreVertical, Check, ChevronsUpDown, CheckCircle2 } from "lucide-react";
+import { MoreVertical, Check, ChevronsUpDown, CheckCircle2, XCircle, Clock, X } from "lucide-react";
 import RequestTableSkeleton from "./RequestTableSkeleton";
 import { useSearchParams } from "next/navigation";
 
 import { apiFetch } from "@/lib/api";
-
+import { defineStepper } from "@stepperize/react";
 
 /* ================= TYPES ================= */
-type Role = {
-  id: number;
-  name: string;
-};
-
-type Application = {
-  id: number;
-  name: string;
-};
-
 type Approval = {
   id: number;
   level: number;
@@ -75,29 +65,112 @@ type Approval = {
   created_at: string;
 };
 
+type Application = {
+  id: number;
+  name: string;
+  role_mode: "static" | "dynamic";
+};
+
 type Request = {
   id: number;
   request_code: string;
   type: "application_access" | "change_role";
   status: "pending" | "approved" | "rejected";
-
   justification: string | null;
-  notes: string | null;           // ← tambah
-
+  notes: string | null;
   created_at: string;
-
-  application: Application & { role_mode: "static" | "dynamic" }; // ← tambah role_mode
-
+  application: Application;
   old_role_id: string | null;
   old_role_name: string | null;
-
   new_role_id: string | null;
   new_role_name: string | null;
-
   approvals: Approval[];
 };
 
-/* ================= COMPONENT ================= */
+/* ================= APPROVAL STEPPER COMPONENT ================= */
+const ApprovalStepper = ({ approvals }: { approvals: Approval[] }) => {
+  const { Stepper } = React.useMemo(
+    () => defineStepper(...approvals.map((a) => ({
+      id: `level-${a.level}`,
+      title: a.approver_name,
+    }))),
+    [approvals]
+  );
+
+  return (
+    <Stepper.Root orientation="horizontal" className="w-full">
+      {() => (
+        <Stepper.List className="flex list-none items-center w-full">
+          {approvals.map((a, index) => {
+            const isApproved = a.status === "approved";
+            const isRejected = a.status === "rejected";
+            const isLast = index === approvals.length - 1;
+
+            return (
+              <React.Fragment key={a.id}>
+                <Stepper.Item
+                  step={`level-${a.level}`}
+                  className="flex flex-col items-center flex-shrink-0"
+                >
+                  <Stepper.Trigger
+                    render={(domProps) => (
+                      <button
+                        {...domProps}
+                        className={`w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all cursor-default
+                          ${isApproved
+                            ? "bg-success text-white"
+                            : isRejected
+                              ? "bg-destructive text-white"
+                              : "bg-background border-border text-muted-foreground"
+                          }`}
+                      >
+                        {isApproved
+                          ? <Check className="w-5 h-5" />
+                          : isRejected
+                            ? <X className="w-5 h-5" />
+                            : <Clock className="w-4 h-4" />
+                        }
+                      </button>
+                    )}
+                  />
+                  <div className="text-center mt-2 max-w-40">
+                    <Stepper.Title
+                      render={(domProps) => (
+                        <p {...domProps} className="font-semibold leading-tight truncate">
+                          {a.approver_name}
+                        </p>
+                      )}
+                    />
+                    <p className=" text-xs text-muted-foreground mt-0.5">Level {a.level}</p>
+                    <p className={` text-xs font-bold capitalize mt-0.5
+                      ${isApproved
+                        ? "text-success"
+                        : isRejected
+                          ? "text-destructive"
+                          : "text-muted-foreground"
+                      }`}>
+                      {a.status}
+                    </p>
+                  </div>
+                </Stepper.Item>
+
+                {!isLast && (
+                  <Stepper.Separator
+                    orientation="horizontal"
+                    data-status={isApproved ? "success" : "inactive"}
+                    className="flex-1 self-start mt-5 h-1 bg-border data-[status=success]:bg-success transition-colors mx-1"
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </Stepper.List>
+      )}
+    </Stepper.Root>
+  );
+};
+
+/* ================= MAIN COMPONENT ================= */
 export default function RequestTable() {
   const [data, setData] = React.useState<Request[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -110,13 +183,11 @@ export default function RequestTable() {
   const rejectedCount = data.filter(r => r.status === "rejected").length;
 
   const [openDetail, setOpenDetail] = React.useState(false);
-  const [selectedCode, setSelectedCode] = React.useState<string | null>(null);
   const [detail, setDetail] = React.useState<Request | null>(null);
   const [detailLoading, setDetailLoading] = React.useState(false);
 
-
   const searchParams = useSearchParams();
-  const statusParam = searchParams.get("status"); // Pending | Approved | Rejected
+  const statusParam = searchParams.get("status");
 
   /* ================= FETCH DATA ================= */
   React.useEffect(() => {
@@ -138,9 +209,7 @@ export default function RequestTable() {
       setOpenDetail(true);
       setDetailLoading(true);
       setDetail(null);
-
       const res = await apiFetch(`/requests/${code}`);
-
       setDetail(res.data);
     } catch (err) {
       console.error(err);
@@ -151,21 +220,15 @@ export default function RequestTable() {
 
   /* ================= COLUMNS ================= */
   const columns: ColumnDef<Request, any>[] = [
-    {
-      accessorKey: "request_code",
-      header: "Request Code",
-    },
+    { accessorKey: "request_code", header: "Request Code" },
     {
       accessorKey: "created_at",
       header: "Date",
-      cell: ({ row }) => {
-        const date = new Date(row.original.created_at);
-        return date.toLocaleDateString();
-      },
+      cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString(),
     },
     {
-      accessorKey: "application.name", // ⬅️ ini trick penting
-      id: "application",               // ⬅️ tetap kasih id
+      accessorKey: "application.name",
+      id: "application",
       header: "Application",
       cell: ({ row }) => row.original.application?.name ?? "-",
       filterFn: "includesString",
@@ -174,9 +237,7 @@ export default function RequestTable() {
       accessorKey: "type",
       header: "Request Type",
       cell: ({ row }) =>
-        row.original.type === "application_access"
-          ? "Application Access"
-          : "Role Change",
+        row.original.type === "application_access" ? "Application Access" : "Role Change",
     },
     {
       accessorKey: "status",
@@ -184,15 +245,13 @@ export default function RequestTable() {
       filterFn: "equalsString",
       cell: ({ row }) => {
         const status = row.original.status;
-
         const styles = {
           approved: "bg-success/10 text-success border-success/30",
           rejected: "bg-destructive/10 text-destructive border-destructive/30",
           pending: "bg-warning/10 text-warning border-warning/30",
         };
-
         return (
-          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium capitalize ${styles[status as keyof typeof styles] ?? styles.pending}`}>
+          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium capitalize ${styles[status]}`}>
             {status}
           </span>
         );
@@ -202,36 +261,22 @@ export default function RequestTable() {
       id: "role",
       header: ({ table }) => {
         const rows = table.getRowModel().rows;
-        const isDynamic = rows[0]?.original.application?.role_mode === "dynamic";
-        return isDynamic ? "Notes" : "Role";
+        return rows[0]?.original.application?.role_mode === "dynamic" ? "Notes" : "Role";
       },
       cell: ({ row }) => {
         const { type, old_role_name, new_role_name, notes, application } = row.original;
-        const isDynamic = application?.role_mode === "dynamic";
-        if (isDynamic) {
+        if (application?.role_mode === "dynamic") {
           return (
             <span className="text-muted-foreground italic truncate block max-w-96" title={notes ?? "-"}>
               {notes ?? "-"}
             </span>
           );
         }
-
-        if (type === "application_access") {
-          return new_role_name ?? "-";
-        }
-
-        return (
-          <div className="text-sm">
-            {old_role_name ?? "-"} → {new_role_name ?? "-"}
-          </div>
-        );
+        if (type === "application_access") return new_role_name ?? "-";
+        return <div className="text-sm">{old_role_name ?? "-"} → {new_role_name ?? "-"}</div>;
       },
     },
-
-
   ];
-
-
 
   /* ================= TABLE ================= */
   const table = useReactTable({
@@ -246,7 +291,6 @@ export default function RequestTable() {
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  /* ================= URL FILTER ================= */
   React.useEffect(() => {
     if (!statusParam) return;
     table.getColumn("status")?.setFilterValue(statusParam);
@@ -256,98 +300,42 @@ export default function RequestTable() {
     table.getColumn("status")?.setFilterValue(status);
   };
 
-
   if (loading) return <RequestTableSkeleton />;
 
   return (
-
     <>
+      {/* STAT CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card
-          onClick={() => filterByStatus(undefined)}
-          className="cursor-pointer border-border/40 hover:border-border transition-colors"
-        >
-          <CardContent className="p-5">
-            <p className="text-xs font-medium text-muted-foreground mb-1">
-              Total Requests
-            </p>
-            <h3 className="text-2xl font-bold">
-              {loading ? <Skeleton className="h-8 w-16" /> : totalRequests}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-primary" />
-              <span>
-                {loading ? '...' : totalRequests} Request
-              </span>
-            </p>
-          </CardContent>
-        </Card>
-        <Card
-          onClick={() => filterByStatus("pending")}
-          className="cursor-pointer border-border/40 hover:border-border transition-colors"
-        >
-          <CardContent className="p-5">
-            <p className="text-xs font-medium text-muted-foreground mb-1">
-              On Going Requests
-            </p>
-            <h3 className="text-2xl font-bold text-warning">
-              {loading ? <Skeleton className="h-8 w-16" /> : pendingCount}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-primary" />
-              <span>
-                {loading ? '...' : pendingCount} Request
-              </span>
-            </p>
-          </CardContent>
-        </Card>
-        <Card
-          onClick={() => filterByStatus("approved")}
-          className="cursor-pointer border-border/40 hover:border-border transition-colors"
-        >
-          <CardContent className="p-5">
-            <p className="text-xs font-medium text-muted-foreground mb-1">
-              Approved Requests
-            </p>
-            <h3 className="text-2xl font-bold text-success">
-              {loading ? <Skeleton className="h-8 w-16" /> : approvedCount}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-primary" />
-              <span>
-                {loading ? '...' : approvedCount} Request
-              </span>
-            </p>
-          </CardContent>
-        </Card>
-        <Card
-          onClick={() => filterByStatus("rejected")}
-          className="cursor-pointer border-border/40 hover:border-border transition-colors"
-        >
-          <CardContent className="p-5">
-            <p className="text-xs font-medium text-muted-foreground mb-1">
-              Rejected Requests
-            </p>
-            <h3 className="text-2xl font-bold text-destructive">
-              {loading ? <Skeleton className="h-8 w-16" /> : rejectedCount}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-primary" />
-              <span>
-                {loading ? '...' : rejectedCount} Request
-              </span>
-            </p>
-          </CardContent>
-        </Card>
+        {[
+          { label: "Total Requests", count: totalRequests, color: "", filter: undefined },
+          { label: "On Going Requests", count: pendingCount, color: "text-warning", filter: "pending" as const },
+          { label: "Approved Requests", count: approvedCount, color: "text-success", filter: "approved" as const },
+          { label: "Rejected Requests", count: rejectedCount, color: "text-destructive", filter: "rejected" as const },
+        ].map(({ label, count, color, filter }) => (
+          <Card
+            key={label}
+            onClick={() => filterByStatus(filter)}
+            className="cursor-pointer border-border/40 hover:border-border transition-colors"
+          >
+            <CardContent className="p-5">
+              <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
+              <h3 className={`text-2xl font-bold ${color}`}>{count}</h3>
+              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3 text-primary" />
+                <span>{count} Request</span>
+              </p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
+      {/* TABLE CARD */}
       <Card>
         <CardHeader className="flex flex-row justify-between">
           <div>
             <CardTitle className="text-lg">My Requests</CardTitle>
             <CardDescription>Application access requests</CardDescription>
           </div>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="icon" variant="ghost">
@@ -362,28 +350,19 @@ export default function RequestTable() {
           </DropdownMenu>
         </CardHeader>
 
-        {/* FILTERS */}
         <CardContent className="flex flex-wrap gap-4 mb-4">
           <Input
             placeholder="Search application..."
-            value={
-              (table.getColumn("application")?.getFilterValue() ?? "") as string
-            }
-            onChange={(e) =>
-              table.getColumn("application")?.setFilterValue(e.target.value)
-            }
+            value={(table.getColumn("application")?.getFilterValue() ?? "") as string}
+            onChange={(e) => table.getColumn("application")?.setFilterValue(e.target.value)}
             className="h-9 w-60 text-sm"
           />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="h-9 w-60 text-sm capitalize text-left"
-              >
+              <Button variant="outline" className="h-9 w-60 text-sm capitalize text-left">
                 {(table.getColumn("status")?.getFilterValue() as string) || "Filter Status"}
               </Button>
             </DropdownMenuTrigger>
-
             <DropdownMenuContent>
               {["pending", "approved", "rejected"].map(status => (
                 <DropdownMenuItem
@@ -392,22 +371,16 @@ export default function RequestTable() {
                   className="flex justify-between capitalize"
                 >
                   {status}
-                  {table.getColumn("status")?.getFilterValue() === status && (
-                    <Check className="h-4 w-4" />
-                  )}
+                  {table.getColumn("status")?.getFilterValue() === status && <Check className="h-4 w-4" />}
                 </DropdownMenuItem>
               ))}
-
-              <DropdownMenuItem
-                onClick={() => table.getColumn("status")?.setFilterValue(undefined)}
-              >
+              <DropdownMenuItem onClick={() => table.getColumn("status")?.setFilterValue(undefined)}>
                 Clear
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </CardContent>
 
-        {/* TABLE */}
         <CardContent>
           <div className="overflow-x-auto rounded-lg border border-border">
             <Table className="min-w-225">
@@ -415,11 +388,7 @@ export default function RequestTable() {
                 {table.getHeaderGroups().map(hg => (
                   <TableRow key={hg.id}>
                     {hg.headers.map(h => (
-                      <TableHead
-                        key={h.id}
-                        className="cursor-pointer select-none"
-                        onClick={() => table.getColumn(h.id)?.toggleSorting()}
-                      >
+                      <TableHead key={h.id} className="cursor-pointer select-none" onClick={() => table.getColumn(h.id)?.toggleSorting()}>
                         <div className="flex items-center gap-1">
                           {flexRender(h.column.columnDef.header, h.getContext())}
                           <ChevronsUpDown className="h-3 w-3 text-muted-foreground" />
@@ -429,7 +398,6 @@ export default function RequestTable() {
                   </TableRow>
                 ))}
               </TableHeader>
-
               <TableBody>
                 {table.getRowModel().rows.map(row => (
                   <TableRow
@@ -449,15 +417,10 @@ export default function RequestTable() {
           </div>
         </CardContent>
 
-        {/* PAGINATION */}
         <CardFooter className="flex justify-between">
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
-              Previous
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-              Next
-            </Button>
+            <Button size="sm" variant="outline" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>Previous</Button>
+            <Button size="sm" variant="outline" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>Next</Button>
           </div>
           <span className="text-sm text-muted-foreground">
             Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
@@ -465,16 +428,13 @@ export default function RequestTable() {
         </CardFooter>
       </Card>
 
+      {/* DETAIL DIALOG */}
       <Dialog open={openDetail} onOpenChange={setOpenDetail}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent style={{ maxWidth: "72rem" }} className="w-full">
 
           <DialogHeader>
-            <DialogTitle>
-              Request Detail
-            </DialogTitle>
-            <DialogDescription>
-              {detail?.request_code}
-            </DialogDescription>
+            <DialogTitle>Request Detail</DialogTitle>
+            <DialogDescription>{detail?.request_code}</DialogDescription>
           </DialogHeader>
 
           {/* LOADING */}
@@ -490,97 +450,91 @@ export default function RequestTable() {
           {!detailLoading && detail && (
             <div className="space-y-4 text-sm">
 
-              {/* BASIC INFO */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-muted-foreground">Application</p>
-                  <p className="font-medium">
-                    {detail.application.name}
-                  </p>
-                </div>
+              {/* CARD: APPROVAL STEPPER */}
+              <Card>
+                <CardContent className="pt-5">
+                  <ApprovalStepper approvals={detail.approvals} />
+                </CardContent>
+              </Card>
 
-                <div>
-                  <p className="text-muted-foreground">Type</p>
-                  <p className="capitalize">
-                    {detail.type.replace("_", " ")}
-                  </p>
-                </div>
+              {/* CARD: INFO */}
+              <Card>
+                <CardContent className="pt-5 space-y-4">
 
-                <div>
-                  <p className="text-muted-foreground">Status</p>
-                  <p className={`font-medium capitalize ${detail.status === "approved"
-                    ? "text-success"
-                    : detail.status === "rejected"
-                      ? "text-destructive"
-                      : "text-warning"
-                    }`}>
-                    {detail.status}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-muted-foreground">Date</p>
-                  <p>
-                    {new Date(detail.created_at).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-
-              {/* ROLE / NOTES */}
-              <div>
-                <p className="text-muted-foreground mb-1">
-                  {detail.application?.role_mode === "dynamic" ? "Notes" : "Role"}
-                </p>
-
-                {detail.application?.role_mode === "dynamic" ? (
-                  <p className="bg-muted p-3 rounded">{detail.notes ?? "-"}</p>
-                ) : detail.type === "application_access" ? (
-                  <p>{detail.new_role_name ?? "-"}</p>
-                ) : (
-                  <p>{detail.old_role_name ?? "-"} → {detail.new_role_name ?? "-"}</p>
-                )}
-              </div>
-
-              {/* JUSTIFICATION */}
-              <div>
-                <p className="text-muted-foreground mb-1">Justification</p>
-                <p className="bg-muted p-3 rounded">
-                  {detail.justification || "-"}
-                </p>
-              </div>
-
-              {/* APPROVALS */}
-              <div>
-                <p className="text-muted-foreground mb-2">Approvals</p>
-
-                <div className="space-y-2">
-                  {detail.approvals.map(a => (
-                    <div
-                      key={a.id}
-                      className="flex flex-col border rounded p-3 gap-1"
-                    >
-                      <div className="flex justify-between">
-                        <span>Level {a.level} ( {a.approver_id} ) {a.approver_name}</span>
-                        <span className={`capitalize font-medium ${
-                          a.status === "approved"
-                            ? "text-success"
-                            : a.status === "rejected"
-                              ? "text-destructive"
-                              : "text-warning"
-                        }`}>
-                          {a.status}
-                        </span>
-                      </div>
-
-                      {a.status === "rejected" && a.reason && (
-                        <p className="text-xs bg-destructive/10 border border-destructive/30 text-destructive p-2 rounded mt-1">
-                          Reason: {a.reason}
-                        </p>
-                      )}
+                  {/* BASIC INFO */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-muted-foreground">Application</p>
+                      <p className="font-medium bg-muted p-3 rounded">
+                        {detail.application.name}
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <div>
+                      <p className="text-muted-foreground">Type</p>
+                      <p className="capitalize bg-muted p-3 rounded">
+                        {detail.type.replace("_", " ")}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Status</p>
+                      <p className={`font-medium capitalize bg-muted p-3 rounded
+                        ${detail.status === "approved"
+                          ? "text-success"
+                          : detail.status === "rejected"
+                            ? "text-destructive"
+                            : "text-warning"
+                        }`}>
+                        {detail.status}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Date</p>
+                      <p className="bg-muted p-3 rounded">
+                        {new Date(detail.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* ROLE / NOTES */}
+                  <div>
+                    <p className="text-muted-foreground mb-1">
+                      {detail.application?.role_mode === "dynamic" ? "Notes" : "Role"}
+                    </p>
+                    {detail.application?.role_mode === "dynamic" ? (
+                      <p className="bg-muted p-3 rounded">{detail.notes ?? "-"}</p>
+                    ) : detail.type === "application_access" ? (
+                      <p className="bg-muted p-3 rounded">{detail.new_role_name ?? "-"}</p>
+                    ) : (
+                      <p className="bg-muted p-3 rounded">{detail.old_role_name ?? "-"} → {detail.new_role_name ?? "-"}</p>
+                    )}
+                  </div>
+
+                  {/* JUSTIFICATION */}
+                  <div>
+                    <p className="text-muted-foreground mb-1">Justification</p>
+                    <p className="bg-muted p-3 rounded">
+                      {detail.justification || "-"}
+                    </p>
+                  </div>
+
+                  {/* REJECT REASON — tampil hanya jika ada approval yang rejected */}
+                  {detail.approvals.some(a => a.status === "rejected" && a.reason) && (
+                    <div>
+                      <p className="text-muted-foreground mb-1">Reject Reason</p>
+                      {detail.approvals
+                        .filter(a => a.status === "rejected" && a.reason)
+                        .map(a => (
+                          <div key={a.id} className="bg-destructive/10 border border-destructive/30 text-destructive p-3 rounded">
+                            <p className="text-xs font-medium mb-0.5">Level {a.level} — {a.approver_name}</p>
+                            <p>{a.reason}</p>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  )}
+
+                </CardContent>
+              </Card>
 
             </div>
           )}
@@ -589,6 +543,4 @@ export default function RequestTable() {
       </Dialog>
     </>
   );
-
-
 }
