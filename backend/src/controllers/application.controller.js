@@ -16,7 +16,6 @@ const APP_CONFIG = {
   },
 };
 
-
 /* ================= GET ALL ================= */
 export const getApplications = async (req, res) => {
   try {
@@ -330,8 +329,6 @@ export const getCmsRoles = async (req, res) => {
   }
 };
 
-
-
 // export const redirectToApplication = async (req, res) => {
 //   try {
 //     const userId = req.user.id;
@@ -469,8 +466,11 @@ export const redirectToApplication = async (req, res) => {
       baseUrl = "https://ims.triasmitra.com";
       token = "KFhNebzV8EvLWTyWYZ0XPKafNGDwtANTN7WzZtka_TfGTqPQtmANLiRfMtCI8JKyxg9";
     } else if (code === "cms") {
-      baseUrl = "https://devcms.triasmitra.com";
-      token = "f7a3c2e8b1d94f6a2e5c7b3d8f1a4e9c2b6d3f8a1e4c7b2d5f9a3e6c1b4d7f2";
+      baseUrl = "https://cms.triasmitra.com";
+      token = "9e6d3c1f7a4b8d2e5f1c9a7b3e6d4f8a2c1e7b9d5f3a6c8e4b1d7a2f9c6e3b5";
+    }else if (code === "aas") {
+      baseUrl = "https://aas.triasmitra.com";
+      token = "a3f9d2b4c1e6f7890a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef";
     }
      else {
       return res.status(404).json({
