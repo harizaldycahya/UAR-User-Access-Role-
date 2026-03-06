@@ -274,8 +274,6 @@ export default function DashboardPage() {
     return "Just now";
   }
 
-
-
   return (
     <main className="min-h-screen bg-background p-6">
 

@@ -417,6 +417,7 @@ export const getRequestDetail = async (req, res) => {
         r.created_at,
 
         a.id   AS application_id,
+        a.code AS application_code,
         a.name AS application_name,
         a.role_mode AS application_role_mode,
 
@@ -474,6 +475,7 @@ export const getRequestDetail = async (req, res) => {
 
       application: {
         id: first.application_id,
+        code: first.application_code,
         name: first.application_name,
         role_mode: first.application_role_mode,
       },
@@ -914,5 +916,71 @@ export const getMyApprovalHistory = async (req, res) => {
       success: false,
       message: "Failed to fetch approval history",
     });
+  }
+};
+
+
+export const reviseRequest = async (req, res) => {
+  const conn = await db.getConnection();
+
+  try {
+    const username = req.user.username;
+    const { request_code } = req.params;
+
+    console.log("username dari token:", username);
+    console.log("request_code:", request_code);
+
+    const {
+      new_role_id, new_role_name,
+      new_location_id, new_location_name,
+      notes, justification
+    } = req.body;
+
+    await conn.beginTransaction();
+
+    // Validasi: request milik user & status need_revision
+    const [rows] = await conn.query(
+      `SELECT * FROM requests WHERE request_code = ? AND username = ? AND status = 'rejected'`,
+      [request_code, username]
+    );
+
+    if (rows.length === 0) {
+      await conn.rollback();
+      return res.status(404).json({ success: false, message: "Request tidak ditemukan atau tidak bisa direvisi" });
+    }
+
+    // Update field yang bisa diubah
+    await conn.query(
+      `UPDATE requests SET 
+        new_role_id = ?, new_role_name = ?,
+        new_location_id = ?, new_location_name = ?,
+        notes = ?, justification = ?,
+        status = 'pending',
+        updated_at = NOW()
+       WHERE request_code = ?`,
+      [
+        new_role_id || null, new_role_name || null,
+        new_location_id || null, new_location_name || null,
+        notes || null, justification,
+        request_code
+      ]
+    );
+
+    // Reset SEMUA approvals ke pending
+    await conn.query(
+      `UPDATE approvals SET status = 'pending', reason = NULL, approved_at = NULL 
+       WHERE request_code = ?`,
+      [request_code]
+    );
+
+    await conn.commit();
+    res.json({ success: true, message: "Request berhasil direvisi dan dikembalikan ke approver" });
+
+  } catch (err) {
+    await conn.rollback();
+    console.error("REVISE REQUEST ERROR:", err);
+    res.status(500).json({ success: false, message: "Gagal merevisi request" });
+  } finally {
+    conn.release();
   }
 };

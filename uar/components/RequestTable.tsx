@@ -2,6 +2,7 @@
 
 import * as React from "react";
 
+import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ColumnDef,
@@ -86,6 +87,8 @@ type Request = {
   new_role_name: string | null;
   approvals: Approval[];
 };
+
+
 
 /* ================= APPROVAL STEPPER COMPONENT ================= */
 const ApprovalStepper = ({ approvals }: { approvals: Approval[] }) => {
@@ -176,6 +179,8 @@ export default function RequestTable() {
   const [loading, setLoading] = React.useState(true);
   const [columnFilters, setColumnFilters] = React.useState<any[]>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
+
+  const router = useRouter();
 
   const totalRequests = data.length;
   const pendingCount = data.filter(r => r.status === "pending").length;
@@ -535,6 +540,20 @@ export default function RequestTable() {
 
                 </CardContent>
               </Card>
+
+              {/* REVISE BUTTON — tampil hanya jika rejected */}
+              {!detailLoading && detail && detail.status === "rejected" && (
+                <div className="flex justify-end">
+                  <Button
+                    onClick={() => {
+                      setOpenDetail(false);
+                      router.push(`/requests/${detail.request_code}/revise`);
+                    }}
+                  >
+                    Revise Request
+                  </Button>
+                </div>
+              )}
 
             </div>
           )}

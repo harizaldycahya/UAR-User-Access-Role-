@@ -497,12 +497,17 @@ export const redirectToApplication = async (req, res) => {
       [username, code]
     );
 
+    console.log("access result:", access); // lihat isinya apa
+
     if (!access) {
       return res.status(403).json({
         success: false,
         message: "Akses aplikasi ditolak",
       });
     }
+
+    console.log("Calling CMS API:", `${baseUrl}/api/public/get-token/${nik}`);
+    console.log("With token:", token);
 
     // call external SSO API
     const response = await axios.get(
@@ -513,6 +518,9 @@ export const redirectToApplication = async (req, res) => {
         },
       }
     );
+
+    console.log("CMS API status:", response.status);
+    console.log("CMS API response:", JSON.stringify(response.data));
 
     const accessToken = response.data?.result?.access_token;
 
@@ -536,6 +544,8 @@ export const redirectToApplication = async (req, res) => {
     });
   } catch (err) {
     console.error("SSO REDIRECT ERROR:", err.response?.data || err.message);
+    console.error("SSO REDIRECT STATUS:", err.response?.status); // tambah ini
+    console.error("SSO REDIRECT URL:", err.config?.url);         // tambah ini
 
     return res.status(500).json({
       success: false,

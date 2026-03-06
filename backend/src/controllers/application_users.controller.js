@@ -18,19 +18,14 @@ export const getApplicationsByUser = async (req, res) => {
       ua.id AS user_app_id,
       ua.created_at AS granted_at,
       ua.application_roles_id,
-      ua.external_application_role_id,
-      ua.external_application_location_id,  -- ← tambah ini
       ua.role_name AS ua_role_name,
-      ua.location_name AS ua_location_name,  -- ← tambah ini
+      ua.location_name AS ua_location_name,
+      ua.external_application_location_id
 
-      ar.name AS ar_role_name
     FROM applications a
     LEFT JOIN user_applications ua
       ON ua.application_id = a.id
       AND ua.username = ?
-    LEFT JOIN application_roles ar
-      ON ar.id = ua.application_roles_id
-      AND ar.deleted_at IS NULL
     ORDER BY 
       (ua.id IS NOT NULL) DESC,
       a.name ASC
@@ -39,8 +34,6 @@ export const getApplicationsByUser = async (req, res) => {
     );
 
     const result = rows.map((app) => {
-      const isExternal = Boolean(app.external_application_role_id);
-
       return {
         id: app.id,
         code: app.code,
@@ -53,13 +46,10 @@ export const getApplicationsByUser = async (req, res) => {
         has_access: Boolean(app.user_app_id),
         granted_at: app.granted_at,
 
-        role: isExternal
-          ? { id: app.external_application_role_id, name: app.ua_role_name }
-          : app.application_roles_id
-            ? { id: app.application_roles_id, name: app.ar_role_name }
-            : null,
+        role: app.ua_role_name
+          ? { id: app.application_roles_id || null, name: app.ua_role_name }
+          : null,
 
-        // ← tambah ini
         location: app.external_application_location_id
           ? { id: app.external_application_location_id, name: app.ua_location_name }
           : null,
