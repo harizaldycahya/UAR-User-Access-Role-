@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import ApprovalTable from "@/components/ApprovalTable";
+import ApprovalTableSkeleton from "@/components/RequestTableSkeleton";
 
 export default function ApprovalsPage() {
   return (
@@ -10,7 +12,9 @@ export default function ApprovalsPage() {
         Review and manage access and role change requests awaiting your approval
       </p>
       <div className="min-h-8"></div>
-      <ApprovalTable />
+      <Suspense fallback={<ApprovalTableSkeleton />}>
+        <ApprovalTable />
+      </Suspense>
     </main>
   );
 }

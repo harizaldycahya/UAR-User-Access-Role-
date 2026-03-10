@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import Link from "next/link";
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
@@ -63,7 +63,7 @@ type MenuGroup = {
     items: MenuItem[];
 };
 
-export default function PortalLayout({ children }: { children: React.ReactNode }) {
+function PortalLayoutInner({ children }: { children: React.ReactNode }) {
     const [user, setUser] = React.useState<any>(null);
     const [profile, setProfile] = React.useState<any>(null);
     const [foto, setFoto] = React.useState<any>(null);
@@ -166,7 +166,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             {
                 label: "Request Approval",
                 items: [
-                    { label: "Approval Pending", icon: <Clock className="h-[18px] w-[18px]" />, href: "/approvals?status=pending", badgeKey: "pending_approvals" },
+                    { label: "Approval Pending", icon: <Clock className="h-[18px] w-[18px]" />, href: "/approvals?status=pending"},
                     { label: "History Approvals", icon: <CheckCircle className="h-[18px] w-[18px]" />, href: "/approvals?status=history" },
                 ],
             },
@@ -359,5 +359,13 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 </SidebarInset>
             </div>
         </SidebarProvider>
+    );
+}
+
+export default function PortalLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <Suspense fallback={null}>
+            <PortalLayoutInner>{children}</PortalLayoutInner>
+        </Suspense>
     );
 }

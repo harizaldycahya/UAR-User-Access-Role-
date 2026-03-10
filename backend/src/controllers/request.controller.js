@@ -128,8 +128,8 @@ export const createRequest = async (req, res) => {
     const [result] = await conn.query(
       `
       INSERT INTO requests
-        (username, application_id, type, old_role_id, old_role_name, new_role_id, new_role_name, new_location_id, new_location_name, old_location_id, old_location_name, notes, justification)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (username, application_id, type, old_role_id, old_role_name, new_role_id, new_role_name, new_location_id, new_location_name, old_location_id, old_location_name, notes, justification, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
       `,
       [
         username,
@@ -190,7 +190,7 @@ export const createRequest = async (req, res) => {
     const nik = username;
 
     const personaRes = await axios.get(
-      "https://personasys.triasmitra.com/api/auth/get-approval-uar",
+      "https://personasys.triasmitra.com/api/auth/get-atasan-uar",
       {
         params: { nik },
         timeout: 10000,
@@ -205,7 +205,33 @@ export const createRequest = async (req, res) => {
       });
     }
 
-    const atasanId = personaRes.data.data?.atasan1_general || null;
+    const {
+      unit_approval,
+      subsi_approval,
+      kasie_approval,
+      kadept_approval,
+      kadiv_approval,
+      direktorat_approval,
+    } = personaRes.data.data;
+
+    let atasanId = null;
+
+    if (nik === kadiv_approval) {
+      // User adalah kadiv → approver: direktorat
+      atasanId = direktorat_approval || null;
+    } else if (nik === kadept_approval) {
+      // User adalah kadept → approver: kadiv
+      atasanId = kadiv_approval || null;
+    } else if (nik === kasie_approval) {
+      // User adalah kasie → approver: kadept
+      atasanId = kadept_approval || null;
+    } else if (nik === subsi_approval) {
+      // User adalah subsi → approver: kasie, fallback kadept
+      atasanId = kasie_approval || kadept_approval || null;
+    } else if (nik === unit_approval) {
+      // User adalah unit → approver: kasie, fallback kadept (skip subsi)
+      atasanId = kasie_approval || kadept_approval || null;
+    }
 
     if (!atasanId) {
       await conn.rollback();

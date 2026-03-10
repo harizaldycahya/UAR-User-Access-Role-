@@ -32,6 +32,7 @@ import { User, Mail, Phone, Building, MapPin, Calendar, Camera } from "lucide-re
 import { Select, SelectContent, SelectValue, SelectTrigger, SelectItem } from "@/components/ui/select";
 import Swal from "sweetalert2";
 import React from "react";
+import { apiFetch } from "@/lib/api"; // ← import apiFetch
 
 // Skeleton Components
 function ProfileCardSkeleton() {
@@ -137,33 +138,16 @@ export default function ProfilePage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [lastPasswordChangedAt, setLastPasswordChangedAt] = useState<string | null>(null);
 
-  // React.useEffect(() => {
-  //   const storedUser = localStorage.getItem("user");
-  //   if (storedUser) setUser(JSON.parse(storedUser));
-  // }, []);
-
   React.useEffect(() => {
     fetchMe();
   }, []);
-
 
   const fetchMe = async () => {
     try {
       setIsLoading(true);
 
-      const token = localStorage.getItem("token");
-
-      const res = await fetch("http://localhost:5000/api/auth/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(result.message || "Gagal ambil profile");
-      }
+      // ← ganti fetch manual dengan apiFetch
+      const result = await apiFetch("/auth/me");
 
       const hr = result.hr_profile;
       const u = result.user;
@@ -191,7 +175,6 @@ export default function ProfilePage() {
       setIsLoading(false);
     }
   };
-
 
   const handleSave = () => {
     console.log("Saving profile:", profile);
@@ -221,25 +204,11 @@ export default function ProfilePage() {
     try {
       setIsChangingPassword(true);
 
-      const token = localStorage.getItem("token");
-
-      const res = await fetch(
-        "http://localhost:5000/api/auth/change-password",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ oldPassword, newPassword }),
-        }
-      );
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(result.message || "Gagal ganti password");
-      }
+      // ← ganti fetch manual dengan apiFetch
+      await apiFetch("/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({ oldPassword, newPassword }),
+      });
 
       await Swal.fire({
         icon: "success",
@@ -282,11 +251,6 @@ export default function ProfilePage() {
 
     return "Just now";
   }
-
-
-
-
-
 
   return (
     <main className="min-h-screen bg-background p-6">
@@ -379,16 +343,6 @@ export default function ProfilePage() {
                       <CardTitle className="text-lg">Personal Information</CardTitle>
                       <CardDescription>Manage your personal details</CardDescription>
                     </div>
-
-                    {/* {!isEditing && (
-                      <Button
-                        onClick={() => setIsEditing(true)}
-                        variant="outline"
-                        size="sm"
-                      >
-                        Edit Profile
-                      </Button>
-                    )} */}
                   </CardHeader>
 
                   <CardContent className="p-6">
@@ -515,8 +469,6 @@ export default function ProfilePage() {
                           )}
                         </div>
                       </div>
-
-
 
                       {/* Action Buttons */}
                       {isEditing && (

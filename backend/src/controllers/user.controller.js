@@ -173,4 +173,59 @@ export const resetPassword = async (req, res) => {
   }
 };
 
+export const createUser = async (req, res) => {
+  const { username, nama_user } = req.body;
+
+  if (!username || !nama_user) {
+    return res.status(400).json({ success: false, message: "username dan nama_user wajib diisi" });
+  }
+
+  try {
+    const [[existing]] = await db.query(
+      `SELECT id FROM users WHERE username = ?`, [username]
+    );
+
+    if (existing) {
+      return res.status(409).json({ success: false, message: "User sudah ada" });
+    }
+
+    const hashedPassword = await bcrypt.hash("2026rising8", 10);
+
+    await db.query(
+      `INSERT INTO users (username, nama_user, password, is_active, role_id, created_at, updated_at, last_password_changed_at)
+       VALUES (?, ?, ?, 1, 2, NOW(), NOW(), NOW())`,
+      [username, nama_user, hashedPassword]
+    );
+
+    // Default apps untuk semua caller
+    const defaultApps = ["HRIS", "HELPDESK", "SHOCART", "AAS"];
+
+    const [apps] = await db.query(
+      `SELECT id, code FROM applications WHERE code IN (?)`,
+      [defaultApps]
+    );
+
+    let grantedApps = [];
+    if (apps.length > 0) {
+      for (const app of apps) {
+        await db.query(
+          `INSERT INTO user_applications (username, application_id, created_at, updated_at) VALUES (?, ?, NOW(), NOW())`,
+          [username, app.id]
+        );
+      }
+      grantedApps = apps.map((a) => a.code);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "User berhasil dibuat",
+      data: { username, nama_user, granted_apps: grantedApps },
+    });
+
+  } catch (err) {
+    console.error("CREATE USER ERROR:", err);
+    return res.status(500).json({ success: false, message: "Gagal membuat user" });
+  }
+};
+
 

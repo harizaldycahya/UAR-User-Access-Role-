@@ -1,4 +1,6 @@
 import RequestTable from "@/components/RequestTable";
+import { Suspense } from "react";
+import RequestTableSkeleton from "@/components/RequestTableSkeleton";
 
 export default function RequestsPage() {
   return (
@@ -13,7 +15,9 @@ export default function RequestsPage() {
         </p>
       </div>
       <div className="min-h-8"></div>
-      <RequestTable />
+      <Suspense fallback={<RequestTableSkeleton />}>
+        <RequestTable />
+      </Suspense>
     </main>
   );
 }
