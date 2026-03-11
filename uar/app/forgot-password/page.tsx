@@ -23,7 +23,7 @@ export default function ForgotPasswordPage() {
     setError("");
 
     try {
-      const res = await fetch("https://devapiuar.triasmitra.com/api/auth/forgot-password", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username }), // ← kirim username, bukan email
@@ -141,14 +141,14 @@ export default function ForgotPasswordPage() {
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <Label htmlFor="username" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Username
+                      NIK
                     </Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                       <Input
                         id="username"
                         type="text"
-                        placeholder="Masukkan username kamu"
+                        placeholder="Masukkan NIK kamu"
                         className="pl-10 h-11 border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-blue-600 dark:focus:border-blue-500"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}

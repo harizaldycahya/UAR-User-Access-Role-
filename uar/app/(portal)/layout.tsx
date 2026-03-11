@@ -364,7 +364,61 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
     return (
-        <Suspense fallback={null}>
+        <Suspense fallback={
+            <div className="flex min-h-screen w-full items-center justify-center bg-background overflow-hidden">
+                {/* Background grid pattern */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border)/0.3)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.3)_1px,transparent_1px)] bg-[size:40px_40px]" />
+                {/* Radial fade overlay */}
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_50%,transparent_40%,hsl(var(--background))_100%)]" />
+
+                <div className="relative flex flex-col items-center gap-8">
+                    {/* Logo + ring animation */}
+                    <div className="relative flex items-center justify-center">
+                        {/* Outer pulse ring */}
+                        <div className="absolute w-20 h-20 rounded-2xl border border-primary/20 animate-ping" style={{ animationDuration: '2s' }} />
+                        {/* Middle ring */}
+                        <div className="absolute w-16 h-16 rounded-xl border border-primary/30" />
+                        {/* Logo box */}
+                        <div className="relative w-14 h-14 rounded-xl bg-sidebar flex items-center justify-center shadow-lg border border-sidebar-border">
+                            <img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
+                        </div>
+                    </div>
+
+                    {/* Brand text */}
+                    <div className="flex flex-col items-center gap-1">
+                        <p className="text-sm font-bold tracking-[0.2em] uppercase text-foreground">
+                            Triasmitra
+                        </p>
+                        <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground">
+                            User Access Role
+                        </p>
+                    </div>
+
+                    {/* Loading bar */}
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="w-48 h-[2px] bg-border rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-primary rounded-full"
+                                style={{
+                                    animation: 'loadingBar 1.6s ease-in-out infinite',
+                                }}
+                            />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground tracking-widest uppercase">
+                            Memuat portal...
+                        </p>
+                    </div>
+                </div>
+
+                <style jsx>{`
+                    @keyframes loadingBar {
+                        0% { width: 0%; margin-left: 0%; }
+                        50% { width: 60%; margin-left: 20%; }
+                        100% { width: 0%; margin-left: 100%; }
+                    }
+                `}</style>
+            </div>
+        }>
             <PortalLayoutInner>{children}</PortalLayoutInner>
         </Suspense>
     );

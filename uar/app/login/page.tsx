@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { apiFetch } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -21,25 +23,12 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("https://devapiuar.triasmitra.com/api/auth/login", {
+      const data = await apiFetch("/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({ username, password }),
       });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Login gagal");
-      }
-
-      // ⬇️ WAJIB
-      const data = await res.json();
-
-      // ⬇️ SIMPAN TOKEN (INI KUNCI SEMESTA)
       localStorage.setItem("token", data.token);
-
       localStorage.setItem("user", JSON.stringify(data.user));
 
       const roleRedirectMap: Record<string, string> = {
@@ -47,10 +36,9 @@ export default function LoginPage() {
         hrd: "/approvals",
       };
 
-      const redirectTo =
-        roleRedirectMap[data.user.role_name] || "/dashboard";
+      const redirectTo = roleRedirectMap[data.user.role_name] || "/dashboard";
+      router.push(redirectTo);
 
-      window.location.href = redirectTo;
     } catch (err: any) {
       setError(err.message || "Login gagal");
     } finally {
@@ -179,13 +167,13 @@ export default function LoginPage() {
                   htmlFor="username"
                   className="text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
-                  Username
+                  NIK
                 </Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                   <Input
                     id="username"
-                    placeholder="Enter username"
+                    placeholder="Enter NIK"
                     className="pl-10 h-11 border-gray-300 dark:border-gray-700 dark:bg-gray-800 focus:border-blue-600 dark:focus:border-blue-500"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}

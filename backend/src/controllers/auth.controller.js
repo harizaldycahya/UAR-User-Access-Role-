@@ -372,7 +372,12 @@ export const forgotPassword = async (req, res) => {
     });
   } catch (err) {
     console.error("FORGOT PASSWORD ERROR:", err);
-    return res.status(500).json({ message: "Terjadi kesalahan server." });
+    // return res.status(500).json({ message: "Terjadi kesalahan server." });
+    return res.status(500).json({ 
+      message: "Terjadi kesalahan server.",
+      debug_error: err.message,  // ← tambah ini sementara
+      debug_stack: err.stack     // ← dan ini
+    });
   }
 };
 
