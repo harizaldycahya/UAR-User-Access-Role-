@@ -49,8 +49,10 @@ import {
     Clock,
     CheckCircle,
     Book,
+    Bell,
 } from 'lucide-react';
 import { apiAxios, apiFetch } from '@/lib/api';
+import { NotificationPanel } from "@/components/NotificationPanel";
 
 type MenuItem = {
     label: string;
@@ -129,21 +131,21 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                 label: "Application Request",
                 items: [
                     { label: "Create New Request", icon: <FilePlus className="h-4.5 w-4.5" />, href: "/requests/create" },
-                    { label: "My Request", icon: <ClipboardList className="h-[18px] w-[18px]" />, href: "/requests" },
+                    { label: "My Request", icon: <ClipboardList className="h-4.5 w-4.5" />, href: "/requests" },
                 ],
             },
             {
                 label: "Request Approval",
                 items: [
-                    { label: "Approval Pending", icon: <Clock className="h-[18px] w-[18px]" />, href: "/approvals?status=pending" },
-                    { label: "History Approvals", icon: <CheckCircle className="h-[18px] w-[18px]" />, href: "/approvals?status=history" },
+                    { label: "Approval Pending", icon: <Clock className="h-4.5 w-4.5" />, href: "/approvals?status=pending" },
+                    { label: "History Approvals", icon: <CheckCircle className="h-4.5 w-4.5" />, href: "/approvals?status=history" },
                 ],
             },
             {
                 label: "Account",
                 items: [
-                    { label: "My Profile", icon: <User className="h-[18px] w-[18px]" />, href: "/profile" },
-                    { label: "Guide Book", icon: <Book className="h-[18px] w-[18px]" />, href: "/guide" },
+                    { label: "My Profile", icon: <User className="h-4.5 w-4.5" />, href: "/profile" },
+                    { label: "Guide Book", icon: <Book className="h-4.5 w-4.5" />, href: "/guide" },
                 ],
             },
         ],
@@ -151,14 +153,14 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
             {
                 label: "Applications",
                 items: [
-                    { label: "Applications", icon: <FilePlus className="h-[18px] w-[18px]" />, href: "/applications" },
-                    { label: "Create Application", icon: <ClipboardList className="h-[18px] w-[18px]" />, href: "/applications/create" },
+                    { label: "Applications", icon: <FilePlus className="h-4.5 w-4.5" />, href: "/applications" },
+                    { label: "Create Application", icon: <ClipboardList className="h-4.5 w-4.5" />, href: "/applications/create" },
                 ],
             },
             {
                 label: "Users",
                 items: [
-                    { label: "Users", icon: <FilePlus className="h-[18px] w-[18px]" />, href: "/users" },
+                    { label: "Users", icon: <FilePlus className="h-4.5 w-4.5" />, href: "/users" },
                 ],
             },
         ],
@@ -166,8 +168,8 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
             {
                 label: "Request Approval",
                 items: [
-                    { label: "Approval Pending", icon: <Clock className="h-[18px] w-[18px]" />, href: "/approvals?status=pending"},
-                    { label: "History Approvals", icon: <CheckCircle className="h-[18px] w-[18px]" />, href: "/approvals?status=history" },
+                    { label: "Approval Pending", icon: <Clock className="h-4.5 w-4.5" />, href: "/approvals?status=pending"},
+                    { label: "History Approvals", icon: <CheckCircle className="h-4.5 w-4.5" />, href: "/approvals?status=history" },
                 ],
             },
         ],
@@ -307,6 +309,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
 
                         <div className="ml-auto flex items-center gap-3">
                             {mounted && <ThemeSwitcher />}
+                            <NotificationPanel />
                             {mounted && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -367,7 +370,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         <Suspense fallback={
             <div className="flex min-h-screen w-full items-center justify-center bg-background overflow-hidden">
                 {/* Background grid pattern */}
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border)/0.3)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.3)_1px,transparent_1px)] bg-[size:40px_40px]" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border)/0.3)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.3)_1px,transparent_1px)] bg-size-[40px_40px]" />
                 {/* Radial fade overlay */}
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_50%,transparent_40%,hsl(var(--background))_100%)]" />
 
@@ -396,7 +399,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
                     {/* Loading bar */}
                     <div className="flex flex-col items-center gap-2">
-                        <div className="w-48 h-[2px] bg-border rounded-full overflow-hidden">
+                        <div className="w-48 h-0.5 bg-border rounded-full overflow-hidden">
                             <div
                                 className="h-full bg-primary rounded-full"
                                 style={{

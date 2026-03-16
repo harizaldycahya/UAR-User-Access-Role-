@@ -48,7 +48,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-import { MoreVertical, Check, ChevronsUpDown, CheckCircle2, XCircle, Clock, X } from "lucide-react";
+import { MoreVertical, Check, ChevronsUpDown, CheckCircle2, X, Clock } from "lucide-react";
 import RequestTableSkeleton from "./RequestTableSkeleton";
 import { useSearchParams } from "next/navigation";
 
@@ -87,8 +87,6 @@ type Request = {
   new_role_name: string | null;
   approvals: Approval[];
 };
-
-
 
 /* ================= APPROVAL STEPPER COMPONENT ================= */
 const ApprovalStepper = ({ approvals }: { approvals: Approval[] }) => {
@@ -144,8 +142,8 @@ const ApprovalStepper = ({ approvals }: { approvals: Approval[] }) => {
                         </p>
                       )}
                     />
-                    <p className=" text-xs text-muted-foreground mt-0.5">Level {a.level}</p>
-                    <p className={` text-xs font-bold capitalize mt-0.5
+                    <p className="text-xs text-muted-foreground mt-0.5">Level {a.level}</p>
+                    <p className={`text-xs font-bold capitalize mt-0.5
                       ${isApproved
                         ? "text-success"
                         : isRejected
@@ -193,6 +191,7 @@ export default function RequestTable() {
 
   const searchParams = useSearchParams();
   const statusParam = searchParams.get("status");
+  const requestCodeParam = searchParams.get("request_code"); // ← dari notifikasi
 
   /* ================= FETCH DATA ================= */
   React.useEffect(() => {
@@ -208,6 +207,24 @@ export default function RequestTable() {
     };
     load();
   }, []);
+
+  // ── Auto-open modal dari notifikasi ──────────────────────────────
+  // Jalan setelah data selesai load dan ada request_code di URL
+  React.useEffect(() => {
+    if (!requestCodeParam || loading || data.length === 0) return;
+
+    const match = data.find((r) => r.request_code === requestCodeParam);
+    if (match) {
+      openDetailModal(match.request_code);
+
+      // Bersihkan query param dari URL supaya tidak re-trigger
+      const newUrl = statusParam
+        ? `/requests?status=${statusParam}`
+        : "/requests";
+      router.replace(newUrl);
+    }
+  }, [requestCodeParam, loading, data]);
+  // ────────────────────────────────────────────────────────────────
 
   const openDetailModal = async (code: string) => {
     try {
@@ -436,13 +453,11 @@ export default function RequestTable() {
       {/* DETAIL DIALOG */}
       <Dialog open={openDetail} onOpenChange={setOpenDetail}>
         <DialogContent style={{ maxWidth: "72rem" }} className="w-full">
-
           <DialogHeader>
             <DialogTitle>Request Detail</DialogTitle>
             <DialogDescription>{detail?.request_code}</DialogDescription>
           </DialogHeader>
 
-          {/* LOADING */}
           {detailLoading && (
             <div className="space-y-3">
               <Skeleton className="h-4 w-full" />
@@ -451,56 +466,38 @@ export default function RequestTable() {
             </div>
           )}
 
-          {/* CONTENT */}
           {!detailLoading && detail && (
             <div className="space-y-4 text-sm">
-
-              {/* CARD: APPROVAL STEPPER */}
               <Card>
                 <CardContent className="pt-5">
                   <ApprovalStepper approvals={detail.approvals} />
                 </CardContent>
               </Card>
 
-              {/* CARD: INFO */}
               <Card>
                 <CardContent className="pt-5 space-y-4">
-
-                  {/* BASIC INFO */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-muted-foreground">Application</p>
-                      <p className="font-medium bg-muted p-3 rounded">
-                        {detail.application.name}
-                      </p>
+                      <p className="font-medium bg-muted p-3 rounded">{detail.application.name}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Type</p>
-                      <p className="capitalize bg-muted p-3 rounded">
-                        {detail.type.replace("_", " ")}
-                      </p>
+                      <p className="capitalize bg-muted p-3 rounded">{detail.type.replace("_", " ")}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Status</p>
                       <p className={`font-medium capitalize bg-muted p-3 rounded
-                        ${detail.status === "approved"
-                          ? "text-success"
-                          : detail.status === "rejected"
-                            ? "text-destructive"
-                            : "text-warning"
-                        }`}>
+                        ${detail.status === "approved" ? "text-success" : detail.status === "rejected" ? "text-destructive" : "text-warning"}`}>
                         {detail.status}
                       </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Date</p>
-                      <p className="bg-muted p-3 rounded">
-                        {new Date(detail.created_at).toLocaleString()}
-                      </p>
+                      <p className="bg-muted p-3 rounded">{new Date(detail.created_at).toLocaleString()}</p>
                     </div>
                   </div>
 
-                  {/* ROLE / NOTES */}
                   <div>
                     <p className="text-muted-foreground mb-1">
                       {detail.application?.role_mode === "dynamic" ? "Notes" : "Role"}
@@ -514,15 +511,11 @@ export default function RequestTable() {
                     )}
                   </div>
 
-                  {/* JUSTIFICATION */}
                   <div>
                     <p className="text-muted-foreground mb-1">Justification</p>
-                    <p className="bg-muted p-3 rounded">
-                      {detail.justification || "-"}
-                    </p>
+                    <p className="bg-muted p-3 rounded">{detail.justification || "-"}</p>
                   </div>
 
-                  {/* REJECT REASON — tampil hanya jika ada approval yang rejected */}
                   {detail.approvals.some(a => a.status === "rejected" && a.reason) && (
                     <div>
                       <p className="text-muted-foreground mb-1">Reject Reason</p>
@@ -537,12 +530,10 @@ export default function RequestTable() {
                       }
                     </div>
                   )}
-
                 </CardContent>
               </Card>
 
-              {/* REVISE BUTTON — tampil hanya jika rejected */}
-              {!detailLoading && detail && detail.status === "rejected" && (
+              {detail.status === "rejected" && (
                 <div className="flex justify-end">
                   <Button
                     onClick={() => {
@@ -554,10 +545,8 @@ export default function RequestTable() {
                   </Button>
                 </div>
               )}
-
             </div>
           )}
-
         </DialogContent>
       </Dialog>
     </>

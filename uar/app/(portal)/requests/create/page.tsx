@@ -18,17 +18,11 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from "@/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Check, FileText, Settings, CheckCircle2, ArrowRight } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { Input } from "@/components/ui/input";
+import { SearchableSelect } from "@/components/ui/searchable-select"; // ← komponen baru
 
 
 type RequestType = "application_access" | "change_role" | "";
@@ -95,8 +89,6 @@ export default function CreateRequestsPage() {
   });
 
 
-
-
   const canProceed = () => {
     if (step === 1) return form.requestType !== "";
     if (step === 2) return form.application !== "";
@@ -119,7 +111,6 @@ export default function CreateRequestsPage() {
       }
 
       if (isAms) {
-        // minimal salah satu diisi, dan justification wajib
         const roleChanged = form.newRole !== "";
         const locationChanged = form.newLocation !== "";
         return (roleChanged || locationChanged) && form.justification.trim() !== "";
@@ -170,20 +161,22 @@ export default function CreateRequestsPage() {
 
         let res;
 
-        // khusus IMS & AMS
         if (selectedApp.code === "IMS") {
           res = await apiFetch("/applications/integrations/ims/roles");
           setRoles(res?.data?.result?.data ?? []);
-        }
-        else if (selectedApp.code === "AMS") {
+        } else if (selectedApp.code === "AMS") {
           res = await apiFetch("/applications/integrations/ams/roles");
           setRoles(res?.data?.result?.data ?? []);
-        }
-        else if (selectedApp.code === "CMS") {
+        } else if (selectedApp.code === "CMS") {
           res = await apiFetch("/applications/integrations/cms/roles");
           setRoles(res?.data?.result?.data ?? []);
-        }
-        else {
+        } else if (selectedApp.code === "QMS") {
+          res = await apiFetch("/applications/integrations/qms/roles");
+          setRoles(res?.data?.result?.data ?? []);
+        } else if (selectedApp.code === "DMS") {
+          res = await apiFetch("/applications/integrations/dms/roles");
+          setRoles(res?.data?.result?.data ?? []);
+        } else {
           res = await apiFetch(`/applications/${form.application}/roles`);
           setRoles(res?.data ?? []);
         }
@@ -233,12 +226,9 @@ export default function CreateRequestsPage() {
 
   useEffect(() => {
     if (!form.application) return;
-
     if (!app || !app.has_access) return;
-
     const role = app.role;
     if (!role) return;
-
     setForm((prev) => ({
       ...prev,
       oldRole: String(role.id),
@@ -271,55 +261,64 @@ export default function CreateRequestsPage() {
     return locations.find((l) => String(l.id) === locationId)?.name ?? "-";
   };
 
+  // ── helpers: convert to SearchableSelect options ──────────────────────────
+
+  const appOptions = (form.requestType === "application_access" ? availableApps : ownedApps).map(
+    (a) => ({ value: String(a.id), label: a.name, sublabel: a.code.toUpperCase() })
+  );
+
+  const roleOptions = roles.map((r) => ({ value: String(r.id), label: r.name }));
+
+  const roleOptionsExcludingCurrent = roles
+    .filter((r) => String(r.id) !== String(form.oldRole))
+    .map((r) => ({ value: String(r.id), label: r.name }));
+
+  const locationOptions = locations.map((l) => ({ value: String(l.id), label: l.name }));
+
+  const locationOptionsExcludingCurrent = locations
+    .filter((l) => String(l.id) !== String(form.oldLocation))
+    .map((l) => ({ value: String(l.id), label: l.name }));
+
+  // ─────────────────────────────────────────────────────────────────────────
+
   const submitRequest = async () => {
     try {
       const selectedNewRoleId =
         form.requestType === "application_access"
           ? form.role
-          : form.newRole || null; // ← boleh null kalau hanya ganti location
+          : form.newRole || null;
 
       const selectedNewRole = roles.find(
         (r) => String(r.id) === String(selectedNewRoleId)
       );
 
       const selectedOldRole =
-        form.requestType === "change_role"
-          ? app?.role
-          : null;
+        form.requestType === "change_role" ? app?.role : null;
 
-      // location
       const newLocationId = isAms
-        ? (form.requestType === "application_access" ? form.location : form.newLocation)
+        ? form.requestType === "application_access"
+          ? form.location
+          : form.newLocation
         : null;
-      const newLocationName = isAms
-        ? getLocationName(newLocationId ?? "")
-        : null;
-      const oldLocationId = isAms && form.requestType === "change_role"
-        ? form.oldLocation
-        : null;
-      const oldLocationName = isAms && form.requestType === "change_role"
-        ? (app?.location?.name ?? null)
-        : null;
+      const newLocationName = isAms ? getLocationName(newLocationId ?? "") : null;
+      const oldLocationId = isAms && form.requestType === "change_role" ? form.oldLocation : null;
+      const oldLocationName =
+        isAms && form.requestType === "change_role" ? (app?.location?.name ?? null) : null;
 
       const res = await apiFetch("/requests", {
         method: "POST",
         body: JSON.stringify({
           application_id: form.application,
           type: form.requestType,
-
           old_role_id: form.requestType === "change_role" ? form.oldRole : null,
           old_role_name: form.requestType === "change_role" ? selectedOldRole?.name || null : null,
-
-          new_role_id: app?.role_mode === "dynamic" ? null : (selectedNewRoleId || null),
-          new_role_name: app?.role_mode === "dynamic" ? null : (selectedNewRole?.name || null),
-
+          new_role_id: app?.role_mode === "dynamic" ? null : selectedNewRoleId || null,
+          new_role_name: app?.role_mode === "dynamic" ? null : selectedNewRole?.name || null,
           new_location_id: newLocationId,
           new_location_name: newLocationName,
           old_location_id: oldLocationId,
           old_location_name: oldLocationName,
-
           notes: app?.role_mode === "dynamic" ? form.notes : null,
-
           justification: form.justification,
         }),
       });
@@ -336,16 +335,13 @@ export default function CreateRequestsPage() {
       });
 
       router.push("/requests");
-
     } catch (err: any) {
       console.error(err);
-
       Swal.fire({
         icon: "error",
         title: "Failed",
         text: err?.message || "Failed to submit request",
       });
-
       router.push("/requests");
     }
   };
@@ -375,12 +371,11 @@ export default function CreateRequestsPage() {
                 <div key={s.id} className="flex items-center flex-1 last:flex-none">
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${isCompleted
-                        ? "bg-primary text-primary-foreground"
-                        : isActive
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                        isCompleted || isActive
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted text-muted-foreground"
-                        }`}
+                      }`}
                     >
                       {isCompleted ? (
                         <Check className="w-5 h-5" />
@@ -390,10 +385,9 @@ export default function CreateRequestsPage() {
                     </div>
                     <div className="mt-2 text-center">
                       <p
-                        className={`text-xs font-medium transition-colors whitespace-nowrap ${isActive || isCompleted
-                          ? "text-foreground"
-                          : "text-muted-foreground"
-                          }`}
+                        className={`text-xs font-medium transition-colors whitespace-nowrap ${
+                          isActive || isCompleted ? "text-foreground" : "text-muted-foreground"
+                        }`}
                       >
                         {s.title}
                       </p>
@@ -401,10 +395,9 @@ export default function CreateRequestsPage() {
                   </div>
                   {idx < steps.length - 1 && (
                     <div
-                      className={`h-0.5 flex-1 mx-4 transition-colors duration-300 self-start mt-5 ${step > s.id
-                        ? "bg-primary"
-                        : "bg-border"
-                        }`}
+                      className={`h-0.5 flex-1 mx-4 transition-colors duration-300 self-start mt-5 ${
+                        step > s.id ? "bg-primary" : "bg-border"
+                      }`}
                     />
                   )}
                 </div>
@@ -440,15 +433,13 @@ export default function CreateRequestsPage() {
                 >
                   <div
                     onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        requestType: "application_access",
-                      }))
+                      setForm((prev) => ({ ...prev, requestType: "application_access" }))
                     }
-                    className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${form.requestType === "application_access"
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-muted-foreground/30 bg-card"
-                      }`}
+                    className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${
+                      form.requestType === "application_access"
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-muted-foreground/30 bg-card"
+                    }`}
                   >
                     <RadioGroupItem
                       value="application_access"
@@ -456,28 +447,22 @@ export default function CreateRequestsPage() {
                       checked={form.requestType === "application_access"}
                     />
                     <Label htmlFor="access" className="flex-1 cursor-pointer">
-                      <div className="font-medium text-foreground">
-                        Request Application Access
-                      </div>
+                      <div className="font-medium text-foreground">Request Application Access</div>
                       <div className="text-sm text-muted-foreground mt-0.5">
                         Request access to a new application
                       </div>
                     </Label>
                   </div>
 
-
                   <div
                     onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        requestType: "change_role",
-                      }))
+                      setForm((prev) => ({ ...prev, requestType: "change_role" }))
                     }
-                    className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all
-                        ${form.requestType === "change_role"
+                    className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${
+                      form.requestType === "change_role"
                         ? "border-primary bg-primary/10"
                         : "border-border hover:border-muted-foreground/30 bg-card"
-                      }`}
+                    }`}
                   >
                     <RadioGroupItem
                       value="change_role"
@@ -491,7 +476,6 @@ export default function CreateRequestsPage() {
                       </div>
                     </Label>
                   </div>
-
                 </RadioGroup>
               </div>
             )}
@@ -503,46 +487,15 @@ export default function CreateRequestsPage() {
                   <Label className="text-foreground text-sm mb-3 block">
                     Select Application
                   </Label>
-
-                  <Select
+                  <SearchableSelect
+                    options={appOptions}
                     value={form.application}
-                    onValueChange={(value) =>
-                      setForm({ ...form, application: value })
-                    }
-                  >
-                    <SelectTrigger className="w-full bg-background border-border text-foreground px-5 py-8">
-                      <SelectValue placeholder="Choose application" />
-                    </SelectTrigger>
-
-                    <SelectContent className="bg-popover border-border">
-                      {(form.requestType === "application_access"
-                        ? availableApps
-                        : ownedApps
-                      ).length === 0 && (
-                          <div className="px-3 py-2 text-sm text-muted-foreground">
-                            Tidak ada aplikasi tersedia
-                          </div>
-                        )}
-
-                      {(form.requestType === "application_access"
-                        ? availableApps
-                        : ownedApps
-                      ).map((app) => (
-                        <SelectItem
-                          key={app.id}
-                          value={String(app.id)}
-                          className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
-                        >
-                          <div className="flex flex-col items-start py-1">
-                            <span className="font-medium">{app.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {app.code.toUpperCase()}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onValueChange={(value) => setForm({ ...form, application: value })}
+                    placeholder="Choose application"
+                    searchPlaceholder="Search application..."
+                    emptyText="No applications available"
+                    triggerClassName="py-4"
+                  />
                 </div>
               </div>
             )}
@@ -565,57 +518,33 @@ export default function CreateRequestsPage() {
                     ) : (
                       <div>
                         <Label className="text-sm mb-3 block">Requested Role</Label>
-                        <Select
+                        <SearchableSelect
+                          options={roleOptions}
                           value={form.role}
                           onValueChange={(value) => setForm({ ...form, role: value })}
-                        >
-                          <SelectTrigger className="w-full px-5 py-8">
-                            <SelectValue placeholder="Select role" />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-60 overflow-y-auto">
-                            {loadingRoles && (
-                              <div className="px-3 py-2 text-sm text-muted-foreground">Loading roles...</div>
-                            )}
-                            {!loadingRoles && roles.length === 0 && (
-                              <div className="px-3 py-2 text-sm text-muted-foreground">No roles available</div>
-                            )}
-                            {roles.map((role) => (
-                              <SelectItem key={role.id} value={String(role.id)}>
-                                <div className="flex flex-col">
-                                  <span className="font-medium text-left">{role.name}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="Select role"
+                          searchPlaceholder="Search role..."
+                          loading={loadingRoles}
+                          emptyText="No roles available"
+                          triggerClassName="py-4"
+                        />
                       </div>
                     )}
 
-                    {/* Location field - AMS only */}
+                    {/* Location - AMS only */}
                     {isAms && (
                       <div>
                         <Label className="text-sm mb-3 block">Location</Label>
-                        <Select
+                        <SearchableSelect
+                          options={locationOptions}
                           value={form.location}
                           onValueChange={(value) => setForm({ ...form, location: value })}
-                        >
-                          <SelectTrigger className="w-full px-5 py-8">
-                            <SelectValue placeholder="Select location" />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-60 overflow-y-auto">
-                            {loadingLocations && (
-                              <div className="px-3 py-2 text-sm text-muted-foreground">Loading locations...</div>
-                            )}
-                            {!loadingLocations && locations.length === 0 && (
-                              <div className="px-3 py-2 text-sm text-muted-foreground">No locations available</div>
-                            )}
-                            {locations.map((loc) => (
-                              <SelectItem key={loc.id} value={String(loc.id)}>
-                                <span className="font-medium">{loc.name}</span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="Select location"
+                          searchPlaceholder="Search location..."
+                          loading={loadingLocations}
+                          emptyText="No locations available"
+                          triggerClassName="py-4"
+                        />
                       </div>
                     )}
 
@@ -630,7 +559,6 @@ export default function CreateRequestsPage() {
                     </div>
                   </div>
                 )}
-
 
                 {form.requestType === "change_role" && (
                   <div className="space-y-5">
@@ -656,30 +584,22 @@ export default function CreateRequestsPage() {
                       <div>
                         <Label className="text-sm mb-3 block">
                           New Role
-                          {isAms && <span className="text-muted-foreground text-xs ml-1">(optional)</span>}
+                          {isAms && (
+                            <span className="text-muted-foreground text-xs ml-1">(optional)</span>
+                          )}
                         </Label>
-                        <Select
-                          value={form.newRole || "__none__"}
-                          onValueChange={(value) => setForm({ ...form, newRole: value === "__clear__" ? "" : value === "__none__" ? "" : value })}
-                        >
-                          <SelectTrigger className="w-full h-12">
-                            <SelectValue placeholder="Select new role" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {isAms && (
-                              <SelectItem value={form.newRole !== "" ? "__clear__" : "__none__"} className="text-muted-foreground italic">
-                                {form.newRole !== "" ? "— Clear selection —" : "— No change —"}
-                              </SelectItem>
-                            )}
-                            {roles
-                              .filter((r) => String(r.id) !== String(form.oldRole))
-                              .map((role) => (
-                                <SelectItem key={role.id} value={String(role.id)}>
-                                  {role.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
+                        <SearchableSelect
+                          options={roleOptionsExcludingCurrent}
+                          value={form.newRole}
+                          onValueChange={(value) => setForm({ ...form, newRole: value })}
+                          placeholder="Select new role"
+                          searchPlaceholder="Search role..."
+                          loading={loadingRoles}
+                          emptyText="No roles available"
+                          clearable={isAms}
+                          clearLabel="— No change —"
+                          triggerClassName="py-3"
+                        />
                         {isAms && (
                           <p className="text-xs text-muted-foreground mt-1">
                             Leave empty if you only want to change location
@@ -688,7 +608,7 @@ export default function CreateRequestsPage() {
                       </div>
                     )}
 
-                    {/* Location field - AMS only */}
+                    {/* Location - AMS only */}
                     {isAms && (
                       <>
                         <div>
@@ -704,32 +624,18 @@ export default function CreateRequestsPage() {
                             New Location
                             <span className="text-muted-foreground text-xs ml-1">(optional)</span>
                           </Label>
-                          <Select
-                            value={form.newLocation || "__none__"}
-                            onValueChange={(value) => setForm({ ...form, newLocation: value === "__clear__" ? "" : value === "__none__" ? "" : value })}
-                          >
-                            <SelectTrigger className="w-full px-5 py-8">
-                              <SelectValue placeholder="Select new location" />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-60 overflow-y-auto">
-                              {loadingLocations && (
-                                <div className="px-3 py-2 text-sm text-muted-foreground">Loading locations...</div>
-                              )}
-                              {!loadingLocations && locations.length === 0 && (
-                                <div className="px-3 py-2 text-sm text-muted-foreground">No locations available</div>
-                              )}
-                              <SelectItem value={form.newLocation !== "" ? "__clear__" : "__none__"} className="text-muted-foreground italic">
-                                {form.newLocation !== "" ? "— Clear selection —" : "— No change —"}
-                              </SelectItem>
-                              {locations
-                                .filter((l) => String(l.id) !== String(form.oldLocation))
-                                .map((loc) => (
-                                  <SelectItem key={loc.id} value={String(loc.id)}>
-                                    {loc.name}
-                                  </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
+                          <SearchableSelect
+                            options={locationOptionsExcludingCurrent}
+                            value={form.newLocation}
+                            onValueChange={(value) => setForm({ ...form, newLocation: value })}
+                            placeholder="Select new location"
+                            searchPlaceholder="Search location..."
+                            loading={loadingLocations}
+                            emptyText="No locations available"
+                            clearable
+                            clearLabel="— No change —"
+                            triggerClassName="py-4"
+                          />
                           <p className="text-xs text-muted-foreground mt-1">
                             Leave empty if you only want to change role
                           </p>
@@ -761,17 +667,13 @@ export default function CreateRequestsPage() {
                     <div className="flex items-start">
                       <div className="w-32 text-sm text-muted-foreground">Request Type</div>
                       <div className="flex-1 text-sm text-foreground">
-                        {form.requestType === "application_access"
-                          ? "Application Access"
-                          : "Role Change"}
+                        {form.requestType === "application_access" ? "Application Access" : "Role Change"}
                       </div>
                     </div>
 
                     <div className="flex items-start">
                       <div className="w-32 text-sm text-muted-foreground">Application</div>
-                      <div className="flex-1 text-sm text-foreground">
-                        {app?.name ?? "-"}
-                      </div>
+                      <div className="flex-1 text-sm text-foreground">{app?.name ?? "-"}</div>
                     </div>
 
                     {form.requestType === "application_access" ? (
@@ -779,84 +681,57 @@ export default function CreateRequestsPage() {
                         {app?.role_mode === "dynamic" ? (
                           <div className="flex items-start">
                             <div className="w-32 text-sm text-muted-foreground">Notes</div>
-                            <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">
-                              {form.notes}
-                            </div>
+                            <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">{form.notes}</div>
                           </div>
                         ) : (
                           <div className="flex items-start">
                             <div className="w-32 text-sm text-muted-foreground">Requested Role</div>
-                            <div className="flex-1 text-sm text-foreground">
-                              {getRoleName(form.role)}
-                            </div>
+                            <div className="flex-1 text-sm text-foreground">{getRoleName(form.role)}</div>
                           </div>
                         )}
-
-                        {/* Location summary - AMS only */}
                         {isAms && (
                           <div className="flex items-start">
                             <div className="w-32 text-sm text-muted-foreground">Location</div>
-                            <div className="flex-1 text-sm text-foreground">
-                              {getLocationName(form.location)}
-                            </div>
+                            <div className="flex-1 text-sm text-foreground">{getLocationName(form.location)}</div>
                           </div>
                         )}
-
                         <div className="flex items-start">
                           <div className="w-32 text-sm text-muted-foreground">Justification</div>
-                          <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">
-                            {form.justification}
-                          </div>
+                          <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">{form.justification}</div>
                         </div>
                       </>
                     ) : (
                       <>
                         <div className="flex items-start">
                           <div className="w-32 text-sm text-muted-foreground">Current Role</div>
-                          <div className="flex-1 text-sm text-foreground">
-                            {app?.role?.name ?? "-"}
-                          </div>
+                          <div className="flex-1 text-sm text-foreground">{app?.role?.name ?? "-"}</div>
                         </div>
-
                         {app?.role_mode === "dynamic" ? (
                           <div className="flex items-start">
                             <div className="w-32 text-sm text-muted-foreground">Notes</div>
-                            <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">
-                              {form.notes}
-                            </div>
+                            <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">{form.notes}</div>
                           </div>
                         ) : (
                           <div className="flex items-start">
                             <div className="w-32 text-sm text-muted-foreground">New Role</div>
-                            <div className="flex-1 text-sm text-foreground">
-                              {getRoleName(form.newRole)}
-                            </div>
+                            <div className="flex-1 text-sm text-foreground">{getRoleName(form.newRole)}</div>
                           </div>
                         )}
-
-                        {/* Location summary - AMS only */}
                         {isAms && (
                           <>
                             <div className="flex items-start">
                               <div className="w-32 text-sm text-muted-foreground">Current Location</div>
-                              <div className="flex-1 text-sm text-foreground">
-                                {app?.location?.name ?? "-"}
-                              </div>
+                              <div className="flex-1 text-sm text-foreground">{app?.location?.name ?? "-"}</div>
                             </div>
                             <div className="flex items-start">
                               <div className="w-32 text-sm text-muted-foreground">New Location</div>
-                              <div className="flex-1 text-sm text-foreground">
-                                {getLocationName(form.newLocation)}
-                              </div>
+                              <div className="flex-1 text-sm text-foreground">{getLocationName(form.newLocation)}</div>
                             </div>
                           </>
                         )}
-
                         <div className="flex items-start">
                           <div className="w-32 text-sm text-muted-foreground">Justification</div>
-                          <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">
-                            {form.justification}
-                          </div>
+                          <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">{form.justification}</div>
                         </div>
                       </>
                     )}
@@ -902,9 +777,7 @@ export default function CreateRequestsPage() {
                   >
                     Cancel
                   </Button>
-                  <Button onClick={submitRequest}>
-                    Submit Request
-                  </Button>
+                  <Button onClick={submitRequest}>Submit Request</Button>
                 </div>
               )}
             </div>

@@ -58,22 +58,17 @@ import { Textarea } from "@/components/ui/textarea";
 
 /* ================= TYPES ================= */
 type Request = {
-  id: number; // request id
+  id: number;
   request_code: string;
   approval_id: number;
   level: number;
   approval_status: "pending" | "approved" | "rejected";
-
   type: "application_access" | "change_role";
-
   application_name: string;
   application_role_mode: "static" | "dynamic";
-
   old_role_name: string | null;
   new_role_name: string | null;
-
   notes: string | null;
-
   justification: string | null;
   created_at: string;
   reason: string | null;
@@ -127,12 +122,11 @@ export default function ApprovalTable() {
     rejected: 0,
   });
 
-  const [statusFilter, setStatusFilter] = React.useState<"pending" | "approved" | "rejected" | null>(null);
-
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const statusParam = searchParams.get("status"); // Pending | Approved | Rejected
+  const statusParam = searchParams.get("status");
+  const requestCodeParam = searchParams.get("request_code"); // ← dari notifikasi
 
   const pageTitleMap: Record<string, string> = {
     pending: "Pending Approvals",
@@ -143,18 +137,12 @@ export default function ApprovalTable() {
 
   const statusLabel = React.useMemo(() => {
     if (!statusParam) return "Filter Status";
-
     switch (statusParam) {
-      case "pending":
-        return "Pending";
-      case "approved":
-        return "Approved";
-      case "rejected":
-        return "Rejected";
-      case "history":
-        return "All History";
-      default:
-        return "Filter Status";
+      case "pending":   return "Pending";
+      case "approved":  return "Approved";
+      case "rejected":  return "Rejected";
+      case "history":   return "All History";
+      default:          return "Filter Status";
     }
   }, [statusParam]);
 
@@ -192,16 +180,11 @@ export default function ApprovalTable() {
       setData(res.data);
     } catch (err: any) {
       console.error("LOAD DATA ERROR:", err);
-
       Swal.fire({
         icon: "error",
         title: "Failed to load data",
-        text:
-          err?.message ||
-          err?.response?.data?.message ||
-          JSON.stringify(err),
+        text: err?.message || JSON.stringify(err),
       });
-
       setData([]);
     } finally {
       setLoading(false);
@@ -216,43 +199,52 @@ export default function ApprovalTable() {
     loadSummary();
   }, [statusParam]);
 
+  // ── Auto-open modal dari notifikasi ──────────────────────────────
+  // Jalan setelah data selesai load dan ada request_code di URL
+  React.useEffect(() => {
+    if (!requestCodeParam || loading || data.length === 0) return;
+
+    const match = data.find((r) => r.request_code === requestCodeParam);
+    if (match) {
+      setSelectedRequest(match);
+      setOpenDetail(true);
+
+      // Hapus query param request_code dari URL supaya tidak re-trigger
+      // tapi tetap pertahankan status param kalau ada
+      const newUrl = statusParam
+        ? `/approvals?status=${statusParam}`
+        : "/approvals";
+      router.replace(newUrl);
+    }
+  }, [requestCodeParam, loading, data]);
+  // ────────────────────────────────────────────────────────────────
 
   const loadSummary = async () => {
     try {
-      const pendingRes = await apiFetch("/requests/approvals/me"); // pending
-      const historyRes = await apiFetch("/requests/approvals/me/history"); // approved + rejected
+      const pendingRes = await apiFetch("/requests/approvals/me");
+      const historyRes = await apiFetch("/requests/approvals/me/history");
 
       const pending = pendingRes.data.length;
       const approved = historyRes.data.filter(
         (i: ApprovalItem) => i.approval_status === "approved"
       ).length;
-
       const rejected = historyRes.data.filter(
         (i: ApprovalItem) => i.approval_status === "rejected"
       ).length;
 
-      setSummary({
-        total: pending + approved + rejected,
-        pending,
-        approved,
-        rejected,
-      });
+      setSummary({ total: pending + approved + rejected, pending, approved, rejected });
     } catch (err) {
       console.error("LOAD SUMMARY ERROR:", err);
     }
   };
 
-  const filterByStatus = (
-    status?: "pending" | "approved" | "rejected" | "history"
-  ) => {
+  const filterByStatus = (status?: "pending" | "approved" | "rejected" | "history") => {
     if (!status) {
       router.replace("/approvals");
       return;
     }
-
     router.replace(`/approvals?status=${status}`);
   };
-
 
   const submitApproval = async (
     approvalId: number,
@@ -276,32 +268,24 @@ export default function ApprovalTable() {
       await Swal.fire({
         icon: "success",
         title: "Success",
-        text: action === "approve"
-          ? "Request approved"
-          : "Request rejected",
+        text: action === "approve" ? "Request approved" : "Request rejected",
       });
 
-      // 🔥 Redirect ke page yang sesuai
       if (action === "approve") {
         router.replace("/approvals?status=approved");
       } else {
         router.replace("/approvals?status=rejected");
       }
 
-      // 🔄 Reload data + summary biar card update
       await loadData();
       await loadSummary();
 
     } catch (err: any) {
       console.error("APPROVAL ERROR:", err);
-
       Swal.fire({
         icon: "error",
         title: "Approval Failed",
-        text:
-          err?.message ||
-          err?.response?.data?.message ||
-          JSON.stringify(err),
+        text: err?.message || JSON.stringify(err),
       });
     }
   };
@@ -312,10 +296,7 @@ export default function ApprovalTable() {
     {
       accessorKey: "created_at",
       header: "Date",
-      cell: ({ row }) => {
-        const date = new Date(row.original.created_at);
-        return date.toLocaleDateString();
-      },
+      cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString(),
     },
     {
       accessorKey: "application_name",
@@ -325,25 +306,17 @@ export default function ApprovalTable() {
       accessorKey: "type",
       header: "Request Type",
       cell: ({ row }) =>
-        row.original.type === "application_access"
-          ? "Application Access"
-          : "Role Change",
+        row.original.type === "application_access" ? "Application Access" : "Role Change",
     },
     {
       accessorKey: "approval_status",
       header: "Status",
       filterFn: (row, columnId, filterValue) => {
         const value = row.getValue(columnId);
-
-        if (Array.isArray(filterValue)) {
-          return filterValue.includes(value);
-        }
-
+        if (Array.isArray(filterValue)) return filterValue.includes(value);
         return value === filterValue;
       },
-      cell: ({ row }) => (
-        <StatusBadge status={row.original.approval_status} />
-      ),
+      cell: ({ row }) => <StatusBadge status={row.original.approval_status} />,
     },
     {
       id: "role",
@@ -361,9 +334,7 @@ export default function ApprovalTable() {
           );
         }
 
-        if (type === "application_access") {
-          return new_role_name ?? "-";
-        }
+        if (type === "application_access") return new_role_name ?? "-";
 
         return (
           <div className="text-sm">
@@ -391,94 +362,67 @@ export default function ApprovalTable() {
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-
   if (loading) return <RequestTableSkeleton />;
 
   return (
-
     <>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card className="border-border/40 hover:border-border transition-colors">
           <CardContent className="p-5">
-            <p className="text-xs font-medium text-muted-foreground mb-1">
-              Total Requests
-            </p>
+            <p className="text-xs font-medium text-muted-foreground mb-1">Total Requests</p>
             <h3 className="text-2xl font-bold">
               {loading ? <Skeleton className="h-8 w-16" /> : summary.total}
             </h3>
             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3 text-primary" />
-              <span>
-                {loading ? '...' : summary.total} Request
-              </span>
+              <span>{loading ? "..." : summary.total} Request</span>
             </p>
           </CardContent>
         </Card>
-        <Card
-          onClick={() => filterByStatus("pending")}
-          className="cursor-pointer border-border/40 hover:border-border transition-colors"
-        >
+        <Card onClick={() => filterByStatus("pending")} className="cursor-pointer border-border/40 hover:border-border transition-colors">
           <CardContent className="p-5">
-            <p className="text-xs font-medium text-muted-foreground mb-1">
-              Pending Approval
-            </p>
+            <p className="text-xs font-medium text-muted-foreground mb-1">Pending Approval</p>
             <h3 className="text-2xl font-bold text-warning">
               {loading ? <Skeleton className="h-8 w-16" /> : summary.pending}
             </h3>
             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3 text-primary" />
-              <span>
-                {loading ? '...' : summary.pending} Request
-              </span>
+              <span>{loading ? "..." : summary.pending} Request</span>
             </p>
           </CardContent>
         </Card>
-        <Card
-          onClick={() => filterByStatus("approved")}
-          className="cursor-pointer border-border/40 hover:border-border transition-colors"
-        >
+        <Card onClick={() => filterByStatus("approved")} className="cursor-pointer border-border/40 hover:border-border transition-colors">
           <CardContent className="p-5">
-            <p className="text-xs font-medium text-muted-foreground mb-1">
-              Approved
-            </p>
+            <p className="text-xs font-medium text-muted-foreground mb-1">Approved</p>
             <h3 className="text-2xl font-bold text-success">
               {loading ? <Skeleton className="h-8 w-16" /> : summary.approved}
             </h3>
             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3 text-primary" />
-              <span>
-                {loading ? '...' : summary.approved} Request
-              </span>
+              <span>{loading ? "..." : summary.approved} Request</span>
             </p>
           </CardContent>
         </Card>
-        <Card
-          onClick={() => filterByStatus("rejected")}
-          className="cursor-pointer border-border/40 hover:border-border transition-colors"
-        >
+        <Card onClick={() => filterByStatus("rejected")} className="cursor-pointer border-border/40 hover:border-border transition-colors">
           <CardContent className="p-5">
-            <p className="text-xs font-medium text-muted-foreground mb-1">
-              Rejected
-            </p>
+            <p className="text-xs font-medium text-muted-foreground mb-1">Rejected</p>
             <h3 className="text-2xl font-bold text-destructive">
               {loading ? <Skeleton className="h-8 w-16" /> : summary.rejected}
             </h3>
             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3 text-primary" />
-              <span>
-                {loading ? '...' : summary.rejected} Request
-              </span>
+              <span>{loading ? "..." : summary.rejected} Request</span>
             </p>
           </CardContent>
         </Card>
       </div>
+
       <Card>
         <CardHeader className="flex flex-row justify-between">
           <div>
             <CardTitle className="text-lg">{pageTitle}</CardTitle>
             <CardDescription>Application access requests</CardDescription>
           </div>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="icon" variant="ghost">
@@ -493,14 +437,11 @@ export default function ApprovalTable() {
           </DropdownMenu>
         </CardHeader>
 
-        {/* FILTERS */}
         <CardContent className="flex flex-wrap gap-4 mb-4">
           <Input
             placeholder="Search application..."
             value={(table.getColumn("application_name")?.getFilterValue() ?? "") as string}
-            onChange={e =>
-              table.getColumn("application_name")?.setFilterValue(e.target.value)
-            }
+            onChange={e => table.getColumn("application_name")?.setFilterValue(e.target.value)}
             className="h-9 w-60 text-sm"
           />
           {statusParam !== "pending" && (
@@ -510,26 +451,15 @@ export default function ApprovalTable() {
                   {statusLabel}
                 </Button>
               </DropdownMenuTrigger>
-
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => filterByStatus("history")}>
-                  All History
-                </DropdownMenuItem>
-
-                <DropdownMenuItem onClick={() => filterByStatus("approved")}>
-                  Approved
-                </DropdownMenuItem>
-
-                <DropdownMenuItem onClick={() => filterByStatus("rejected")}>
-                  Rejected
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => filterByStatus("history")}>All History</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => filterByStatus("approved")}>Approved</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => filterByStatus("rejected")}>Rejected</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-
         </CardContent>
 
-        {/* TABLE */}
         <CardContent>
           <div className="overflow-x-auto rounded-lg border border-border">
             <Table className="min-w-225">
@@ -571,7 +501,6 @@ export default function ApprovalTable() {
           </div>
         </CardContent>
 
-        {/* PAGINATION */}
         <CardFooter className="flex justify-between">
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
@@ -586,6 +515,8 @@ export default function ApprovalTable() {
           </span>
         </CardFooter>
       </Card>
+
+      {/* Detail Modal */}
       <Dialog
         open={openDetail}
         onOpenChange={(open) => {
@@ -624,7 +555,7 @@ export default function ApprovalTable() {
                   <p>{new Date(selectedRequest.created_at).toLocaleString()}</p>
                 </div>
               </div>
-              {/* REJECT REASON */}
+
               {selectedRequest.approval_status === "rejected" && selectedRequest.reason && (
                 <div>
                   <p className="text-muted-foreground mb-1">Rejection Reason</p>
@@ -658,7 +589,7 @@ export default function ApprovalTable() {
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setOpenDetail(false);  // ← tutup dialog dulu
+                      setOpenDetail(false);
                       submitApproval(selectedRequest.approval_id, "approve");
                     }}
                   >
@@ -669,7 +600,7 @@ export default function ApprovalTable() {
                     variant="destructive"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setOpenDetail(false);  // ← sudah ada, pastikan sebelum handleReject
+                      setOpenDetail(false);
                       handleReject(selectedRequest.approval_id);
                     }}
                   >
@@ -682,6 +613,7 @@ export default function ApprovalTable() {
         </DialogContent>
       </Dialog>
 
+      {/* Reject Dialog */}
       <Dialog open={openRejectDialog} onOpenChange={setOpenRejectDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -698,12 +630,8 @@ export default function ApprovalTable() {
               onChange={(e) => setRejectReason(e.target.value)}
               className="min-h-25"
             />
-
             <div className="flex justify-end gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setOpenRejectDialog(false)}
-              >
+              <Button variant="outline" onClick={() => setOpenRejectDialog(false)}>
                 Cancel
               </Button>
               <Button
@@ -717,7 +645,6 @@ export default function ApprovalTable() {
           </div>
         </DialogContent>
       </Dialog>
-
     </>
   );
 }
