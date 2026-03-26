@@ -180,7 +180,6 @@ export default function CreateRequestsPage() {
           res = await apiFetch(`/applications/${form.application}/roles`);
           setRoles(res?.data ?? []);
         }
-
       } catch (err) {
         console.error(err);
         setRoles([]);
@@ -188,7 +187,6 @@ export default function CreateRequestsPage() {
         setLoadingRoles(false);
       }
     };
-
     loadRoles();
   }, [form.application, applications]);
 

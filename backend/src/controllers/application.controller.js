@@ -468,11 +468,14 @@ export const redirectToApplication = async (req, res) => {
     } else if (code === "cms") {
       baseUrl = "https://cms.triasmitra.com";
       token = "9e6d3c1f7a4b8d2e5f1c9a7b3e6d4f8a2c1e7b9d5f3a6c8e4b1d7a2f9c6e3b5";
-    }else if (code === "aas") {
+    } else if (code === "aas") {
       baseUrl = "https://aas.triasmitra.com";
       token = "a3f9d2b4c1e6f7890a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef";
+    } else if (code === "qms") {
+      baseUrl = "https://qms.triasmitra.com";
+      token = "9f3c8a1d7e4b2f5a6c0d1e8b3a9f7c24e5d6b8a1c3f9e0d7a2b4c6e8f1a3d5b7";
     }
-     else {
+    else {
       return res.status(404).json({
         success: false,
         message: "Application not supported",
@@ -486,7 +489,7 @@ export const redirectToApplication = async (req, res) => {
     // cek akses user berdasarkan username
     const [[access]] = await db.query(
       `
-        SELECT ua.id
+        SELECT ua.id, ua.role_name
         FROM user_applications ua
         JOIN applications a 
           ON a.id = ua.application_id
@@ -495,7 +498,7 @@ export const redirectToApplication = async (req, res) => {
         LIMIT 1
       `,
       [username, code]
-    );
+    )
 
     console.log("access result:", access); // lihat isinya apa
 
@@ -509,9 +512,11 @@ export const redirectToApplication = async (req, res) => {
     console.log("Calling CMS API:", `${baseUrl}/api/public/get-token/${nik}`);
     console.log("With token:", token);
 
+    const targetIdentifier = code === "qms" ? access.role_name : nik;
+    
     // call external SSO API
     const response = await axios.get(
-      `${baseUrl}/api/public/get-token/${nik}`,
+      `${baseUrl}/api/public/get-token/${targetIdentifier}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
