@@ -287,9 +287,6 @@ export default function ProfilePage() {
                             .join("") || "U"}
                         </AvatarFallback>
                       </Avatar>
-                      <button className="absolute bottom-0 right-0 w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center hover:bg-primary/90 transition-colors">
-                        <Camera className="w-5 h-5" />
-                      </button>
                     </div>
 
                     <h2 className="text-xl font-semibold text-foreground mb-1">

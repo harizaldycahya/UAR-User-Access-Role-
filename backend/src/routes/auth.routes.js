@@ -19,6 +19,8 @@ router.post("/change-password", authMiddleware, changePassword);
 router.post("/forgot-password",forgotPassword);
 router.get("/verify-reset-token",verifyResetToken);
 router.post("/reset-password",resetPassword);
-
+router.get("/test-deploy", (req, res) => {
+  res.json({ version: "v2", time: new Date() });
+});
 
 export default router;

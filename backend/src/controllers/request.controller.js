@@ -11,6 +11,8 @@ import {
   notifyExternalApp,
 } from "../helpers/approvalHelpers.js";
 
+import { triggerApprovalNotification } from "./notification.controller.js";
+
 export const createRequest = async (req, res) => {
   const conn = await db.getConnection();
 
@@ -72,25 +74,21 @@ export const createRequest = async (req, res) => {
       });
     }
 
-    // application_access: role wajib
     if (!isDynamic && type === "application_access" && (!new_role_id || !new_role_name)) {
       await conn.rollback();
       return res.status(400).json({ success: false, message: "Role data is required" });
     }
 
-    // application_access AMS: location wajib
     if (isAms && type === "application_access" && (!new_location_id || !new_location_name)) {
       await conn.rollback();
       return res.status(400).json({ success: false, message: "Location data is required for this application" });
     }
 
-    // change_role non-AMS: role wajib
     if (!isDynamic && type === "change_role" && !isAms && (!new_role_id || !new_role_name)) {
       await conn.rollback();
       return res.status(400).json({ success: false, message: "Role data is required" });
     }
 
-    // change_role AMS: minimal salah satu role atau location harus diisi
     if (!isDynamic && type === "change_role" && isAms) {
       if (!new_role_id && !new_location_id) {
         await conn.rollback();
@@ -217,19 +215,14 @@ export const createRequest = async (req, res) => {
     let atasanId = null;
 
     if (nik === kadiv_approval) {
-      // User adalah kadiv → approver: direktorat
       atasanId = direktorat_approval || null;
     } else if (nik === kadept_approval) {
-      // User adalah kadept → approver: kadiv
       atasanId = kadiv_approval || null;
     } else if (nik === kasie_approval) {
-      // User adalah kasie → approver: kadept
       atasanId = kadept_approval || null;
     } else if (nik === subsi_approval) {
-      // User adalah subsi → approver: kasie, fallback kadept
       atasanId = kasie_approval || kadept_approval || null;
     } else if (nik === unit_approval) {
-      // User adalah unit → approver: kasie, fallback kadept (skip subsi)
       atasanId = kasie_approval || kadept_approval || null;
     }
 
@@ -248,7 +241,6 @@ export const createRequest = async (req, res) => {
 
     const isHris = appData?.code === "HRIS";
 
-    // App Owner - skip untuk HRIS
     const approvers = [
       { level: 1, approver_id: atasanId },
       { level: 2, approver_id: hrd?.approver_id },
@@ -293,6 +285,25 @@ export const createRequest = async (req, res) => {
     );
 
     await conn.commit();
+
+    // =========================
+    // 9) Notifikasi ke approver level 1 (setelah commit)
+    // =========================
+    const requestTypeLabel = type === "change_role" ? "Change Role" : "Application Access";
+
+    try {
+      await triggerApprovalNotification({
+        username      : atasanId,
+        type          : "approval",
+        title         : "New Request Awaiting Your Approval",
+        content       : `${username} has submitted a ${requestTypeLabel} request (${requestCode}) that requires your approval.`,
+        url           : `/approvals?request_code=${requestCode}`,
+        reference_id  : requestCode,
+        reference_type: "request",
+      });
+    } catch (notifErr) {
+      console.error("Failed to send notification to level 1 approver:", notifErr);
+    }
 
     res.status(201).json({
       success: true,
@@ -659,6 +670,23 @@ export const approvalAction = async (req, res) => {
     if (action === "reject") {
       await handleReject(conn, approval, reason || null);
       await conn.commit();
+
+      try {
+        await triggerApprovalNotification({
+          username      : rejectedRequest.username,   // ← dari requests.username
+          type          : "rejection",
+          title         : "Your Request Was Rejected",
+          content       : reason
+            ? `Your request (${approval.request_code}) was rejected. Reason: ${reason}`
+            : `Your request (${approval.request_code}) was rejected.`,
+          url           : `/requests?request_code=${approval.request_code}`,
+          reference_id  : String(approval.request_code),
+          reference_type: "request",
+        });
+      } catch (notifErr) {
+        console.error("Failed to send rejection notification:", notifErr);
+      }
+
       return res.json({ success: true, message: "Request ditolak" });
     }
 
@@ -677,12 +705,53 @@ export const approvalAction = async (req, res) => {
 
       const request = await getRequestInfo(conn, approval.request_code);
       await applyRoleChanges(conn, request);
-      // Hit external API di luar transaksi, supaya kalau gagal tidak rollback DB
+
       await notifyExternalApp(request);
 
       await conn.commit();
+
+      try {
+        await triggerApprovalNotification({
+          username      : request.username,
+          type          : "approval",
+          title         : "Your Request Was Approved",
+          content       : `Your request (${approval.request_code}) has been fully approved.`,
+          url           : `/requests?request_code=${approval.request_code}`,
+          reference_id  : String(approval.request_code),
+          reference_type: "request",
+        });
+      } catch (notifErr) {
+        console.error("Failed to send approval notification:", notifErr);
+      }
+
+
     } else {
+
+      const [[nextApproval]] = await conn.query(
+        `SELECT approver_id, level
+         FROM approvals
+         WHERE request_code = ? AND level = ? AND status = 'pending'
+         LIMIT 1`,
+        [approval.request_code, approval.level + 1]
+      );
+
       await conn.commit();
+
+      if (nextApproval) {
+        try {
+          await triggerApprovalNotification({
+            username      : nextApproval.approver_id,
+            type          : "approval",
+            title         : "New Request Awaiting Your Approval",
+            content       : `Request (${approval.request_code}) has been approved by level ${approval.level} and is now awaiting your approval (level ${nextApproval.level}).`,
+            url           : `/approvals?request_code=${approval.request_code}`,
+            reference_id  : String(approval.request_code),
+            reference_type: "request",
+          });
+        } catch (notifErr) {
+          console.error("Failed to send next approver notification:", notifErr);
+        }
+      }
     }
 
     res.json({ success: true, message: "Approval berhasil" });

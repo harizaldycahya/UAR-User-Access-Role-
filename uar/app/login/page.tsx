@@ -58,22 +58,22 @@ export default function LoginPage() {
       <div className="hidden lg:flex lg:w-2/5 bg-gray-900 dark:bg-black flex-col justify-between p-12 border-r border-gray-800 dark:border-gray-900">
         <div>
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-blue-600 dark:bg-blue-700 flex items-center justify-center">
-              <Lock className="w-6 h-6 text-white" />
+            <div className="relative w-14 h-14 rounded-xl bg-sidebar flex items-center justify-center">
+              <img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
             </div>
             <div>
               <h1 className="text-white text-xl font-semibold tracking-tight">
-                Portal Triasmitra
+                KETROSDEN TRIASMITRA
               </h1>
               <p className="text-gray-400 text-xs">
-                Internal Employee Access
+                User Access Role
               </p>
             </div>
           </div>
 
           <div className="mt-16 space-y-6">
             <h2 className="text-white text-3xl font-bold leading-tight">
-              Welcome to<br />Portal Triasmitra
+              Welcome to<br />Portal Ketrosden Triasmitra
             </h2>
             <p className="text-gray-400 dark:text-gray-500 text-sm leading-relaxed max-w-md">
               A centralized internal portal that provides Triasmitra employees with
@@ -302,7 +302,12 @@ export default function LoginPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Need help?{" "}
-              <a href="#" className="text-blue-600 dark:text-blue-500 hover:underline font-medium">
+              <a
+                href="https://wa.me/6289632167121"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 dark:text-blue-500 hover:underline font-medium"
+              >
                 Contact Support
               </a>
             </p>

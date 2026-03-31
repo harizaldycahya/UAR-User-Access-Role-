@@ -105,7 +105,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               pointer-events-auto
               rounded-lg border shadow-lg
               px-4 py-3 pr-10
-              min-w-[300px] max-w-[420px]
+              min-w-75 max-w-105
               transition-all duration-300 ease-out
               ${getVariantStyles()}
               ${isVisible 

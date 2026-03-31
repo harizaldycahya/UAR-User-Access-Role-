@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-
 export type NotificationType = "approval" | "rejection";
 
 export interface Notification {
@@ -61,6 +60,31 @@ export function NotificationPanel() {
   const panelRef = useRef<HTMLDivElement>(null);
   const hasFetched = useRef(false);
 
+  // ── Auto-mark as read berdasarkan URL aktif ─────────────────────
+  const autoMarkByCurrentUrl = useCallback(async (list: Notification[]) => {
+    const currentPath = window.location.pathname;
+
+    const toMark = list.filter(
+      (n) => !n.is_read && n.url && currentPath.startsWith(n.url)
+    );
+
+    if (toMark.length === 0) return;
+
+    const ids = toMark.map((n) => n.id);
+
+    // Optimistic update
+    setNotifications((prev) =>
+      prev.map((n) => (ids.includes(n.id) ? { ...n, is_read: 1 as const } : n))
+    );
+    setUnreadCount((c) => Math.max(0, c - toMark.length));
+
+    await Promise.allSettled(
+      ids.map((id) =>
+        apiFetch(`/notifications/uar/${id}/read`, { method: "PATCH" })
+      )
+    );
+  }, []);
+
   // ── Fetch full data (dipanggil saat panel dibuka) ───────────────
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
@@ -69,22 +93,24 @@ export function NotificationPanel() {
       const res: ApiResponse = await apiFetch("/notifications/uar");
       setNotifications(res.data);
       setUnreadCount(res.unread_count);
+      await autoMarkByCurrentUrl(res.data);
     } catch (err: any) {
       setError(err.message ?? "Failed to load notifications");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [autoMarkByCurrentUrl]);
 
   // ── Fetch unread count saja (ringan, untuk badge) ───────────────
   const fetchUnreadCount = useCallback(async () => {
     try {
       const res: ApiResponse = await apiFetch("/notifications/uar");
       setUnreadCount(res.unread_count);
+      await autoMarkByCurrentUrl(res.data);
     } catch {
       // silent fail
     }
-  }, []);
+  }, [autoMarkByCurrentUrl]);
 
   // Fetch badge saat pertama kali mount — supaya merah langsung muncul
   useEffect(() => {
@@ -95,10 +121,8 @@ export function NotificationPanel() {
   useEffect(() => {
     const interval = setInterval(() => {
       if (open) {
-        // Panel terbuka → refresh full data
         fetchNotifications();
       } else {
-        // Panel tertutup → cukup update badge
         fetchUnreadCount();
       }
     }, 60_000);
@@ -131,7 +155,6 @@ export function NotificationPanel() {
       return;
     }
 
-    // Optimistic update
     setNotifications((prev) =>
       prev.map((n) => (n.id === notif.id ? { ...n, is_read: 1 as const } : n))
     );

@@ -2,9 +2,14 @@
 
 import express from "express";
 import {
+  // Outside app
   createNotification,
   getMyNotifications,
-  markNotificationRead
+  markNotificationRead,
+  // UAR
+  getUarNotifications,
+  markAllUarNotificationsRead,
+  markUarNotificationRead,
 } from "../controllers/notification.controller.js";
 
 import { authMiddleware } from "../middleware/auth.middleware.js";
@@ -39,5 +44,14 @@ router.patch(
   authMiddleware,
   markNotificationRead
 );
+
+/**
+ * =========================
+ * UAR NOTIFICATIONS
+ * =========================
+ */
+router.get   ("/uar",          authMiddleware, getUarNotifications);
+router.patch ("/uar/read-all", authMiddleware, markAllUarNotificationsRead);
+router.patch ("/uar/:id/read", authMiddleware, markUarNotificationRead);
 
 export default router;

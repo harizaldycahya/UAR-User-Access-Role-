@@ -329,6 +329,92 @@ export const getCmsRoles = async (req, res) => {
   }
 };
 
+export const getDmsRoles = async (req, res) => {
+  try {
+    const token = req.headers['authorization'];
+
+    const response = await axios.get(
+      'http://35.219.106.161:8080/PatroliApi/selectQuery?param1=select user_id, username from user',
+      {
+        headers: {
+          'Authorization': token,
+        }
+      }
+    );
+
+    // Transform data supaya strukturnya sama seperti IMS/CMS roles
+    const rawData = response.data;
+
+    // Sesuaikan mapping ini dengan struktur response PatroliApi yang asli
+    const transformedData = (rawData?.data || rawData || []).map((item) => ({
+      id: item.user_id,
+      name: item.username,
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        success: true,
+        code: 200,
+        result: {
+          data: transformedData,
+        },
+      },
+    });
+
+  } catch (err) {
+    console.error("GET DMS ROLES ERROR:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch DMS roles",
+      error: err.message,
+    });
+  }
+};
+
+export const getQmsRoles = async (req, res) => {
+  try {
+    const token = req.headers['authorization'];
+
+    const response = await axios.get(
+      'http://35.219.106.161:8080/PatroliApi/selectQuery?param1=select user_id, username from user',
+      {
+        headers: {
+          'Authorization': token,
+        }
+      }
+    );
+
+    // Transform data supaya strukturnya sama seperti IMS/CMS roles
+    const rawData = response.data;
+
+    // Sesuaikan mapping ini dengan struktur response PatroliApi yang asli
+    const transformedData = (rawData?.data || rawData || []).map((item) => ({
+      id: item.user_id,
+      name: item.username,
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        success: true,
+        code: 200,
+        result: {
+          data: transformedData,
+        },
+      },
+    });
+
+  } catch (err) {
+    console.error("GET QMS ROLES ERROR:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch QMS roles",
+      error: err.message,
+    });
+  }
+};
+
 // export const redirectToApplication = async (req, res) => {
 //   try {
 //     const userId = req.user.id;
@@ -446,15 +532,16 @@ export const getCmsRoles = async (req, res) => {
 // };
 
 export const redirectToApplication = async (req, res) => {
+  // ✅ Deklarasi di luar try agar bisa diakses di catch
+  let baseUrl = "";
+  let token = "";
+  let targetIdentifier = "";
+
   try {
     const username = String(req.user.username).trim();
-    const nik = username; // kalau memang NIK = username
+    const nik = username;
     const rawCode = req.params.code;
     const code = rawCode.trim().toLowerCase();
-
-    // mapping hardcode sementara
-    let baseUrl = "";
-    let token = "";
 
     if (code === "hris" || code === "hrisnew") {
       baseUrl = "https://personasys.triasmitra.com";
@@ -472,10 +559,13 @@ export const redirectToApplication = async (req, res) => {
       baseUrl = "https://aas.triasmitra.com";
       token = "a3f9d2b4c1e6f7890a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef";
     } else if (code === "qms") {
+      // ✅ Hapus duplikat, pakai satu saja
       baseUrl = "https://qms.triasmitra.com";
       token = "9f3c8a1d7e4b2f5a6c0d1e8b3a9f7c24e5d6b8a1c3f9e0d7a2b4c6e8f1a3d5b7";
-    }
-    else {
+    } else if (code === "das") {
+      baseUrl = "https://devdas.triasmitra.com";
+      token = "8f8cba9716432668d1c4c5c660e3254ab44cf2064ea7c2bb0904cce6654661b0";
+    } else {
       return res.status(404).json({
         success: false,
         message: "Application not supported",
@@ -486,7 +576,6 @@ export const redirectToApplication = async (req, res) => {
     console.log("username from token:", username);
     console.log("code from params:", code);
 
-    // cek akses user berdasarkan username
     const [[access]] = await db.query(
       `
         SELECT ua.id, ua.role_name
@@ -498,9 +587,9 @@ export const redirectToApplication = async (req, res) => {
         LIMIT 1
       `,
       [username, code]
-    )
+    );
 
-    console.log("access result:", access); // lihat isinya apa
+    console.log("access result:", access);
 
     if (!access) {
       return res.status(403).json({
@@ -509,12 +598,12 @@ export const redirectToApplication = async (req, res) => {
       });
     }
 
-    console.log("Calling CMS API:", `${baseUrl}/api/public/get-token/${nik}`);
+    // ✅ QMS pakai role_name sebagai identifier, lainnya pakai NIK
+    targetIdentifier = code === "qms" ? access.role_name : nik;
+
+    console.log("Calling API:", `${baseUrl}/api/public/get-token/${targetIdentifier}`);
     console.log("With token:", token);
 
-    const targetIdentifier = code === "qms" ? access.role_name : nik;
-    
-    // call external SSO API
     const response = await axios.get(
       `${baseUrl}/api/public/get-token/${targetIdentifier}`,
       {
@@ -524,8 +613,8 @@ export const redirectToApplication = async (req, res) => {
       }
     );
 
-    console.log("CMS API status:", response.status);
-    console.log("CMS API response:", JSON.stringify(response.data));
+    console.log("API status:", response.status);
+    console.log("API response:", JSON.stringify(response.data));
 
     const accessToken = response.data?.result?.access_token;
 
@@ -542,19 +631,27 @@ export const redirectToApplication = async (req, res) => {
         redirect_url: `${baseUrl}/sso/${accessToken}`,
         application: code.toUpperCase(),
         role: {
-          id: access.role_id,
-          name: access.role_name,
+          id: access.role_id ?? null,
+          name: access.role_name ?? username,
         },
       },
     });
   } catch (err) {
     console.error("SSO REDIRECT ERROR:", err.response?.data || err.message);
-    console.error("SSO REDIRECT STATUS:", err.response?.status); // tambah ini
-    console.error("SSO REDIRECT URL:", err.config?.url);         // tambah ini
+    console.error("SSO REDIRECT STATUS:", err.response?.status);
+    console.error("SSO REDIRECT URL:", err.config?.url);
 
     return res.status(500).json({
       success: false,
       message: "Gagal melakukan redirect SSO",
+      _debug: {
+        error_message: err.message,
+        error_status: err.response?.status ?? null,
+        error_url: err.config?.url ?? null,
+        error_response: err.response?.data ?? null,
+        target_identifier: targetIdentifier, // ✅ sekarang accessible
+        base_url: baseUrl,                   // ✅ sekarang accessible
+      }
     });
   }
 };

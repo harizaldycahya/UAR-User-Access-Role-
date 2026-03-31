@@ -332,7 +332,8 @@ export const forgotPassword = async (req, res) => {
     );
     console.log("11. INSERT berhasil!");
 
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    // const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`; prod buka ini 
+    const resetLink = `http://localhost:3000/reset-password?token=${token}`;
     console.log("12. kirim email ke:", email);
 
     await transporter.sendMail({
@@ -372,7 +373,6 @@ export const forgotPassword = async (req, res) => {
     });
   } catch (err) {
     console.error("FORGOT PASSWORD ERROR:", err);
-    // return res.status(500).json({ message: "Terjadi kesalahan server." });
     return res.status(500).json({ 
       message: "Terjadi kesalahan server.",
       debug_error: err.message,  // ← tambah ini sementara

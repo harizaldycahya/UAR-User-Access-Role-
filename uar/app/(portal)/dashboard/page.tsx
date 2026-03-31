@@ -93,6 +93,13 @@ export default function DashboardPage() {
   const [markingId, setMarkingId] = React.useState<number | null>(null);
   const [myRequests, setMyRequests] = React.useState<MyRequest[]>([]);
   const [myApprovals, setMyApprovals] = React.useState<MyApproval[]>([]);
+  const [filter, setFilter] = React.useState("all");
+
+  const filteredApplications = applications.filter((app) => {
+    if (filter === "accessible") return app.has_access;
+    if (filter === "not_accessible") return !app.has_access;
+    return true; // "all"
+  });
 
 
   const [loading, setLoading] = React.useState(true);
@@ -581,7 +588,7 @@ export default function DashboardPage() {
                 <p className="text-sm">No notifications</p>
               </div>
             )}
-          </CardContent>
+          </CardContent> 
         </Card>
 
         {/* APPLICATIONS */}
@@ -607,9 +614,15 @@ export default function DashboardPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem>Sort by name</DropdownMenuItem>
-                  <DropdownMenuItem>Sort by date</DropdownMenuItem>
-                  <DropdownMenuItem>View all</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilter("accessible")}>
+                    Accessible
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilter("not_accessible")}>
+                    Not Accessible
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilter("all")}>
+                    View All
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -625,8 +638,8 @@ export default function DashboardPage() {
                     <Skeleton className="h-9 w-full" />
                   </div>
                 ))
-              ) : applications.length > 0 ? (
-                applications.map((app) => {
+              ) : filteredApplications.length > 0 ? (
+                filteredApplications.map((app) => {
                   const Icon = (Icons as unknown as Record<string, LucideIcon>)[
                     app.icon?.charAt(0).toUpperCase() + app.icon?.slice(1)
                   ];
