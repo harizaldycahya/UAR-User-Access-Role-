@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Bell, CheckCheck, AlertCircle, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Bell, CheckCheck, AlertCircle, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 
@@ -57,6 +57,7 @@ export function NotificationPanel() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const hasFetched = useRef(false);
 
@@ -142,6 +143,7 @@ export function NotificationPanel() {
     function handleClickOutside(e: MouseEvent) {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
         setOpen(false);
+        setShowClearConfirm(false);
       }
     }
     if (open) document.addEventListener("mousedown", handleClickOutside);
@@ -183,6 +185,33 @@ export function NotificationPanel() {
     }
   };
 
+  // ── Clear all notifications ─────────────────────────────────────
+  const clearAll = async () => {
+    const prevNotifications = notifications;
+    const prevCount = unreadCount;
+
+    setShowClearConfirm(false);
+    setNotifications([]);
+    setUnreadCount(0);
+
+    try {
+      await apiFetch("/notifications/uar/clear-all", { method: "DELETE" });
+    } catch {
+      // Rollback on failure
+      setNotifications(prevNotifications);
+      setUnreadCount(prevCount);
+    }
+  };
+
+  useEffect(() => {
+    const handler = () => {
+      setUnreadCount(0);
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: 1 as const })));
+    };
+    window.addEventListener("notifications:read-all", handler);
+    return () => window.removeEventListener("notifications:read-all", handler);
+  }, []);
+
   return (
     <div className="relative" ref={panelRef}>
       {/* Bell Button */}
@@ -219,14 +248,44 @@ export function NotificationPanel() {
                 <p className="text-xs text-muted-foreground">{unreadCount} unread</p>
               )}
             </div>
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllAsRead}
-                className="flex items-center gap-1 text-xs text-primary hover:underline"
-              >
-                <CheckCheck className="h-3.5 w-3.5" />
-                Mark all as read
-              </button>
+            {notifications.length > 0 && (
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    className="flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <CheckCheck className="h-3.5 w-3.5" />
+                    Mark all as read
+                  </button>
+                )}
+                {showClearConfirm ? (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground">Sure?</span>
+                    <button
+                      onClick={clearAll}
+                      className="text-xs font-medium text-destructive hover:underline"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      onClick={() => setShowClearConfirm(false)}
+                      className="text-xs text-muted-foreground hover:underline"
+                    >
+                      No
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowClearConfirm(true)}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
+                    title="Clear all notifications"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Clear all
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
@@ -305,7 +364,7 @@ export function NotificationPanel() {
           </div>
 
           {/* Footer */}
-          {!loading && notifications.length > 0 && (
+          {/* {!loading && notifications.length > 0 && (
             <div className="border-t px-4 py-2.5">
               <a
                 href="/notifications"
@@ -314,7 +373,7 @@ export function NotificationPanel() {
                 View all notifications →
               </a>
             </div>
-          )}
+          )} */}
         </div>
       )}
     </div>

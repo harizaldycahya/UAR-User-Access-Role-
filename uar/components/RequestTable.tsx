@@ -199,6 +199,12 @@ export default function RequestTable() {
       try {
         const res = await apiFetch("/requests/me");
         setData(res.data);
+
+        // ── Auto-mark semua notif sebagai read ──
+        apiFetch("/notifications/uar/read-all", { method: "PATCH" })
+        .then(() => window.dispatchEvent(new Event("notifications:read-all")))
+        .catch(() => {});
+
       } catch {
         setData([]);
       } finally {

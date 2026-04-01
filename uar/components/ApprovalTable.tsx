@@ -178,6 +178,10 @@ export default function ApprovalTable() {
       }
 
       setData(res.data);
+
+      apiFetch("/notifications/uar/read-all", { method: "PATCH" })
+      .then(() => window.dispatchEvent(new Event("notifications:read-all")))
+      .catch(() => {});
     } catch (err: any) {
       console.error("LOAD DATA ERROR:", err);
       Swal.fire({
