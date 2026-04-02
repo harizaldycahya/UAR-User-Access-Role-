@@ -53,7 +53,7 @@ export const getMyNotifications = async (req, res) => {
       notification_date,
       is_read
     FROM notifications
-    WHERE username = ?
+    WHERE username = ? AND deleted_at IS NULL
     ORDER BY notification_date DESC
     LIMIT 50
     `,
@@ -130,18 +130,11 @@ export const getUarNotifications = async (req, res) => {
   const [rows] = await db.query(
     `
     SELECT
-      id,
-      type,
-      title,
-      content,
-      url,
-      reference_id,
-      reference_type,
-      is_read,
-      read_at,
-      notification_date
+      id, type, title, content, url,
+      reference_id, reference_type,
+      is_read, read_at, notification_date
     FROM uar_notifications
-    WHERE username = ?
+    WHERE username = ? AND deleted_at IS NULL
     ORDER BY notification_date DESC
     LIMIT 50
     `,
@@ -150,10 +143,7 @@ export const getUarNotifications = async (req, res) => {
 
   const unread_count = rows.filter((r) => !r.is_read).length;
 
-  return res.json({
-    data: rows,
-    unread_count,
-  });
+  return res.json({ data: rows, unread_count });
 };
 
 // PATCH /api/notifications/uar/read-all
@@ -228,5 +218,41 @@ export const markUarNotificationByReference = async (req, res) => {
   return res.json({
     message: "Notification marked as read by reference",
     updated: result.affectedRows,
+  });
+};
+
+export const clearAllUarNotifications = async (req, res) => {
+  const username = req.user.username;
+
+  const [result] = await db.query(
+    `
+    UPDATE uar_notifications
+    SET deleted_at = NOW()
+    WHERE username = ? AND deleted_at IS NULL
+    `,
+    [username]
+  );
+
+  return res.json({
+    message: "Semua notifikasi UAR berhasil dihapus",
+    deleted: result.affectedRows,
+  });
+};
+
+export const clearAllNotifications = async (req, res) => {
+  const username = req.user.username;
+
+  const [result] = await db.query(
+    `
+    UPDATE notifications
+    SET deleted_at = NOW()
+    WHERE username = ? AND deleted_at IS NULL
+    `,
+    [username]
+  );
+
+  return res.json({
+    message: "All notifications cleared",
+    deleted: result.affectedRows,
   });
 };

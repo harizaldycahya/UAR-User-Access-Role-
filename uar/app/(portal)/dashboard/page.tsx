@@ -93,6 +93,7 @@ export default function DashboardPage() {
   const [markingId, setMarkingId] = React.useState<number | null>(null);
   const [myRequests, setMyRequests] = React.useState<MyRequest[]>([]);
   const [myApprovals, setMyApprovals] = React.useState<MyApproval[]>([]);
+  const [notifFilter, setNotifFilter] = React.useState<"all" | "read" | "unread">("all");
   const [filter, setFilter] = React.useState("all");
 
   const filteredApplications = applications.filter((app) => {
@@ -260,6 +261,24 @@ export default function DashboardPage() {
   const myPendingApprovals = myApprovals.filter(
     (a) => a.approval_status === "pending"
   ).length;
+
+  const filteredNotifications = React.useMemo(() => {
+    if (notifFilter === "read") return notifications.filter((n) => n.is_read === 1);
+    if (notifFilter === "unread") return notifications.filter((n) => n.is_read === 0);
+    return notifications;
+  }, [notifications, notifFilter]);
+
+  const clearAll = async () => {
+    // Optimistic UI
+    setNotifications([]);
+
+    try {
+      await apiAxios.delete("/notifications/me/clear"); // sesuaikan endpoint-nya
+    } catch (err) {
+      console.error("Failed to clear notifications", err);
+      // Optional: refetch jika gagal
+    }
+  };
 
   function timeAgo(dateString?: string | null) {
     if (!dateString) return "Not available";
@@ -481,9 +500,19 @@ export default function DashboardPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={() => setNotifFilter("unread")}>
+                    Unread
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setNotifFilter("read")}>
+                    Read
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={markAllAsRead}>Mark all as read</DropdownMenuItem>
-                  <DropdownMenuItem>Settings</DropdownMenuItem>
-                  <DropdownMenuItem>Clear all</DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={clearAll}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    Clear all
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -502,8 +531,8 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ))
-            ) : notifications && notifications.length > 0 ? (
-              notifications.map((notification) => (
+            ) : filteredNotifications && filteredNotifications.length > 0 ? (
+              filteredNotifications.map((notification) => (
                 <div
                   key={notification.id}
                   className={`
@@ -588,7 +617,7 @@ export default function DashboardPage() {
                 <p className="text-sm">No notifications</p>
               </div>
             )}
-          </CardContent> 
+          </CardContent>
         </Card>
 
         {/* APPLICATIONS */}

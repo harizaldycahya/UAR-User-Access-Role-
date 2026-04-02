@@ -331,9 +331,6 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                                                 <User className="mr-3 h-4 w-4" /> Profile
                                             </DropdownMenuItem>
                                         </a>
-                                        <DropdownMenuItem className="py-2.5 cursor-pointer rounded-md">
-                                            <Settings className="mr-3 h-4 w-4" /> Settings
-                                        </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem
                                             className="py-2.5 text-destructive hover:text-destructive focus:text-destructive cursor-pointer rounded-md"
