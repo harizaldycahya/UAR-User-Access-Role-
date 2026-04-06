@@ -9,6 +9,8 @@ import applicationUsersRoutes from "./routes/applicationUsers.routes.js";
 import requestRoutes from "./routes/request.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import usersRoutes from "./routes/users.routes.js";
+import passport from "./config/passport.config.js";
+import googleAuthRouter from "./routes/auth.google.route.js";
 
 dotenv.config();
 
@@ -24,11 +26,13 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(passport.initialize());
 
 app.get("/", (req, res) => {
   res.send("API is alive");
 });
-
+app.use("/auth", googleAuthRouter); // tambah ini
+app.use("/api/auth", googleAuthRouter);
 app.use("/api/auth", authRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/application-users", applicationUsersRoutes);
