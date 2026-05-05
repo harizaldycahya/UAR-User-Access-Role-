@@ -37,4 +37,13 @@ router.get(
   }
 );
 
+router.get(
+  "/google",
+  passport.authenticate("google", {
+    scope: ["email", "profile"],
+    session: false,
+    prompt: "select_account", // ← ini yang bikin muncul pilihan akun
+  })
+);
+
 export default router;

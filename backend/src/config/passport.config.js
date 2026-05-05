@@ -1,24 +1,6 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { db } from "./db.js";
-import axios from "axios";
-
-// Helper sama persis seperti di auth.controller.js
-const getEmailFromHR = async (nik) => {
-  try {
-    const res = await axios.get(
-      "https://personasys.triasmitra.com/api/auth/get-profile-uar",
-      { params: { nik }, timeout: 5000 }
-    );
-    if (res.data?.Success && res.data?.data?.email) {
-      return res.data.data.email;
-    }
-    return null;
-  } catch (err) {
-    console.error("HR API ERROR:", err.message);
-    return null;
-  }
-};
 
 passport.use(
   new GoogleStrategy(
@@ -31,8 +13,8 @@ passport.use(
       try {
         const googleEmail = profile.emails[0].value;
 
-        // 1. Ambil semua user aktif dari DB
-        const [users] = await db.query(
+        // Langsung query by email — tidak perlu hit HR API sama sekali
+        const [rows] = await db.query(
           `SELECT 
             u.id,
             u.username,
@@ -42,28 +24,16 @@ passport.use(
             r.code AS role_name
            FROM users u
            JOIN roles r ON r.id = u.role_id
-           WHERE u.is_active = 1`,
+           WHERE u.email = ? AND u.is_active = 1
+           LIMIT 1`,
+          [googleEmail]
         );
 
-        if (users.length === 0) {
-          return done(null, false, { message: "Tidak ada user aktif" });
+        if (rows.length === 0) {
+          return done(null, false, { message: "Email tidak terdaftar di sistem" });
         }
 
-        // 2. Loop user, cek email dari HR API satu per satu
-        let matchedUser = null;
-        for (const user of users) {
-          const hrEmail = await getEmailFromHR(user.username);
-          if (hrEmail && hrEmail.toLowerCase() === googleEmail.toLowerCase()) {
-            matchedUser = user;
-            break;
-          }
-        }
-
-        if (!matchedUser) {
-          return done(null, false, { message: "Email Google tidak terdaftar di sistem" });
-        }
-
-        return done(null, matchedUser);
+        return done(null, rows[0]);
       } catch (err) {
         return done(err, null);
       }

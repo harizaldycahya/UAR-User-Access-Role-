@@ -41,4 +41,18 @@ app.use("/api/requests", requestRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/users", usersRoutes);
 
+// TEST SEMENTARA — hapus setelah selesai debug
+app.get("/test-hr", async (req, res) => {
+  try {
+    const axios = (await import("axios")).default;
+    const result = await axios.get(
+      "https://personasys.triasmitra.com/api/auth/get-profile-uar",
+      { params: { nik: "KT-23071336" }, timeout: 10000 }
+    );
+    res.json(result.data);
+  } catch (err) {
+    res.json({ error: err.message, code: err.code });
+  }
+});
+
 export default app;

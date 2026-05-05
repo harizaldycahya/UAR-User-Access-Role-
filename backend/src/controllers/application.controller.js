@@ -553,17 +553,25 @@ export const redirectToApplication = async (req, res) => {
       baseUrl = "https://ims.triasmitra.com";
       token = "KFhNebzV8EvLWTyWYZ0XPKafNGDwtANTN7WzZtka_TfGTqPQtmANLiRfMtCI8JKyxg9";
     } else if (code === "cms") {
-      baseUrl = "https://cms.triasmitra.com";
+      baseUrl = "https://devcms.triasmitra.com";
       token = "9e6d3c1f7a4b8d2e5f1c9a7b3e6d4f8a2c1e7b9d5f3a6c8e4b1d7a2f9c6e3b5";
     } else if (code === "aas") {
       baseUrl = "https://aas.triasmitra.com";
       token = "a3f9d2b4c1e6f7890a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef";
     } else if (code === "qms") {
-      // ✅ Hapus duplikat, pakai satu saja
       baseUrl = "https://qms.triasmitra.com";
       token = "9f3c8a1d7e4b2f5a6c0d1e8b3a9f7c24e5d6b8a1c3f9e0d7a2b4c6e8f1a3d5b7";
+    } else if (code === "shocart") {
+      baseUrl = "https://shocart.triasmitra.com";
+      token = "c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e8f9012345678901";
+    } else if (code === "helpdesk") {
+      baseUrl = "https://helpdesk.triasmitra.com";
+      token = "9fA7kLm2QxP8vZr4Tn6YwB1cHdE5uJ0s";
+    } else if (code === "campers") {
+      baseUrl = "https://campers.triasmitra.com";
+      token = "ddMhiXpxw0pAEuX2FXSzsaC5kN9yZM2qz8eBGby6oL3gYFh4WWM8ZEnNVHFNRHOr";
     } else if (code === "das") {
-      baseUrl = "https://devdas.triasmitra.com";
+      baseUrl = "https://das.triasmitra.com";
       token = "8f8cba9716432668d1c4c5c660e3254ab44cf2064ea7c2bb0904cce6654661b0";
     } else {
       return res.status(404).json({
