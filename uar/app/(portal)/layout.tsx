@@ -344,7 +344,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                         </div>
                     </header>
 
-                    <main className="flex-1 p-8">{children}</main>
+                    <main className="flex-1 p-1">{children}</main>
 
                     <footer className="shrink-0 border-t border-border/40 bg-card/60">
                         <div className="flex items-center justify-between px-8 py-4 text-xs text-muted-foreground">
@@ -352,7 +352,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                             <div className="flex items-center gap-4">
                                 <span>v1.0.0</span>
                                 <span className="opacity-40">•</span>
-                                <span>Last update: 15 Jan 2025</span>
+                                <span>Last update: 05 May 2026</span>
                             </div>
                         </div>
                     </footer>
