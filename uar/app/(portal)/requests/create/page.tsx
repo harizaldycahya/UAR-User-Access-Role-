@@ -120,13 +120,6 @@ export default function CreateRequestsPage() {
     }
   }
 
-
-  // auth
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) router.replace("/login");
-  }, []);
-
   // load applications
   useEffect(() => {
     const load = async () => {

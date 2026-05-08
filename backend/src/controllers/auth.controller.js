@@ -53,7 +53,6 @@ export const login = async (req, res) => {
   });
 
   return res.json({
-    token,
     user: {
       id: user.id,
       username: user.username,
@@ -89,7 +88,11 @@ export const logout = async (req, res) => {
       return res.status(400).json({ message: "User tidak ditemukan saat logout" });
     }
 
-    res.clearCookie("token");
+    res.clearCookie("token", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
 
     return res.json({ message: "Logout berhasil" });
   } catch (err) {

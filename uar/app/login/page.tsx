@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiAxios } from "@/lib/api";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -18,33 +18,34 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const submit = async () => {
-    setIsLoading(true);
-    setError("");
+const submit = async () => {
+  setIsLoading(true);
+  setError("");
 
-    try {
-      const data = await apiFetch("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ username, password }),
-      });
+  try {
+    // Login — backend set httpOnly cookie otomatis
+    await apiFetch("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    });
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+    // Cookie sudah aktif, langsung ambil user info
+    const meRes = await apiAxios.get("/auth/me");
+    const role_name = meRes.data?.user?.role_name;
 
-      const roleRedirectMap: Record<string, string> = {
-        admin: "/applications",
-        hrd: "/approvals",
-      };
+    const roleRedirectMap: Record<string, string> = {
+      admin: "/applications",
+      hrd: "/approvals",
+    };
 
-      const redirectTo = roleRedirectMap[data.user.role_name] || "/dashboard";
-      router.push(redirectTo);
+    router.push(roleRedirectMap[role_name] || "/dashboard");
 
-    } catch (err: any) {
-      setError(err.message || "Login gagal");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  } catch (err: any) {
+    setError(err.message || "Login gagal");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && username && password) {
@@ -88,12 +89,8 @@ export default function LoginPage() {
                 <Layers className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-white text-sm font-medium">
-                  Centralized System Access
-                </div>
-                <div className="text-gray-500 text-xs mt-1">
-                  One portal to access internal applications and platforms.
-                </div>
+                <div className="text-white text-sm font-medium">Centralized System Access</div>
+                <div className="text-gray-500 text-xs mt-1">One portal to access internal applications and platforms.</div>
               </div>
             </div>
 
@@ -102,12 +99,8 @@ export default function LoginPage() {
                 <ShieldCheck className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-white text-sm font-medium">
-                  Secure Authentication
-                </div>
-                <div className="text-gray-500 text-xs mt-1">
-                  Protected access aligned with company security policies.
-                </div>
+                <div className="text-white text-sm font-medium">Secure Authentication</div>
+                <div className="text-gray-500 text-xs mt-1">Protected access aligned with company security policies.</div>
               </div>
             </div>
 
@@ -116,12 +109,8 @@ export default function LoginPage() {
                 <Briefcase className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-white text-sm font-medium">
-                  Operational Efficiency
-                </div>
-                <div className="text-gray-500 text-xs mt-1">
-                  Designed to support daily tasks and enterprise workflows.
-                </div>
+                <div className="text-white text-sm font-medium">Operational Efficiency</div>
+                <div className="text-gray-500 text-xs mt-1">Designed to support daily tasks and enterprise workflows.</div>
               </div>
             </div>
           </div>
@@ -131,7 +120,6 @@ export default function LoginPage() {
           © {new Date().getFullYear()} PT Ketrosden Triasmitra. All rights reserved.
         </div>
       </div>
-
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center p-8">
@@ -163,10 +151,7 @@ export default function LoginPage() {
             <div className="space-y-6">
               {/* Username Field */}
               <div className="space-y-2">
-                <Label
-                  htmlFor="username"
-                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
+                <Label htmlFor="username" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   NIK
                 </Label>
                 <div className="relative">
@@ -185,16 +170,10 @@ export default function LoginPage() {
               {/* Password Field */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label
-                    htmlFor="password"
-                    className="text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Password
                   </Label>
-                  <a
-                    href="/forgot-password"
-                    className="text-xs text-blue-600 dark:text-blue-500 hover:underline font-medium"
-                  >
+                  <a href="/forgot-password" className="text-xs text-blue-600 dark:text-blue-500 hover:underline font-medium">
                     Forgot password?
                   </a>
                 </div>
@@ -214,11 +193,7 @@ export default function LoginPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
@@ -232,10 +207,7 @@ export default function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 border-gray-300 dark:border-gray-700 rounded text-blue-600 focus:ring-blue-600 cursor-pointer"
                 />
-                <label
-                  htmlFor="remember"
-                  className="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
-                >
+                <label htmlFor="remember" className="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
                   Remember me for 30 days
                 </label>
               </div>

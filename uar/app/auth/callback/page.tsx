@@ -9,27 +9,25 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
-    const userRaw = params.get("user");
+    const role = params.get("role");
     const error = params.get("error");
 
-    if (error || !token || !userRaw) {
+    // Bersihkan URL dari query params
+    window.history.replaceState({}, "", window.location.pathname);
+
+    if (error || !role) {
       router.push("/login?error=unauthorized");
       return;
     }
 
-    const user = JSON.parse(decodeURIComponent(userRaw));
-
-    // Simpan persis seperti login biasa
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(user));
-
+    // ✅ Cookie sudah diset backend — tidak perlu exchange apapun
+    // Langsung redirect berdasarkan role yang ada di URL
     const roleRedirectMap: Record<string, string> = {
       admin: "/applications",
       hrd: "/approvals",
     };
 
-    const redirectTo = roleRedirectMap[user.role_name] || "/dashboard";
+    const redirectTo = roleRedirectMap[role] || "/dashboard";
     router.push(redirectTo);
   }, []);
 
