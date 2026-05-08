@@ -106,10 +106,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = React.useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) router.replace("/login");
-  }, []);
 
   useEffect(() => {
     const loadDashboard = async () => {

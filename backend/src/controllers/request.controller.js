@@ -183,16 +183,13 @@ export const createRequest = async (req, res) => {
     );
 
     // =========================
-    // 6) Personasys (username = NIK)
+    // 6) Personasys — tentukan atasan & level approval
     // =========================
     const nik = username;
 
     const personaRes = await axios.get(
       "https://personasys.triasmitra.com/api/auth/get-atasan-uar",
-      {
-        params: { nik },
-        timeout: 10000,
-      }
+      { params: { nik }, timeout: 10000 }
     );
 
     if (!personaRes.data?.Success) {
@@ -212,46 +209,61 @@ export const createRequest = async (req, res) => {
       direktorat_approval,
     } = personaRes.data.data;
 
-    let atasanId = null;
+    // Cek apakah user adalah Manager ke atas (kasie, kadept, kadiv, direktorat)
+    const isManagerOrAbove = [kasie_approval, kadept_approval, kadiv_approval, direktorat_approval]
+      .filter(Boolean)           // buang string kosong / null
+      .includes(nik);
 
-    if (nik === kadiv_approval) {
-      atasanId = direktorat_approval || null;
-    } else if (nik === kadept_approval) {
-      atasanId = kadiv_approval || null;
-    } else if (nik === kasie_approval) {
-      atasanId = kadept_approval || null;
-    } else if (nik === subsi_approval) {
-      atasanId = kasie_approval || kadept_approval || null;
-    } else if (nik === unit_approval) {
-      atasanId = kasie_approval || kadept_approval || null;
-    }
-
-    if (!atasanId) {
-      await conn.rollback();
-      return res.status(500).json({
-        success: false,
-        message: "Approver not found from personasys",
-      });
-    }
-
-    // HRD
     const [[hrd]] = await conn.query(
       `SELECT username AS approver_id FROM users WHERE role_id = '3' LIMIT 1`
     );
 
     const isHris = appData?.code === "HRIS";
 
-    const approvers = [
-      { level: 1, approver_id: atasanId },
-      { level: 2, approver_id: hrd?.approver_id },
-    ];
+    let approvers = [];
 
+    if (isManagerOrAbove) {
+      // Manager ke atas: HRD + App Owner
+      approvers = [
+        { level: 1, approver_id: hrd?.approver_id },
+      ];
+    } else {
+      // Staff: cari atasan langsung
+      let atasanId = null;
+
+      if (nik === kadiv_approval && direktorat_approval) {
+        atasanId = direktorat_approval;
+      } else if (nik === kadept_approval && kadiv_approval) {
+        atasanId = kadiv_approval;
+      } else if (nik === kasie_approval && kadept_approval) {
+        atasanId = kadept_approval;
+      } else if (nik === subsi_approval) {
+        atasanId = kasie_approval || kadept_approval || null;
+      } else if (nik === unit_approval) {
+        atasanId = kasie_approval || kadept_approval || null;
+      }
+
+      if (!atasanId) {
+        await conn.rollback();
+        return res.status(500).json({
+          success: false,
+          message: "Approver not found from personasys",
+        });
+      }
+
+      approvers = [
+        { level: 1, approver_id: atasanId },
+        { level: 2, approver_id: hrd?.approver_id },
+      ];
+    }
+
+    // Tambah App Owner sebagai level terakhir (kecuali HRIS)
     if (!isHris) {
       const [[appOwner]] = await conn.query(
         `SELECT owner AS approver_id FROM applications WHERE id = ?`,
         [application_id]
       );
-      approvers.push({ level: 3, approver_id: appOwner?.approver_id });
+      approvers.push({ level: approvers.length + 1, approver_id: appOwner?.approver_id });
     }
 
     for (const a of approvers) {
@@ -291,9 +303,11 @@ export const createRequest = async (req, res) => {
     // =========================
     const requestTypeLabel = type === "change_role" ? "Change Role" : "Application Access";
 
+    const firstApprover = approvers[0].approver_id;
+
     try {
       await triggerApprovalNotification({
-        username      : atasanId,
+        username      : firstApprover,
         type          : "approval",
         title         : "New Request Awaiting Your Approval",
         content       : `${username} has submitted a ${requestTypeLabel} request (${requestCode}) that requires your approval.`,
@@ -673,14 +687,14 @@ export const approvalAction = async (req, res) => {
 
       try {
         await triggerApprovalNotification({
-          username      : rejectedRequest.username,   // ← dari requests.username
-          type          : "rejection",
-          title         : "Your Request Was Rejected",
-          content       : reason
+          username: rejectedRequest.username,   // ← dari requests.username
+          type: "rejection",
+          title: "Your Request Was Rejected",
+          content: reason
             ? `Your request (${approval.request_code}) was rejected. Reason: ${reason}`
             : `Your request (${approval.request_code}) was rejected.`,
-          url           : `/requests?request_code=${approval.request_code}`,
-          reference_id  : String(approval.request_code),
+          url: `/requests?request_code=${approval.request_code}`,
+          reference_id: String(approval.request_code),
           reference_type: "request",
         });
       } catch (notifErr) {
@@ -712,12 +726,12 @@ export const approvalAction = async (req, res) => {
 
       try {
         await triggerApprovalNotification({
-          username      : request.username,
-          type          : "approval",
-          title         : "Your Request Was Approved",
-          content       : `Your request (${approval.request_code}) has been fully approved.`,
-          url           : `/requests?request_code=${approval.request_code}`,
-          reference_id  : String(approval.request_code),
+          username: request.username,
+          type: "approval",
+          title: "Your Request Was Approved",
+          content: `Your request (${approval.request_code}) has been fully approved.`,
+          url: `/requests?request_code=${approval.request_code}`,
+          reference_id: String(approval.request_code),
           reference_type: "request",
         });
       } catch (notifErr) {
@@ -740,12 +754,12 @@ export const approvalAction = async (req, res) => {
       if (nextApproval) {
         try {
           await triggerApprovalNotification({
-            username      : nextApproval.approver_id,
-            type          : "approval",
-            title         : "New Request Awaiting Your Approval",
-            content       : `Request (${approval.request_code}) has been approved by level ${approval.level} and is now awaiting your approval (level ${nextApproval.level}).`,
-            url           : `/approvals?request_code=${approval.request_code}`,
-            reference_id  : String(approval.request_code),
+            username: nextApproval.approver_id,
+            type: "approval",
+            title: "New Request Awaiting Your Approval",
+            content: `Request (${approval.request_code}) has been approved by level ${approval.level} and is now awaiting your approval (level ${nextApproval.level}).`,
+            url: `/approvals?request_code=${approval.request_code}`,
+            reference_id: String(approval.request_code),
             reference_type: "request",
           });
         } catch (notifErr) {

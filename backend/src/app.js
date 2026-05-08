@@ -11,6 +11,7 @@ import notificationRoutes from "./routes/notification.routes.js";
 import usersRoutes from "./routes/users.routes.js";
 import passport from "./config/passport.config.js";
 import googleAuthRouter from "./routes/auth.google.route.js";
+import cookieParser from "cookie-parser"; 
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
 
