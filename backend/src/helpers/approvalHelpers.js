@@ -387,9 +387,8 @@ const updateImsUser = async (request) => {
   }
 };
 
-
 const CMS_TOKEN = '9e6d3c1f7a4b8d2e5f1c9a7b3e6d4f8a2c1e7b9d5f3a6c8e4b1d7a2f9c6e3b5';
-const CMS_BASE_URL = 'https://devcms.triasmitra.com/api/public';
+const CMS_BASE_URL = 'https://cms.triasmitra.com/api/public';
 
 const cmsHeaders = {
   'Content-Type': 'application/json',

@@ -35,7 +35,6 @@ export const getUsers = async (req, res) => {
   }
 };
 
-
 export const getUserByUsername = async (req, res) => {
   try {
     const { username } = req.params;
@@ -116,7 +115,6 @@ export const getUserByUsername = async (req, res) => {
     });
   }
 };
-
 
 export const resetPassword = async (req, res) => {
   try {

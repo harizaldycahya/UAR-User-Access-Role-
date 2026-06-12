@@ -3,7 +3,7 @@ import { db } from "../config/db.js";
 import { signToken } from "../utils/jwt.js";
 import axios from "axios";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
+import { transporter } from "../config/mailer.js"; // ← tambah ini
 
 
 export const login = async (req, res) => {
@@ -46,10 +46,12 @@ export const login = async (req, res) => {
     role_id: user.role_id,
   });
 
+  const isProd = process.env.NODE_ENV === "production";
+
   res.cookie("token", token, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production", // ✅ FIX: dynamic, bukan hardcoded false
+    sameSite: isProd ? "none" : "lax",  // none di prod, lax di local
+    secure: isProd,                      // true di prod, false di local
   });
 
   return res.json({
@@ -232,20 +234,6 @@ export const changePassword = async (req, res) => {
     });
   }
 };
-
-// ─── Konfigurasi nodemailer ────────────────────────────────────
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false,
-  },
-});
 
 // ─── Helper: ambil email dari HR API ──────────────────────────
 const getEmailFromHR = async (nik) => {

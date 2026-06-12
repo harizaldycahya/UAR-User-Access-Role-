@@ -100,27 +100,49 @@ export const markNotificationRead = async (req, res) => {
 
 export const triggerApprovalNotification = async ({
   username,
-  type,             // "approval" | "rejection"
+  type,
   title,
   content,
   url = null,
   reference_id = null,
   reference_type = null,
+  send_email = false,
 }) => {
   if (!username || !type || !title || !content) {
-    throw new Error(
-      "triggerApprovalNotification: username, type, title, dan content wajib diisi"
-    );
+    throw new Error("username, type, title, dan content wajib diisi");
   }
 
+  // 1. Simpan notifikasi in-app
   await db.query(
-    `
-    INSERT INTO uar_notifications
+    `INSERT INTO uar_notifications
       (username, type, title, content, url, reference_id, reference_type, notification_date, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-    `,
+     VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
     [username, type, title, content, url, reference_id, reference_type]
   );
+
+  // 2. Kirim email kalau diminta
+  if (send_email) {
+    const [[user]] = await db.query(
+      `SELECT email FROM users WHERE username = ? LIMIT 1`,
+      [username]
+    );
+
+    if (user?.email) {
+      const { subject, html } = approvalEmailTemplate({ username, type, title, content, url });
+
+      // Fire-and-forget, biar gak block proses utama
+      transporter
+        .sendMail({
+          from: `"Portal Triasmitra" <${process.env.SMTP_USER}>`,
+          to: user.email,
+          subject,
+          html,
+        })
+        .catch((err) =>
+          console.error(`[Email Notif] Gagal kirim ke ${user.email}:`, err.message)
+        );
+    }
+  }
 };
 
 // GET /api/notifications/uar

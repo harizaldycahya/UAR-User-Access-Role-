@@ -553,7 +553,7 @@ export const redirectToApplication = async (req, res) => {
       baseUrl = "https://ims.triasmitra.com";
       token = "KFhNebzV8EvLWTyWYZ0XPKafNGDwtANTN7WzZtka_TfGTqPQtmANLiRfMtCI8JKyxg9";
     } else if (code === "cms") {
-      baseUrl = "https://devcms.triasmitra.com";
+      baseUrl = "https://cms.triasmitra.com";
       token = "9e6d3c1f7a4b8d2e5f1c9a7b3e6d4f8a2c1e7b9d5f3a6c8e4b1d7a2f9c6e3b5";
     } else if (code === "aas") {
       baseUrl = "https://aas.triasmitra.com";
@@ -568,11 +568,14 @@ export const redirectToApplication = async (req, res) => {
       baseUrl = "https://helpdesk.triasmitra.com";
       token = "9fA7kLm2QxP8vZr4Tn6YwB1cHdE5uJ0s";
     } else if (code === "campers") {
-      baseUrl = "https://campers.triasmitra.com";
+      baseUrl = "https://rms.triasmitra.com";
       token = "ddMhiXpxw0pAEuX2FXSzsaC5kN9yZM2qz8eBGby6oL3gYFh4WWM8ZEnNVHFNRHOr";
     } else if (code === "das") {
       baseUrl = "https://das.triasmitra.com";
       token = "8f8cba9716432668d1c4c5c660e3254ab44cf2064ea7c2bb0904cce6654661b0";
+    } else if (code === "dms") {
+      baseUrl = "http://devdms.triasmitra.com";
+      token = "7e316e87289439e98139ef8d0a0c11ea3a611032d40f4876df9e237b0e385e59";
     } else {
       return res.status(404).json({
         success: false,
@@ -607,7 +610,7 @@ export const redirectToApplication = async (req, res) => {
     }
 
     // ✅ QMS pakai role_name sebagai identifier, lainnya pakai NIK
-    targetIdentifier = code === "qms" ? access.role_name : nik;
+    targetIdentifier = (code === "qms" || code === "dms") ? access.role_name : nik;
 
     console.log("Calling API:", `${baseUrl}/api/public/get-token/${targetIdentifier}`);
     console.log("With token:", token);

@@ -76,8 +76,7 @@ export default function CreateApplicationPage() {
     icon: "",
     color: "#000000"
   });
-
-
+  
   const handleCreate = async () => {
     if (!form.code || !form.name) return;
 
@@ -129,7 +128,6 @@ export default function CreateApplicationPage() {
                 }
               />
             </div>
-
             <div>
               <Label>Application Name</Label>
               <Input
@@ -139,7 +137,6 @@ export default function CreateApplicationPage() {
                 }
               />
             </div>
-
             <div>
               <Label>Application URL</Label>
               <Input
@@ -149,7 +146,6 @@ export default function CreateApplicationPage() {
                 }
               />
             </div>
-
             <div>
               <Label>Application Owner</Label>
               <Input
@@ -159,7 +155,6 @@ export default function CreateApplicationPage() {
                 }
               />
             </div>
-
             <div>
               <Label>Application Icon</Label>
 
@@ -184,7 +179,6 @@ export default function CreateApplicationPage() {
                 </span>
               </div>
             </div>
-
             <div>
               <Label>Application Color</Label>
               <div className="flex items-center gap-3">
@@ -199,7 +193,6 @@ export default function CreateApplicationPage() {
                 <Input value={form.color} readOnly />
               </div>
             </div>
-            
             <div className="flex gap-3 pt-4">
               <Button
                 onClick={handleCreate}
