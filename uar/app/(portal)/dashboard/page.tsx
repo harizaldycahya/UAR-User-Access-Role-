@@ -106,10 +106,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = React.useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) router.replace("/login");
-  }, []);
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -310,175 +306,231 @@ export default function DashboardPage() {
         Overview of request status, approvals, and system activity
       </p>
       <div className="min-h-8"></div>
+
+      <div className="xl:hidden mb-6">
+        <Card className="flex-1 border-border/40">
+          <Card className="flex-1 border-border/40">
+            <CardHeader className="border-b border-border/40">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <CardTitle className="text-base font-semibold">Applications</CardTitle>
+                    <CardDescription className="text-xs">Access your available applications</CardDescription>
+                  </div>
+                </div>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem onClick={() => setFilter("accessible")}>
+                      Accessible
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setFilter("not_accessible")}>
+                      Not Accessible
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setFilter("all")}>
+                      View All
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardHeader>
+
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-3 gap-4">
+                {loading ? (
+                  Array.from({ length: 6 }).map((_, idx) => (
+                    <div key={idx} className="rounded-lg border border-border/40 p-4">
+                      <Skeleton className="h-12 w-12 rounded-lg mb-3" />
+                      <Skeleton className="h-4 w-3/4 mb-2" />
+                      <Skeleton className="h-9 w-full" />
+                    </div>
+                  ))
+                ) : filteredApplications.length > 0 ? (
+                  filteredApplications.map((app) => {
+                    const Icon = (Icons as unknown as Record<string, LucideIcon>)[
+                      app.icon?.charAt(0).toUpperCase() + app.icon?.slice(1)
+                    ];
+
+                    return (
+                      <div
+                        key={app.id}
+                        className={`rounded-lg border border-border/40 transition p-4 bg-card
+                          ${!app.has_access ? "opacity-60 grayscale cursor-not-allowed" : "hover:border-border hover:shadow-lg"}
+                        `}
+                      >
+                        <div className="flex items-start gap-3 mb-4">
+                          <div
+                            className="h-12 w-12 rounded-lg flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: app.color }}
+                          >
+                            {Icon ? (
+                              <Icon className="h-6 w-6 text-white" />
+                            ) : (
+                              <span className="text-white font-semibold">
+                                {app.code}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold truncate">
+                              {app.code}
+                            </h3>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {app.name}
+                            </p>
+                            {app.role ? (
+                              <span className="text-xs text-muted-foreground">
+                                Role: {app.role.name}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                <div className="min-h-4"></div>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          className="w-full h-9 text-xs"
+                          variant={app.has_access ? "default" : "outline"}
+                          disabled={!app.has_access}
+                          onClick={() => openApplication(app.code)}
+                        >
+                          <span className="flex items-center gap-1.5">
+                            {app.has_access ? (
+                              <>
+                                <span>Open Application</span>
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="h-3.5 w-3.5" />
+                                <span>No Access</span>
+                              </>
+                            )}
+                          </span>
+                        </Button>
+
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full flex flex-col items-center py-16 text-muted-foreground">
+                    <Calendar className="h-12 w-12 mb-3 opacity-20" />
+                    <p className="text-sm">No applications available</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </Card>
+      </div>
+
       {/* Quick Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        {/* Total Applications */}
+      <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-4 gap-4 mb-6">
+        {/* Accessible Application */}
         <Card className="border-border/40 hover:border-border transition-colors">
           <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-1">Accessable Application</p>
-                <h3 className="text-2xl font-bold text-foreground">
-                  {loading ? <Skeleton className="h-8 w-16" /> : accessibleCount}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                  <Clock className="h-3 w-3 text-primary" />
-                  <span>
-                    Applications
-                  </span>
-                </p>
-
-              </div>
-              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg, #1e50c8 0%, #4f8ef7 100%)' }}>
+                <svg className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                 </svg>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Accessible Application</p>
+                <h3 className="text-3xl font-bold text-foreground tracking-tight mt-0.5">
+                  {loading ? <Skeleton className="h-9 w-16" /> : accessibleCount}
+                </h3>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* My Pending Approval */}
-        <Link href="/approvals" className="block">
-          <Card
-            className="
-                border-border/40 
-                hover:border-border 
-                hover:shadow-sm 
-                transition-all
-                cursor-pointer
-                focus-within:ring-2 
-                focus-within:ring-primary
-                group
-              "
-          >
+        <Link href="/approvals" className="block group">
+          <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all cursor-pointer">
             <CardContent className="p-5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #1565c0 0%, #42a5f5 100%)' }}>
+                  <Clock className="h-7 w-7 text-white" />
+                </div>
                 <div className="flex-1">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">
-                    My Pending Approval
-                  </p>
-
-                  <h3 className="text-2xl font-bold text-foreground">
-                    {loading ? <Skeleton className="h-8 w-16" /> : myPendingApprovals}
+                  <p className="text-sm text-muted-foreground">My Pending Approval</p>
+                  <h3 className="text-3xl font-bold text-foreground tracking-tight mt-0.5">
+                    {loading ? <Skeleton className="h-9 w-16" /> : myPendingApprovals}
                   </h3>
-
-                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                    <Clock className="h-3 w-3 text-primary" />
-                    <span>Approvals</span>
-                  </p>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Clock className="h-6 w-6 text-primary" />
-                  </div>
-
-                  {/* Visual hint kalau ini navigasi */}
-                  <ChevronRight
-                    className="
-                        h-5 w-5 
-                        text-muted-foreground
-                        opacity-0 
-                        -translate-x-1
-                        group-hover:opacity-100 
-                        group-hover:translate-x-0
-                        transition-all
-                      "
-                  />
-                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
         </Link>
 
-        {/* My Pending Requests */}
-        <Link href="/requests" className="block">
-          <Card
-            className="
-                border-border/40 
-                hover:border-border 
-                hover:shadow-sm 
-                transition-all
-                cursor-pointer
-                focus-within:ring-2 
-                focus-within:ring-primary
-                group
-              "
-          >
+        {/* My On Going Requests */}
+        <Link href="/requests" className="block group">
+          <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all cursor-pointer">
             <CardContent className="p-5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #0d47a1 0%, #1e88e5 100%)' }}>
+                  <Clock className="h-7 w-7 text-white" />
+                </div>
                 <div className="flex-1">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">
-                    My On Going Requests
-                  </p>
-
-                  <h3 className="text-2xl font-bold text-foreground">
-                    {loading ? <Skeleton className="h-8 w-16" /> : myPendingRequests}
+                  <p className="text-sm text-muted-foreground">My On Going Requests</p>
+                  <h3 className="text-3xl font-bold text-foreground tracking-tight mt-0.5">
+                    {loading ? <Skeleton className="h-9 w-16" /> : myPendingRequests}
                   </h3>
-
-                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                    <Clock className="h-3 w-3 text-primary" />
-                    <span>Requests</span>
-                  </p>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Clock className="h-6 w-6 text-primary" />
-                  </div>
-
-                  <ChevronRight
-                    className="
-                      h-5 w-5 
-                      text-muted-foreground
-                      opacity-0 
-                      -translate-x-1
-                      group-hover:opacity-100 
-                      group-hover:translate-x-0
-                      transition-all
-                    "
-                  />
-                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
         </Link>
 
         {/* Last Activity */}
-        <Card className="border-border/40 hover:border-border transition-colors">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-1">Last Activity</p>
-                <h3 className="text-2xl font-bold text-foreground">
-                  {loading ? (
-                    <Skeleton className="h-8 w-24" />
-                  ) : (
-                    timeAgo(lastLoginAt)
-                  )}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                  <Clock className="h-3 w-3 text-primary" />
-                  <span>
-                    {loading
-                      ? "..."
-                      : lastLoginAt
-                        ? "Previous login"
-                        : "No previous activity"}
-                  </span>
-                </p>
-              </div>
-              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-primary" />
-              </div>
+        <div className="relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between min-h-[130px]"
+          style={{ background: 'linear-gradient(135deg, #1a237e 0%, #3949ab 100%)' }}>
+          <div className="absolute w-24 h-24 rounded-full bottom-[-28px] right-[-20px]"
+            style={{ background: 'rgba(255,255,255,0.07)' }} />
+
+          {/* Top: icon + label sejajar */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'rgba(255,255,255,0.18)' }}>
+              <Clock className="h-5 w-5 text-white" />
             </div>
-          </CardContent>
-        </Card>
+            <p className="text-sm font-medium text-white">Last Activity</p>
+          </div>
+
+          {/* Bottom: angka + sub-label */}
+          <div>
+            <h3 className="text-4xl font-bold text-white tracking-tight">
+              {loading ? <Skeleton className="h-10 w-24 bg-white/20" /> : timeAgo(lastLoginAt)}
+            </h3>
+            <p className="text-xs mt-2 flex items-center gap-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
+              <Clock className="h-3 w-3" />
+              <span>{loading ? '...' : lastLoginAt ? 'Previous login' : 'No previous activity'}</span>
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[30%_1fr] gap-6">
         {/* NOTIFICATIONS */}
         <Card className="flex flex-col border-border/40">
           <CardHeader className="border-b border-border/40">
@@ -621,130 +673,132 @@ export default function DashboardPage() {
         </Card>
 
         {/* APPLICATIONS */}
-        <Card className="flex-1 border-border/40">
-          <CardHeader className="border-b border-border/40">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                  </svg>
-                </div>
-                <div>
-                  <CardTitle className="text-base font-semibold">Applications</CardTitle>
-                  <CardDescription className="text-xs">Access your available applications</CardDescription>
-                </div>
-              </div>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem onClick={() => setFilter("accessible")}>
-                    Accessible
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilter("not_accessible")}>
-                    Not Accessible
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilter("all")}>
-                    View All
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </CardHeader>
-
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {loading ? (
-                Array.from({ length: 6 }).map((_, idx) => (
-                  <div key={idx} className="rounded-lg border border-border/40 p-4">
-                    <Skeleton className="h-12 w-12 rounded-lg mb-3" />
-                    <Skeleton className="h-4 w-3/4 mb-2" />
-                    <Skeleton className="h-9 w-full" />
+        <div className="hidden xl:block">
+          <Card className="flex-1 border-border/40">
+            <CardHeader className="border-b border-border/40">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
                   </div>
-                ))
-              ) : filteredApplications.length > 0 ? (
-                filteredApplications.map((app) => {
-                  const Icon = (Icons as unknown as Record<string, LucideIcon>)[
-                    app.icon?.charAt(0).toUpperCase() + app.icon?.slice(1)
-                  ];
-
-                  return (
-                    <div
-                      key={app.id}
-                      className={`rounded-lg border border-border/40 transition p-4 bg-card
-                        ${!app.has_access ? "opacity-60 grayscale cursor-not-allowed" : "hover:border-border hover:shadow-lg"}
-                      `}
-                    >
-                      <div className="flex items-start gap-3 mb-4">
-                        <div
-                          className="h-12 w-12 rounded-lg flex items-center justify-center shrink-0"
-                          style={{ backgroundColor: app.color }}
-                        >
-                          {Icon ? (
-                            <Icon className="h-6 w-6 text-white" />
-                          ) : (
-                            <span className="text-white font-semibold">
-                              {app.code}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold truncate">
-                            {app.code}
-                          </h3>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {app.name}
-                          </p>
-                          {app.role ? (
-                            <span className="text-xs text-muted-foreground">
-                              Role: {app.role.name}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">
-                              <div className="min-h-4"></div>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <Button
-                        className="w-full h-9 text-xs"
-                        variant={app.has_access ? "default" : "outline"}
-                        disabled={!app.has_access}
-                        onClick={() => openApplication(app.code)}
-                      >
-                        <span className="flex items-center gap-1.5">
-                          {app.has_access ? (
-                            <>
-                              <span>Open Application</span>
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </>
-                          ) : (
-                            <>
-                              <Lock className="h-3.5 w-3.5" />
-                              <span>No Access</span>
-                            </>
-                          )}
-                        </span>
-                      </Button>
-
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="col-span-full flex flex-col items-center py-16 text-muted-foreground">
-                  <Calendar className="h-12 w-12 mb-3 opacity-20" />
-                  <p className="text-sm">No applications available</p>
+                  <div>
+                    <CardTitle className="text-base font-semibold">Applications</CardTitle>
+                    <CardDescription className="text-xs">Access your available applications</CardDescription>
+                  </div>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem onClick={() => setFilter("accessible")}>
+                      Accessible
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setFilter("not_accessible")}>
+                      Not Accessible
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setFilter("all")}>
+                      View All
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardHeader>
+
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-3 gap-4">
+                {loading ? (
+                  Array.from({ length: 6 }).map((_, idx) => (
+                    <div key={idx} className="rounded-lg border border-border/40 p-4">
+                      <Skeleton className="h-12 w-12 rounded-lg mb-3" />
+                      <Skeleton className="h-4 w-3/4 mb-2" />
+                      <Skeleton className="h-9 w-full" />
+                    </div>
+                  ))
+                ) : filteredApplications.length > 0 ? (
+                  filteredApplications.map((app) => {
+                    const Icon = (Icons as unknown as Record<string, LucideIcon>)[
+                      app.icon?.charAt(0).toUpperCase() + app.icon?.slice(1)
+                    ];
+
+                    return (
+                      <div
+                        key={app.id}
+                        className={`rounded-lg border border-border/40 transition p-4 bg-card
+                          ${!app.has_access ? "opacity-60 grayscale cursor-not-allowed" : "hover:border-border hover:shadow-lg"}
+                        `}
+                      >
+                        <div className="flex items-start gap-3 mb-4">
+                          <div
+                            className="h-12 w-12 rounded-lg flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: app.color }}
+                          >
+                            {Icon ? (
+                              <Icon className="h-6 w-6 text-white" />
+                            ) : (
+                              <span className="text-white font-semibold">
+                                {app.code}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold truncate">
+                              {app.code}
+                            </h3>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {app.name}
+                            </p>
+                            {app.role ? (
+                              <span className="text-xs text-muted-foreground">
+                                Role: {app.role.name}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                <div className="min-h-4"></div>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          className="w-full h-9 text-xs"
+                          variant={app.has_access ? "default" : "outline"}
+                          disabled={!app.has_access}
+                          onClick={() => openApplication(app.code)}
+                        >
+                          <span className="flex items-center gap-1.5">
+                            {app.has_access ? (
+                              <>
+                                <span>Open Application</span>
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="h-3.5 w-3.5" />
+                                <span>No Access</span>
+                              </>
+                            )}
+                          </span>
+                        </Button>
+
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full flex flex-col items-center py-16 text-muted-foreground">
+                    <Calendar className="h-12 w-12 mb-3 opacity-20" />
+                    <p className="text-sm">No applications available</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </main>
   );

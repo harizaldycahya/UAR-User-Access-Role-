@@ -77,8 +77,15 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
     React.useEffect(() => setMounted(true), []);
 
     React.useEffect(() => {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) setUser(JSON.parse(storedUser));
+        const fetchMe = async () => {
+            try {
+                const res = await apiAxios.get("/auth/me");
+                setUser(res.data?.user);
+            } catch {
+                // 401 → apiAxios interceptor sudah auto-redirect ke /login
+            }
+        };
+        fetchMe();
     }, []);
 
     React.useEffect(() => {
@@ -114,8 +121,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
         try { await apiAxios.post("/auth/logout"); }
         catch (e) { console.error(e); }
         finally {
-            document.cookie = "token=; path=/; max-age=0";
-            localStorage.removeItem("token");
+            document.cookie = "token=; path=/; max-age=0"; // backup clear cookie di client
             window.location.href = "/login";
         }
     };
@@ -168,7 +174,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
             {
                 label: "Request Approval",
                 items: [
-                    { label: "Approval Pending", icon: <Clock className="h-4.5 w-4.5" />, href: "/approvals?status=pending"},
+                    { label: "Approval Pending", icon: <Clock className="h-4.5 w-4.5" />, href: "/approvals?status=pending" },
                     { label: "History Approvals", icon: <CheckCircle className="h-4.5 w-4.5" />, href: "/approvals?status=history" },
                 ],
             },
@@ -344,7 +350,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                         </div>
                     </header>
 
-                    <main className="flex-1 p-8">{children}</main>
+                    <main className="flex-1 p-1">{children}</main>
 
                     <footer className="shrink-0 border-t border-border/40 bg-card/60">
                         <div className="flex items-center justify-between px-8 py-4 text-xs text-muted-foreground">
@@ -352,7 +358,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                             <div className="flex items-center gap-4">
                                 <span>v1.0.0</span>
                                 <span className="opacity-40">•</span>
-                                <span>Last update: 15 Jan 2025</span>
+                                <span>Last update: 05 May 2026</span>
                             </div>
                         </div>
                     </footer>

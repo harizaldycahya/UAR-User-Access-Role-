@@ -120,13 +120,6 @@ export default function CreateRequestsPage() {
     }
   }
 
-
-  // auth
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) router.replace("/login");
-  }, []);
-
   // load applications
   useEffect(() => {
     const load = async () => {
@@ -345,7 +338,7 @@ export default function CreateRequestsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-background p-6">
+    <main className="min-h-screen bg-background p-3 sm:p-6">
       <div className="max-w-7xl">
         {/* Header */}
         <div className="mb-8">
@@ -369,33 +362,30 @@ export default function CreateRequestsPage() {
                 <div key={s.id} className="flex items-center flex-1 last:flex-none">
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                        isCompleted || isActive
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${isCompleted || isActive
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted text-muted-foreground"
-                      }`}
+                        }`}
                     >
                       {isCompleted ? (
-                        <Check className="w-5 h-5" />
+                        <Check className="w-4 h-4 sm:w-5 sm:h-5" />
                       ) : (
-                        <Icon className="w-5 h-5" />
+                        <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                       )}
                     </div>
                     <div className="mt-2 text-center">
                       <p
-                        className={`text-xs font-medium transition-colors whitespace-nowrap ${
-                          isActive || isCompleted ? "text-foreground" : "text-muted-foreground"
-                        }`}
+                        className={`text-xs font-medium transition-colors whitespace-nowrap ${isActive || isCompleted ? "text-foreground" : "text-muted-foreground"
+                          }`}
                       >
-                        {s.title}
+                        <span className="hidden sm:inline">{s.title}</span>
                       </p>
                     </div>
                   </div>
                   {idx < steps.length - 1 && (
                     <div
-                      className={`h-0.5 flex-1 mx-4 transition-colors duration-300 self-start mt-5 ${
-                        step > s.id ? "bg-primary" : "bg-border"
-                      }`}
+                      className={`h-0.5 flex-1 mx-4 transition-colors duration-300 self-start mt-5 ${step > s.id ? "bg-primary" : "bg-border"
+                        }`}
                     />
                   )}
                 </div>
@@ -418,7 +408,7 @@ export default function CreateRequestsPage() {
             </p>
           </CardHeader>
 
-          <CardContent className="p-8 min-h-80">
+          <CardContent className="p-4 sm:p-8 min-h-80">
             {/* STEP 1 */}
             {step === 1 && (
               <div className="space-y-3">
@@ -433,11 +423,10 @@ export default function CreateRequestsPage() {
                     onClick={() =>
                       setForm((prev) => ({ ...prev, requestType: "application_access" }))
                     }
-                    className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${
-                      form.requestType === "application_access"
+                    className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${form.requestType === "application_access"
                         ? "border-primary bg-primary/10"
                         : "border-border hover:border-muted-foreground/30 bg-card"
-                    }`}
+                      }`}
                   >
                     <RadioGroupItem
                       value="application_access"
@@ -456,11 +445,10 @@ export default function CreateRequestsPage() {
                     onClick={() =>
                       setForm((prev) => ({ ...prev, requestType: "change_role" }))
                     }
-                    className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${
-                      form.requestType === "change_role"
+                    className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${form.requestType === "change_role"
                         ? "border-primary bg-primary/10"
                         : "border-border hover:border-muted-foreground/30 bg-card"
-                    }`}
+                      }`}
                   >
                     <RadioGroupItem
                       value="change_role"
@@ -662,73 +650,73 @@ export default function CreateRequestsPage() {
                   <h3 className="font-medium text-foreground text-base">Request Summary</h3>
 
                   <div className="space-y-3">
-                    <div className="flex items-start">
-                      <div className="w-32 text-sm text-muted-foreground">Request Type</div>
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-0.5 sm:gap-0">
+                      <div className="sm:w-32 text-xs sm:text-sm text-muted-foreground shrink-0">Request Type</div>
                       <div className="flex-1 text-sm text-foreground">
                         {form.requestType === "application_access" ? "Application Access" : "Role Change"}
                       </div>
                     </div>
 
-                    <div className="flex items-start">
-                      <div className="w-32 text-sm text-muted-foreground">Application</div>
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-0.5 sm:gap-0">
+                      <div className="sm:w-32 text-xs sm:text-sm text-muted-foreground shrink-0">Application</div>
                       <div className="flex-1 text-sm text-foreground">{app?.name ?? "-"}</div>
                     </div>
 
                     {form.requestType === "application_access" ? (
                       <>
                         {app?.role_mode === "dynamic" ? (
-                          <div className="flex items-start">
-                            <div className="w-32 text-sm text-muted-foreground">Notes</div>
+                          <div className="flex flex-col sm:flex-row sm:items-start gap-0.5 sm:gap-0">
+                            <div className="sm:w-32 text-xs sm:text-sm text-muted-foreground shrink-0">Notes</div>
                             <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">{form.notes}</div>
                           </div>
                         ) : (
-                          <div className="flex items-start">
-                            <div className="w-32 text-sm text-muted-foreground">Requested Role</div>
+                          <div className="flex flex-col sm:flex-row sm:items-start gap-0.5 sm:gap-0">
+                            <div className="sm:w-32 text-xs sm:text-sm text-muted-foreground shrink-0">Requested Role</div>
                             <div className="flex-1 text-sm text-foreground">{getRoleName(form.role)}</div>
                           </div>
                         )}
                         {isAms && (
-                          <div className="flex items-start">
-                            <div className="w-32 text-sm text-muted-foreground">Location</div>
+                          <div className="flex flex-col sm:flex-row sm:items-start gap-0.5 sm:gap-0">
+                            <div className="sm:w-32 text-xs sm:text-sm text-muted-foreground shrink-0">Location</div>
                             <div className="flex-1 text-sm text-foreground">{getLocationName(form.location)}</div>
                           </div>
                         )}
-                        <div className="flex items-start">
-                          <div className="w-32 text-sm text-muted-foreground">Justification</div>
+                        <div className="flex flex-col sm:flex-row sm:items-start gap-0.5 sm:gap-0">
+                          <div className="sm:w-32 text-xs sm:text-sm text-muted-foreground shrink-0">Justification</div>
                           <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">{form.justification}</div>
                         </div>
                       </>
                     ) : (
                       <>
-                        <div className="flex items-start">
-                          <div className="w-32 text-sm text-muted-foreground">Current Role</div>
+                        <div className="flex flex-col sm:flex-row sm:items-start gap-0.5 sm:gap-0">
+                          <div className="sm:w-32 text-xs sm:text-sm text-muted-foreground shrink-0">Current Role</div>
                           <div className="flex-1 text-sm text-foreground">{app?.role?.name ?? "-"}</div>
                         </div>
                         {app?.role_mode === "dynamic" ? (
-                          <div className="flex items-start">
-                            <div className="w-32 text-sm text-muted-foreground">Notes</div>
+                          <div className="flex flex-col sm:flex-row sm:items-start gap-0.5 sm:gap-0">
+                            <div className="sm:w-32 text-xs sm:text-sm text-muted-foreground shrink-0">Notes</div>
                             <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">{form.notes}</div>
                           </div>
                         ) : (
-                          <div className="flex items-start">
-                            <div className="w-32 text-sm text-muted-foreground">New Role</div>
+                          <div className="flex flex-col sm:flex-row sm:items-start gap-0.5 sm:gap-0">
+                            <div className="sm:w-32 text-xs sm:text-sm text-muted-foreground shrink-0">New Role</div>
                             <div className="flex-1 text-sm text-foreground">{getRoleName(form.newRole)}</div>
                           </div>
                         )}
                         {isAms && (
                           <>
-                            <div className="flex items-start">
-                              <div className="w-32 text-sm text-muted-foreground">Current Location</div>
+                            <div className="flex flex-col sm:flex-row sm:items-start gap-0.5 sm:gap-0">
+                              <div className="sm:w-32 text-xs sm:text-sm text-muted-foreground shrink-0">Current Location</div>
                               <div className="flex-1 text-sm text-foreground">{app?.location?.name ?? "-"}</div>
                             </div>
-                            <div className="flex items-start">
-                              <div className="w-32 text-sm text-muted-foreground">New Location</div>
+                            <div className="flex flex-col sm:flex-row sm:items-start gap-0.5 sm:gap-0">
+                              <div className="sm:w-32 text-xs sm:text-sm text-muted-foreground shrink-0">New Location</div>
                               <div className="flex-1 text-sm text-foreground">{getLocationName(form.newLocation)}</div>
                             </div>
                           </>
                         )}
-                        <div className="flex items-start">
-                          <div className="w-32 text-sm text-muted-foreground">Justification</div>
+                        <div className="flex flex-col sm:flex-row sm:items-start gap-0.5 sm:gap-0">
+                          <div className="sm:w-32 text-xs sm:text-sm text-muted-foreground shrink-0">Justification</div>
                           <div className="flex-1 text-sm text-foreground whitespace-pre-wrap">{form.justification}</div>
                         </div>
                       </>
@@ -747,12 +735,12 @@ export default function CreateRequestsPage() {
 
           {/* Navigation */}
           <div className="border-t border-border px-6 py-4 bg-muted/30">
-            <div className="flex justify-between">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2 sm:gap-0">
               <Button
                 variant="outline"
                 disabled={step === 1}
                 onClick={() => setStep(step - 1)}
-                className="min-w-25"
+                className="w-full sm:w-auto sm:min-w-25"
               >
                 Back
               </Button>
@@ -761,21 +749,23 @@ export default function CreateRequestsPage() {
                 <Button
                   onClick={() => setStep(step + 1)}
                   disabled={!canProceed()}
-                  className="min-w-25"
+                  className="w-full sm:w-auto sm:min-w-25"
                 >
                   Next
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                   <Button
                     variant="outline"
                     onClick={() => setStep(1)}
-                    className="min-w-25"
+                    className="w-full sm:w-auto sm:min-w-25"
                   >
                     Cancel
                   </Button>
-                  <Button onClick={submitRequest}>Submit Request</Button>
+                  <Button onClick={submitRequest} className="w-full sm:w-auto">
+                    Submit Request
+                  </Button>
                 </div>
               )}
             </div>

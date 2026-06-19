@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "UAR Portal",
-  description: "User Access Role Management System",
+  title: "Advance Portal Triasmitra",
+  description: "Advance Portal & User Access Role Management System",
 };
 
 export default function RootLayout({

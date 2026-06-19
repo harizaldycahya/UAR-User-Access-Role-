@@ -568,7 +568,7 @@ export const redirectToApplication = async (req, res) => {
       baseUrl = "https://helpdesk.triasmitra.com";
       token = "9fA7kLm2QxP8vZr4Tn6YwB1cHdE5uJ0s";
     } else if (code === "campers") {
-      baseUrl = "https://campers.triasmitra.com";
+      baseUrl = "https://rms.triasmitra.com";
       token = "ddMhiXpxw0pAEuX2FXSzsaC5kN9yZM2qz8eBGby6oL3gYFh4WWM8ZEnNVHFNRHOr";
     } else if (code === "das") {
       baseUrl = "https://das.triasmitra.com";
@@ -666,3 +666,4 @@ export const redirectToApplication = async (req, res) => {
     });
   }
 };
+
