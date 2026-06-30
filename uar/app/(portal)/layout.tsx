@@ -256,7 +256,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-bold tracking-wide text-sidebar-foreground">TRIASMITRA</p>
-                                    <p className="text-[10px] font-semibold tracking-widest uppercase text-sidebar-foreground/50">User Access Role</p>
+                                    <p className="text-[10px] font-semibold tracking-widest uppercase text-sidebar-foreground/50">Applications Portal</p>
                                 </div>
                             </div>
                         </div>
@@ -287,7 +287,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
 
                 {/* ===== MAIN ===== */}
                 <SidebarInset className="flex flex-col flex-1 min-h-screen">
-                    <header className="shrink-0 flex h-20 items-center gap-6 border-b border-border/60 dark:border-white/5 px-6 bg-card/80 dark:bg-card/50 backdrop-blur-sm">
+                    <header className="z-30 shrink-0 flex h-20 items-center gap-6 border-b border-border/60 dark:border-white/5 px-6 bg-card/80 dark:bg-card/50 backdrop-blur-sm">
                         <SidebarTrigger className="h-10 w-10 rounded-lg hover:bg-accent transition-colors" />
 
                         {mounted && segments.length > 0 && (
@@ -393,10 +393,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                     {/* Brand text */}
                     <div className="flex flex-col items-center gap-1">
                         <p className="text-sm font-bold tracking-[0.2em] uppercase text-foreground">
-                            Triasmitra
+                            Ketrosden Triasmitra
                         </p>
                         <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground">
-                            User Access Role
+                            Applications Portal
                         </p>
                     </div>
 

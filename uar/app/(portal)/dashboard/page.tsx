@@ -13,7 +13,9 @@ import {
 import {
   MoreVertical, Calendar, ExternalLink,
   Bell, CheckCircle2, Lock, Clock,
-  ChevronRight
+  ChevronRight,
+  LayoutGrid,
+  RefreshCw
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,6 +28,8 @@ import * as Icons from "lucide-react";
 import { LucideIcon } from "lucide-react";
 import { apiAxios } from "@/lib/api";
 import Link from "next/link";
+
+import { InsightCard } from "@/components/ui/insight-card";
 
 interface Role {
   id: number;
@@ -83,8 +87,6 @@ interface MyApproval {
   application_name: string;
   new_role_name: string | null;
 }
-
-
 
 export default function DashboardPage() {
   const [lastLoginAt, setlastLoginAt] = React.useState<string | null>(null);
@@ -296,10 +298,66 @@ export default function DashboardPage() {
     return "Just now";
   }
 
+  // Notifications
+  const redirectViaSSO = async (code: string, fallbackUrl?: string | null) => {
+    try {
+      const res = await apiAxios.get(`/applications/${code.toLowerCase()}/redirect`);
+
+      const redirectUrl = res.data?.data?.redirect_url;
+
+      if (redirectUrl) {
+        window.open(redirectUrl, "_blank", "noopener,noreferrer");
+      } else {
+        console.error("Redirect URL tidak ditemukan:", res.data);
+        if (fallbackUrl) window.open(normalizeUrl(fallbackUrl), "_blank", "noopener,noreferrer");
+      }
+    } catch (err: any) {
+      console.error("SSO redirect error", err);
+
+      if (err.response?.status === 403) {
+        alert("Anda tidak memiliki akses ke aplikasi ini");
+      } else if (fallbackUrl) {
+        window.open(normalizeUrl(fallbackUrl), "_blank", "noopener,noreferrer");
+      }
+    }
+  };
+
+  const handleNotificationClick = async (notification: Notification) => {
+    if (markingId === notification.id) return;
+
+    const hasAccess = getAppAccess(notification.app_code);
+    if (!hasAccess) return; // langsung stop, nggak bisa diklik
+
+    setMarkingId(notification.id);
+
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.id === notification.id ? { ...n, is_read: 1 } : n
+      )
+    );
+
+    try {
+      await markAsRead(notification.id);
+    } catch (err) {
+      console.error("Failed to mark as read", err);
+    } finally {
+      setMarkingId(null);
+    }
+
+    await redirectViaSSO(notification.app_code, notification.url);
+  };
+
+  const getAppAccess = (appCode: string) => {
+    const app = applications.find(
+      (a) => a.code?.toLowerCase() === appCode?.toLowerCase()
+    );
+    return app?.has_access ?? false;
+  };
+
   return (
     <main className="min-h-screen bg-background p-6">
 
-      <h1 className="text-3xl font-semibold text-foreground mb-2">
+      <h1 className="text-5xl font-semibold text-foreground mb-2">
         Dashboard
       </h1>
       <p className="text-muted-foreground text-sm">
@@ -438,95 +496,47 @@ export default function DashboardPage() {
 
       {/* Quick Insights */}
       <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-4 gap-4 mb-6">
-        {/* Accessible Application */}
-        <Card className="border-border/40 hover:border-border transition-colors">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #1e50c8 0%, #4f8ef7 100%)' }}>
-                <svg className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Accessible Application</p>
-                <h3 className="text-3xl font-bold text-foreground tracking-tight mt-0.5">
-                  {loading ? <Skeleton className="h-9 w-16" /> : accessibleCount}
-                </h3>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* My Pending Approval */}
-        <Link href="/approvals" className="block group">
-          <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all cursor-pointer">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'linear-gradient(135deg, #1565c0 0%, #42a5f5 100%)' }}>
-                  <Clock className="h-7 w-7 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">My Pending Approval</p>
-                  <h3 className="text-3xl font-bold text-foreground tracking-tight mt-0.5">
-                    {loading ? <Skeleton className="h-9 w-16" /> : myPendingApprovals}
-                  </h3>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 flex-shrink-0" />
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* My On Going Requests */}
-        <Link href="/requests" className="block group">
-          <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all cursor-pointer">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'linear-gradient(135deg, #0d47a1 0%, #1e88e5 100%)' }}>
-                  <Clock className="h-7 w-7 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">My On Going Requests</p>
-                  <h3 className="text-3xl font-bold text-foreground tracking-tight mt-0.5">
-                    {loading ? <Skeleton className="h-9 w-16" /> : myPendingRequests}
-                  </h3>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 flex-shrink-0" />
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* Last Activity */}
-        <div className="relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between min-h-[130px]"
-          style={{ background: 'linear-gradient(135deg, #1a237e 0%, #3949ab 100%)' }}>
-          <div className="absolute w-24 h-24 rounded-full bottom-[-28px] right-[-20px]"
-            style={{ background: 'rgba(255,255,255,0.07)' }} />
-
-          {/* Top: icon + label sejajar */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(255,255,255,0.18)' }}>
-              <Clock className="h-5 w-5 text-white" />
-            </div>
-            <p className="text-sm font-medium text-white">Last Activity</p>
-          </div>
-
-          {/* Bottom: angka + sub-label */}
-          <div>
-            <h3 className="text-4xl font-bold text-white tracking-tight">
-              {loading ? <Skeleton className="h-10 w-24 bg-white/20" /> : timeAgo(lastLoginAt)}
-            </h3>
-            <p className="text-xs mt-2 flex items-center gap-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
-              <Clock className="h-3 w-3" />
-              <span>{loading ? '...' : lastLoginAt ? 'Previous login' : 'No previous activity'}</span>
-            </p>
-          </div>
-        </div>
+        <InsightCard
+          layout="icon-stacked"
+          icon={<LayoutGrid className="h-5 w-5 text-white" />}
+          gradient="linear-gradient(135deg, #1a237e 0%, #3949ab 100%)"
+          label="Accessible Application"
+          value={`${accessibleCount} Apps`}
+          subLabel="Apps you can access"
+          subIcon={<LayoutGrid className="h-3 w-3" />}
+          loading={loading}
+        />
+        <InsightCard
+          layout="icon-stacked"
+          variant="gradient"
+          icon={<Clock className="h-5 w-5 text-white" />}
+          gradient="linear-gradient(135deg, #1a237e 0%, #3949ab 100%)"
+          label="My Pending Approval"
+          value={`${myPendingApprovals} Approval`}
+          subLabel="Waiting for your action"
+          subIcon={<Clock className="h-3 w-3" />}
+          loading={loading}
+        />
+        <InsightCard
+          layout="icon-stacked"
+          icon={<RefreshCw className="h-5 w-5 text-white" />}
+          gradient="linear-gradient(135deg, #0f6e56 0%, #1d9e75 100%)"
+          label="My On Going Requests"
+          value={`${myPendingRequests} Requests`}
+          subLabel="Currently in progress"
+          subIcon={<RefreshCw className="h-3 w-3" />}
+          loading={loading}
+        />
+        <InsightCard
+          layout="icon-stacked"
+          icon={<Clock className="h-5 w-5 text-white" />}
+          gradient="linear-gradient(135deg, #444441 0%, #888780 100%)"
+          label="Last Activity"
+          value={timeAgo(lastLoginAt)}
+          subLabel="Previous login"
+          subIcon={<Clock className="h-3 w-3" />}
+          loading={loading}
+        />
       </div>
 
       {/* Main Content */}
@@ -584,85 +594,67 @@ export default function DashboardPage() {
                 </div>
               ))
             ) : filteredNotifications && filteredNotifications.length > 0 ? (
-              filteredNotifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`
-                    group rounded-lg border border-border/40 transition-all duration-200 p-3 cursor-pointer
-                    hover:border-border hover:bg-accent/50
-                    ${notification.is_read === 0 ? "bg-accent/30" : "opacity-70"}
-                  `}
-                  onClick={async () => {
-                    if (markingId === notification.id) return; // prevent double click
+              filteredNotifications.map((notification) => {
+                const hasAccess = getAppAccess(notification.app_code);
 
-                    setMarkingId(notification.id);
-
-                    // Optimistic UI
-                    setNotifications((prev) =>
-                      prev.map((n) =>
-                        n.id === notification.id
-                          ? { ...n, is_read: 1 }
-                          : n
-                      )
-                    );
-
-                    try {
-                      await markAsRead(notification.id);
-                    } catch (err) {
-                      console.error("Failed to mark as read", err);
-                      // Optional: revert UI kalau mau super strict
-                    } finally {
-                      setMarkingId(null);
-                    }
-
-                    // Redirect
-                    if (notification.url) {
-                      window.location.href = normalizeUrl(notification.url);
-                    }
-                  }}
-
-
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center text-primary text-xs font-semibold shrink-0">
-                      {notification.app_code}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <p
-                          className={`text-sm truncate ${notification.is_read === 0
-                            ? "font-semibold text-foreground"
-                            : "font-normal text-muted-foreground"
-                            }`}
-                        >
-                          {notification.app_code}
-                        </p>
-
-                        {notification.is_read === 0 && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
-                        )}
+                return (
+                  <div
+                    key={notification.id}
+                    className={`
+                      group rounded-lg border border-border/40 transition-all duration-200 p-3
+                      ${hasAccess ? "cursor-pointer hover:border-border hover:bg-accent/50" : "opacity-60 grayscale cursor-not-allowed"}
+                      ${notification.is_read === 0 ? "bg-accent/30" : "opacity-70"}
+                    `}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center text-primary text-xs font-semibold shrink-0">
+                        {notification.app_code}
                       </div>
 
-                      <p
-                        className={`text-xs line-clamp-2 mb-2 ${notification.is_read === 0
-                          ? "text-muted-foreground"
-                          : "text-muted-foreground/70"
-                          }`}
-                      >
-                        {notification.content}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <p
+                            className={`text-sm truncate ${notification.is_read === 0
+                              ? "font-semibold text-foreground"
+                              : "font-normal text-muted-foreground"
+                              }`}
+                          >
+                            {notification.app_code}
+                          </p>
 
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        <span>
-                          {new Date(notification.notification_date).toLocaleString()}
-                        </span>
+                          {notification.is_read === 0 && (
+                            <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
+                          )}
+                        </div>
+
+                        <p
+                          className={`text-xs line-clamp-2 mb-2 ${notification.is_read === 0
+                            ? "text-muted-foreground"
+                            : "text-muted-foreground/70"
+                            }`}
+                        >
+                          {notification.content}
+                        </p>
+
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          <span>
+                            {new Date(notification.notification_date).toLocaleString()}
+                          </span>
+                        </div>
+
+                        {!hasAccess && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                            <Lock className="h-3 w-3" />
+                            <span>No Access</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                 <Bell className="h-12 w-12 mb-3 opacity-20" />
@@ -729,13 +721,43 @@ export default function DashboardPage() {
                     return (
                       <div
                         key={app.id}
-                        className={`rounded-lg border border-border/40 transition p-4 bg-card
-                          ${!app.has_access ? "opacity-60 grayscale cursor-not-allowed" : "hover:border-border hover:shadow-lg"}
-                        `}
+                        role="button"
+                        tabIndex={app.has_access ? 0 : -1}
+                        onClick={() => app.has_access && openApplication(app.code)}
+                        onKeyDown={(e) => {
+                          if (app.has_access && (e.key === "Enter" || e.key === " ")) {
+                            e.preventDefault();
+                            openApplication(app.code);
+                          }
+                        }}
+                        style={
+                          app.has_access
+                            ? ({ "--app-color": app.color } as React.CSSProperties)
+                            : undefined
+                        }
+                        className={`group relative rounded-lg border p-4 bg-card overflow-hidden
+                  transition-all duration-300 ease-out
+                  ${app.has_access
+                            ? `cursor-pointer border-border/40 hover:-translate-y-1
+                         hover:shadow-xl hover:border-[var(--app-color)]
+                         focus-visible:outline-none focus-visible:ring-2
+                         focus-visible:ring-[var(--app-color)] focus-visible:ring-offset-2`
+                            : "opacity-60 grayscale cursor-not-allowed border-border/40"
+                          }
+                `}
                       >
-                        <div className="flex items-start gap-3 mb-4">
+                        {/* Colorful glow on hover */}
+                        {app.has_access && (
                           <div
-                            className="h-12 w-12 rounded-lg flex items-center justify-center shrink-0"
+                            className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300"
+                            style={{ backgroundColor: app.color }}
+                          />
+                        )}
+
+                        <div className="relative flex items-start gap-3 mb-4">
+                          <div
+                            className="h-12 w-12 rounded-lg flex items-center justify-center shrink-0
+                      transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
                             style={{ backgroundColor: app.color }}
                           >
                             {Icon ? (
@@ -748,7 +770,7 @@ export default function DashboardPage() {
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-semibold truncate">
+                            <h3 className="text-sm font-semibold truncate transition-colors duration-300 group-hover:text-[var(--app-color)]">
                               {app.code}
                             </h3>
                             <p className="text-xs text-muted-foreground truncate">
@@ -765,27 +787,22 @@ export default function DashboardPage() {
                             )}
                           </div>
                         </div>
-                        <Button
-                          className="w-full h-9 text-xs"
-                          variant={app.has_access ? "default" : "outline"}
-                          disabled={!app.has_access}
-                          onClick={() => openApplication(app.code)}
-                        >
-                          <span className="flex items-center gap-1.5">
-                            {app.has_access ? (
-                              <>
-                                <span>Open Application</span>
-                                <ExternalLink className="h-3.5 w-3.5" />
-                              </>
-                            ) : (
-                              <>
-                                <Lock className="h-3.5 w-3.5" />
-                                <span>No Access</span>
-                              </>
-                            )}
-                          </span>
-                        </Button>
 
+                        <div className="relative flex items-center justify-between text-xs font-medium">
+                          {app.has_access ? (
+                            <span
+                              className="flex items-center gap-1.5 transition-colors duration-300 group-hover:text-[var(--app-color)]"
+                            >
+                              <span>Open Application</span>
+                              <ExternalLink className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                              <Lock className="h-3.5 w-3.5" />
+                              <span>No Access</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
                     );
                   })

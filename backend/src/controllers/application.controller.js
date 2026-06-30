@@ -576,6 +576,9 @@ export const redirectToApplication = async (req, res) => {
     } else if (code === "dms") {
       baseUrl = "http://devdms.triasmitra.com";
       token = "7e316e87289439e98139ef8d0a0c11ea3a611032d40f4876df9e237b0e385e59";
+    } else if (code === "sonar") {
+      baseUrl = "http://supra.triasmitra.com";
+      token = "sonar-portal-sso-20260623-1c6a9f87c3b24d90";
     } else {
       return res.status(404).json({
         success: false,

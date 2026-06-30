@@ -54,12 +54,12 @@ export default function ForgotPasswordPage() {
       <div className="hidden lg:flex lg:w-2/5 bg-gray-900 dark:bg-black flex-col justify-between p-12 border-r border-gray-800 dark:border-gray-900">
         <div>
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-blue-600 dark:bg-blue-700 flex items-center justify-center">
-              <Lock className="w-6 h-6 text-white" />
+            <div className="relative w-14 h-14 rounded-xl bg-sidebar flex items-center justify-center">
+              <img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain" />
             </div>
             <div>
-              <h1 className="text-white text-xl font-semibold tracking-tight">Portal Triasmitra</h1>
-              <p className="text-gray-400 text-xs">Internal Employee Access</p>
+              <h1 className="text-white text-xl font-semibold tracking-tight">KETROSDEN TRIASMITRA</h1>
+              <p className="text-gray-400 text-xs">APPLICATION PORTAL</p>
             </div>
           </div>
 

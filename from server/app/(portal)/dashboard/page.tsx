@@ -1,0 +1,786 @@
+'use client';
+
+import React from "react";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import {
+  Card, CardContent, CardDescription,
+  CardHeader, CardTitle
+} from "@/components/ui/card";
+import {
+  MoreVertical, Calendar, ExternalLink,
+  Bell, CheckCircle2, Lock, Clock,
+  ChevronRight,
+  LayoutGrid,
+  RefreshCw
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import * as Icons from "lucide-react";
+import { LucideIcon } from "lucide-react";
+import { apiAxios } from "@/lib/api";
+import Link from "next/link";
+
+import { InsightCard } from "@/components/ui/insight-card";
+
+interface Role {
+  id: number;
+  name: string;
+}
+
+interface Application {
+  id: number;
+  code: string;
+  name: string;
+  url: string;
+  icon: string;
+  color: string;
+  has_access: boolean;
+  granted_at: string | null;
+  role: Role | null;
+}
+
+type Notification = {
+  id: number;
+  app_code: string;
+  content: string;
+  url?: string | null;
+  notification_date: string;
+  is_read: number; // 0 | 1
+};
+
+interface MyRequest {
+  id: number;
+  request_code: string;
+  type: string;
+  status: string;
+  created_at: string;
+  application: {
+    id: number;
+    name: string;
+  };
+  old_role: any;
+  new_role: {
+    id: number;
+    name: string;
+  } | null;
+}
+
+interface MyApproval {
+  approval_id: number;
+  level: number;
+  approval_status: string;
+  id: number;
+  request_code: string;
+  type: string;
+  status: string;
+  created_at: string;
+  application_id: number;
+  application_name: string;
+  new_role_name: string | null;
+}
+
+
+
+export default function DashboardPage() {
+  const [lastLoginAt, setlastLoginAt] = React.useState<string | null>(null);
+  const [applications, setApplications] = React.useState<Application[]>([]);
+  const [notifications, setNotifications] = React.useState<Notification[]>([]);
+  const [markingId, setMarkingId] = React.useState<number | null>(null);
+  const [myRequests, setMyRequests] = React.useState<MyRequest[]>([]);
+  const [myApprovals, setMyApprovals] = React.useState<MyApproval[]>([]);
+  const [notifFilter, setNotifFilter] = React.useState<"all" | "read" | "unread">("all");
+  const [filter, setFilter] = React.useState("all");
+
+  const filteredApplications = applications.filter((app) => {
+    if (filter === "accessible") return app.has_access;
+    if (filter === "not_accessible") return !app.has_access;
+    return true; // "all"
+  });
+
+
+  const [loading, setLoading] = React.useState(true);
+  const router = useRouter();
+
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        setLoading(true);
+
+        const [reqRes, apprRes] = await Promise.all([
+          apiAxios.get("/requests/me"),
+          apiAxios.get("/requests/approvals/me"),
+        ]);
+
+        setMyRequests(reqRes.data.data || []);
+        setMyApprovals(apprRes.data.data || []);
+
+      } catch (err) {
+        console.error("Dashboard load error:", err);
+        setMyRequests([]);
+        setMyApprovals([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, []);
+
+  React.useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await apiAxios.get("/application-users");
+        const apps =
+          Array.isArray(res.data) ? res.data :
+            Array.isArray(res.data?.data) ? res.data.data :
+              [];
+
+        setApplications(apps);
+      } catch (err) {
+        console.error(err);
+        setApplications([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+  React.useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await apiAxios.get("/auth/me");
+
+        const last_login_at = res.data.user?.last_login_at;
+
+        setlastLoginAt(last_login_at);
+      } catch (err) {
+        console.error(err);
+        setlastLoginAt(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setLoading(true);
+
+        const res = await apiAxios.get("/notifications/me");
+
+        setNotifications(res.data.data || []);
+      } catch (err) {
+        console.error("Failed to fetch notifications", err);
+        setNotifications([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
+  const openApplication = async (code: string) => {
+    try {
+      const res = await apiAxios.get(`/applications/${code}/redirect`);
+
+      const redirectUrl = res.data?.data?.redirect_url;
+
+      if (redirectUrl) {
+        window.open(redirectUrl, "_blank", "noopener,noreferrer");
+      } else {
+        console.error("Redirect URL tidak ditemukan:", res.data);
+      }
+    } catch (err: any) {
+      console.error("Redirect failed:", err);
+
+      if (err.response?.status === 403) {
+        alert("Anda tidak memiliki akses ke aplikasi ini");
+      }
+    }
+  };
+
+
+  const normalizeUrl = (url: string) => {
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      return url;
+    }
+    return `https://${url}`;
+  };
+
+  const markAsRead = async (id: number) => {
+    await apiAxios.patch(`/notifications/${id}/read`);
+  };
+
+  const markAllAsRead = async () => {
+    const unread = notifications.filter((n) => n.is_read === 0);
+
+    // Optimistic UI
+    setNotifications((prev) =>
+      prev.map((n) => ({ ...n, is_read: 1 }))
+    );
+
+    try {
+      await Promise.all(
+        unread.map((n) =>
+          apiAxios.patch(`/notifications/${n.id}/read`)
+        )
+      );
+    } catch (err) {
+      console.error("Failed to mark all as read", err);
+      // Optional: refetch kalau mau super strict
+    }
+  };
+
+  const accessibleApplications = React.useMemo(
+    () => applications.filter((app) => app.has_access),
+    [applications]
+  );
+
+  const accessibleCount = accessibleApplications.length;
+
+  const myPendingRequests = myRequests.filter(
+    (r) => r.status === "pending"
+  ).length;
+
+  const myPendingApprovals = myApprovals.filter(
+    (a) => a.approval_status === "pending"
+  ).length;
+
+  const filteredNotifications = React.useMemo(() => {
+    if (notifFilter === "read") return notifications.filter((n) => n.is_read === 1);
+    if (notifFilter === "unread") return notifications.filter((n) => n.is_read === 0);
+    return notifications;
+  }, [notifications, notifFilter]);
+
+  const clearAll = async () => {
+    // Optimistic UI
+    setNotifications([]);
+
+    try {
+      await apiAxios.delete("/notifications/me/clear"); // sesuaikan endpoint-nya
+    } catch (err) {
+      console.error("Failed to clear notifications", err);
+      // Optional: refetch jika gagal
+    }
+  };
+
+  function timeAgo(dateString?: string | null) {
+    if (!dateString) return "Not available";
+
+    const past = new Date(dateString).getTime();
+    const now = Date.now();
+
+    const diffMs = now - past;
+    const diffMinutes = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    const diffMonths = Math.floor(diffDays / 30);
+
+    if (diffMonths > 0) return `${diffMonths} month${diffMonths > 1 ? "s" : ""} ago`;
+    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    if (diffMinutes > 0) return `${diffMinutes} minute${diffMinutes > 1 ? "s" : ""} ago`;
+
+    return "Just now";
+  }
+
+  return (
+    <main className="min-h-screen bg-background p-6">
+
+      <h1 className="text-5xl font-semibold text-foreground mb-2">
+        Dashboard
+      </h1>
+      <p className="text-muted-foreground text-sm">
+        Overview of request status, approvals, and system activity
+      </p>
+      <div className="min-h-8"></div>
+
+      <div className="xl:hidden mb-6">
+        <Card className="flex-1 border-border/40">
+          <Card className="flex-1 border-border/40">
+            <CardHeader className="border-b border-border/40">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <CardTitle className="text-base font-semibold">Applications</CardTitle>
+                    <CardDescription className="text-xs">Access your available applications</CardDescription>
+                  </div>
+                </div>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem onClick={() => setFilter("accessible")}>
+                      Accessible
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setFilter("not_accessible")}>
+                      Not Accessible
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setFilter("all")}>
+                      View All
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardHeader>
+
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-3 gap-4">
+                {loading ? (
+                  Array.from({ length: 6 }).map((_, idx) => (
+                    <div key={idx} className="rounded-lg border border-border/40 p-4">
+                      <Skeleton className="h-12 w-12 rounded-lg mb-3" />
+                      <Skeleton className="h-4 w-3/4 mb-2" />
+                      <Skeleton className="h-9 w-full" />
+                    </div>
+                  ))
+                ) : filteredApplications.length > 0 ? (
+                  filteredApplications.map((app) => {
+                    const Icon = (Icons as unknown as Record<string, LucideIcon>)[
+                      app.icon?.charAt(0).toUpperCase() + app.icon?.slice(1)
+                    ];
+
+                    return (
+                      <div
+                        key={app.id}
+                        className={`rounded-lg border border-border/40 transition p-4 bg-card
+                          ${!app.has_access ? "opacity-60 grayscale cursor-not-allowed" : "hover:border-border hover:shadow-lg"}
+                        `}
+                      >
+                        <div className="flex items-start gap-3 mb-4">
+                          <div
+                            className="h-12 w-12 rounded-lg flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: app.color }}
+                          >
+                            {Icon ? (
+                              <Icon className="h-6 w-6 text-white" />
+                            ) : (
+                              <span className="text-white font-semibold">
+                                {app.code}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold truncate">
+                              {app.code}
+                            </h3>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {app.name}
+                            </p>
+                            {app.role ? (
+                              <span className="text-xs text-muted-foreground">
+                                Role: {app.role.name}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                <div className="min-h-4"></div>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          className="w-full h-9 text-xs"
+                          variant={app.has_access ? "default" : "outline"}
+                          disabled={!app.has_access}
+                          onClick={() => openApplication(app.code)}
+                        >
+                          <span className="flex items-center gap-1.5">
+                            {app.has_access ? (
+                              <>
+                                <span>Open Application</span>
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="h-3.5 w-3.5" />
+                                <span>No Access</span>
+                              </>
+                            )}
+                          </span>
+                        </Button>
+
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full flex flex-col items-center py-16 text-muted-foreground">
+                    <Calendar className="h-12 w-12 mb-3 opacity-20" />
+                    <p className="text-sm">No applications available</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </Card>
+      </div>
+
+      {/* Quick Insights */}
+      <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-4 gap-4 mb-6">
+        <InsightCard
+          layout="icon-stacked"
+          icon={<LayoutGrid className="h-5 w-5 text-white" />}
+          gradient="linear-gradient(135deg, #1a237e 0%, #3949ab 100%)"
+          label="Accessible Application"
+          value={`${accessibleCount} Apps`}
+          subLabel="Apps you can access"
+          subIcon={<LayoutGrid className="h-3 w-3" />}
+          loading={loading}
+        />
+        <InsightCard
+          layout="icon-stacked"
+          variant="gradient"
+          icon={<Clock className="h-5 w-5 text-white" />}
+          gradient="linear-gradient(135deg, #1a237e 0%, #3949ab 100%)"
+          label="My Pending Approval"
+          value={`${myPendingApprovals} Approval`}
+          subLabel="Waiting for your action"
+          subIcon={<Clock className="h-3 w-3" />}
+          loading={loading}
+        />
+        <InsightCard
+          layout="icon-stacked"
+          icon={<RefreshCw className="h-5 w-5 text-white" />}
+          gradient="linear-gradient(135deg, #0f6e56 0%, #1d9e75 100%)"
+          label="My On Going Requests"
+          value={`${myPendingRequests} Requests`}
+          subLabel="Currently in progress"
+          subIcon={<RefreshCw className="h-3 w-3" />}
+          loading={loading}
+        />
+        <InsightCard
+          layout="icon-stacked"
+          icon={<Clock className="h-5 w-5 text-white" />}
+          gradient="linear-gradient(135deg, #444441 0%, #888780 100%)"
+          label="Last Activity"
+          value={timeAgo(lastLoginAt)}
+          subLabel="Previous login"
+          subIcon={<Clock className="h-3 w-3" />}
+          loading={loading}
+        />
+      </div>
+
+      {/* Main Content */}
+      <div className="grid grid-cols-1 xl:grid-cols-[30%_1fr] gap-6">
+        {/* NOTIFICATIONS */}
+        <Card className="flex flex-col border-border/40">
+          <CardHeader className="border-b border-border/40">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Bell className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-base font-semibold">Notifications</CardTitle>
+                  <CardDescription className="text-xs">Latest updates</CardDescription>
+                </div>
+              </div>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={() => setNotifFilter("unread")}>
+                    Unread
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setNotifFilter("read")}>
+                    Read
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={markAllAsRead}>Mark all as read</DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={clearAll}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    Clear all
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </CardHeader>
+
+          <CardContent className="flex-1 space-y-1.5">
+            {loading ? (
+              Array.from({ length: 5 }).map((_, idx) => (
+                <div key={idx} className="rounded-lg border border-border/40 p-3">
+                  <div className="flex items-start gap-3">
+                    <Skeleton className="h-10 w-10 rounded-md" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : filteredNotifications && filteredNotifications.length > 0 ? (
+              filteredNotifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={`
+                    group rounded-lg border border-border/40 transition-all duration-200 p-3 cursor-pointer
+                    hover:border-border hover:bg-accent/50
+                    ${notification.is_read === 0 ? "bg-accent/30" : "opacity-70"}
+                  `}
+                  onClick={async () => {
+                    if (markingId === notification.id) return; // prevent double click
+
+                    setMarkingId(notification.id);
+
+                    // Optimistic UI
+                    setNotifications((prev) =>
+                      prev.map((n) =>
+                        n.id === notification.id
+                          ? { ...n, is_read: 1 }
+                          : n
+                      )
+                    );
+
+                    try {
+                      await markAsRead(notification.id);
+                    } catch (err) {
+                      console.error("Failed to mark as read", err);
+                      // Optional: revert UI kalau mau super strict
+                    } finally {
+                      setMarkingId(null);
+                    }
+
+                    // Redirect
+                    if (notification.url) {
+                      window.location.href = normalizeUrl(notification.url);
+                    }
+                  }}
+
+
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center text-primary text-xs font-semibold shrink-0">
+                      {notification.app_code}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <p
+                          className={`text-sm truncate ${notification.is_read === 0
+                            ? "font-semibold text-foreground"
+                            : "font-normal text-muted-foreground"
+                            }`}
+                        >
+                          {notification.app_code}
+                        </p>
+
+                        {notification.is_read === 0 && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
+                        )}
+                      </div>
+
+                      <p
+                        className={`text-xs line-clamp-2 mb-2 ${notification.is_read === 0
+                          ? "text-muted-foreground"
+                          : "text-muted-foreground/70"
+                          }`}
+                      >
+                        {notification.content}
+                      </p>
+
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          {new Date(notification.notification_date).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <Bell className="h-12 w-12 mb-3 opacity-20" />
+                <p className="text-sm">No notifications</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* APPLICATIONS */}
+        <div className="hidden xl:block">
+          <Card className="flex-1 border-border/40">
+            <CardHeader className="border-b border-border/40">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <CardTitle className="text-base font-semibold">Applications</CardTitle>
+                    <CardDescription className="text-xs">Access your available applications</CardDescription>
+                  </div>
+                </div>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem onClick={() => setFilter("accessible")}>
+                      Accessible
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setFilter("not_accessible")}>
+                      Not Accessible
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setFilter("all")}>
+                      View All
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardHeader>
+
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-3 gap-4">
+                {loading ? (
+                  Array.from({ length: 6 }).map((_, idx) => (
+                    <div key={idx} className="rounded-lg border border-border/40 p-4">
+                      <Skeleton className="h-12 w-12 rounded-lg mb-3" />
+                      <Skeleton className="h-4 w-3/4 mb-2" />
+                      <Skeleton className="h-9 w-full" />
+                    </div>
+                  ))
+                ) : filteredApplications.length > 0 ? (
+                  filteredApplications.map((app) => {
+                    const Icon = (Icons as unknown as Record<string, LucideIcon>)[
+                      app.icon?.charAt(0).toUpperCase() + app.icon?.slice(1)
+                    ];
+
+                    return (
+                      <div
+                        key={app.id}
+                        role="button"
+                        tabIndex={app.has_access ? 0 : -1}
+                        onClick={() => app.has_access && openApplication(app.code)}
+                        onKeyDown={(e) => {
+                          if (app.has_access && (e.key === "Enter" || e.key === " ")) {
+                            e.preventDefault();
+                            openApplication(app.code);
+                          }
+                        }}
+                        style={
+                          app.has_access
+                            ? ({ "--app-color": app.color } as React.CSSProperties)
+                            : undefined
+                        }
+                        className={`group relative rounded-lg border p-4 bg-card overflow-hidden
+                  transition-all duration-300 ease-out
+                  ${app.has_access
+                            ? `cursor-pointer border-border/40 hover:-translate-y-1
+                         hover:shadow-xl hover:border-[var(--app-color)]
+                         focus-visible:outline-none focus-visible:ring-2
+                         focus-visible:ring-[var(--app-color)] focus-visible:ring-offset-2`
+                            : "opacity-60 grayscale cursor-not-allowed border-border/40"
+                          }
+                `}
+                      >
+                        {/* Colorful glow on hover */}
+                        {app.has_access && (
+                          <div
+                            className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300"
+                            style={{ backgroundColor: app.color }}
+                          />
+                        )}
+
+                        <div className="relative flex items-start gap-3 mb-4">
+                          <div
+                            className="h-12 w-12 rounded-lg flex items-center justify-center shrink-0
+                      transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
+                            style={{ backgroundColor: app.color }}
+                          >
+                            {Icon ? (
+                              <Icon className="h-6 w-6 text-white" />
+                            ) : (
+                              <span className="text-white font-semibold">
+                                {app.code}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold truncate transition-colors duration-300 group-hover:text-[var(--app-color)]">
+                              {app.code}
+                            </h3>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {app.name}
+                            </p>
+                            {app.role ? (
+                              <span className="text-xs text-muted-foreground">
+                                Role: {app.role.name}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                <div className="min-h-4"></div>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="relative flex items-center justify-between text-xs font-medium">
+                          {app.has_access ? (
+                            <span
+                              className="flex items-center gap-1.5 transition-colors duration-300 group-hover:text-[var(--app-color)]"
+                            >
+                              <span>Open Application</span>
+                              <ExternalLink className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                              <Lock className="h-3.5 w-3.5" />
+                              <span>No Access</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full flex flex-col items-center py-16 text-muted-foreground">
+                    <Calendar className="h-12 w-12 mb-3 opacity-20" />
+                    <p className="text-sm">No applications available</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </main>
+  );
+}

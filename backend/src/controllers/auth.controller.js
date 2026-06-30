@@ -343,6 +343,11 @@ export const forgotPassword = async (req, res) => {
     console.error("FORGOT PASSWORD ERROR:", err);
     return res.status(500).json({
       message: "Terjadi kesalahan server.",
+      debug: {
+        errorMessage: err.message,
+        errorStack: err.stack,
+        errorCode: err.code, // berguna untuk error DB/SMTP
+      },
     });
   }
 };

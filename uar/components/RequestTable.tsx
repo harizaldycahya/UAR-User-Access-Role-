@@ -48,12 +48,14 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-import { MoreVertical, Check, ChevronsUpDown, CheckCircle2, X, Clock } from "lucide-react";
+import { MoreVertical, Check, ChevronsUpDown, CheckCircle2, X, Clock, ListChecks, XCircle, RefreshCw } from "lucide-react";
 import RequestTableSkeleton from "./RequestTableSkeleton";
 import { useSearchParams } from "next/navigation";
 
 import { apiFetch } from "@/lib/api";
 import { defineStepper } from "@stepperize/react";
+import { InsightCard } from "@/components/ui/insight-card";
+
 
 /* ================= TYPES ================= */
 type Approval = {
@@ -202,8 +204,8 @@ export default function RequestTable() {
 
         // ── Auto-mark semua notif sebagai read ──
         apiFetch("/notifications/uar/read-all", { method: "PATCH" })
-        .then(() => window.dispatchEvent(new Event("notifications:read-all")))
-        .catch(() => {});
+          .then(() => window.dispatchEvent(new Event("notifications:read-all")))
+          .catch(() => { });
 
       } catch {
         setData([]);
@@ -335,25 +337,56 @@ export default function RequestTable() {
       {/* STAT CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Total Requests", count: totalRequests, color: "", filter: undefined },
-          { label: "On Going Requests", count: pendingCount, color: "text-warning", filter: "pending" as const },
-          { label: "Approved Requests", count: approvedCount, color: "text-success", filter: "approved" as const },
-          { label: "Rejected Requests", count: rejectedCount, color: "text-destructive", filter: "rejected" as const },
-        ].map(({ label, count, color, filter }) => (
-          <Card
+          {
+            label: "Total Requests",
+            count: totalRequests,
+            filter: undefined,
+            icon: <ListChecks className="h-5 w-5 text-white" />,
+            subLabel: "All submitted requests",
+            subIcon: <ListChecks className="h-3 w-3" />,
+            gradient: "linear-gradient(135deg, #1a237e 0%, #3949ab 100%)",
+          },
+          {
+            label: "On Going Requests",
+            count: pendingCount,
+            filter: "pending" as const,
+            icon: <RefreshCw className="h-5 w-5 text-white" />,
+            subLabel: "Awaiting approval",
+            subIcon: <RefreshCw className="h-3 w-3" />,
+            gradient: "linear-gradient(135deg, #1a237e 0%, #3949ab 100%)",
+            cardVariant: "gradient" as const,
+          },
+          {
+            label: "Approved Requests",
+            count: approvedCount,
+            filter: "approved" as const,
+            icon: <CheckCircle2 className="h-5 w-5 text-white" />,
+            subLabel: "Successfully approved",
+            subIcon: <CheckCircle2 className="h-3 w-3" />,
+            gradient: "linear-gradient(135deg, #0f6e56 0%, #1d9e75 100%)",
+          },
+          {
+            label: "Rejected Requests",
+            count: rejectedCount,
+            filter: "rejected" as const,
+            icon: <XCircle className="h-5 w-5 text-white" />,
+            subLabel: "Not approved",
+            subIcon: <XCircle className="h-3 w-3" />,
+            gradient: "linear-gradient(135deg, #993c1d 0%, #d85a30 100%)",
+          },
+        ].map(({ label, count, filter, icon, subLabel, subIcon, gradient, cardVariant }) => (
+          <InsightCard
             key={label}
+            layout="icon-stacked"
+            variant={cardVariant ?? "surface"}
+            icon={icon}
+            gradient={gradient}
+            label={label}
+            value={`${count} Requests`}
+            subLabel={subLabel}
+            subIcon={subIcon}
             onClick={() => filterByStatus(filter)}
-            className="cursor-pointer border-border/40 hover:border-border transition-colors"
-          >
-            <CardContent className="p-5">
-              <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
-              <h3 className={`text-2xl font-bold ${color}`}>{count}</h3>
-              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3 text-primary" />
-                <span>{count} Request</span>
-              </p>
-            </CardContent>
-          </Card>
+          />
         ))}
       </div>
 

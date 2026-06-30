@@ -38,7 +38,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical, Check, ChevronsUpDown, CheckCircle2 } from "lucide-react";
+import { MoreVertical, Check, ChevronsUpDown, CheckCircle2, ListChecks, Clock, XCircle } from "lucide-react";
 import RequestTableSkeleton from "./RequestTableSkeleton";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { Textarea } from "@/components/ui/textarea";
+import { InsightCard } from "./ui/insight-card";
 
 
 /* ================= TYPES ================= */
@@ -64,6 +65,7 @@ type Request = {
   level: number;
   approval_status: "pending" | "approved" | "rejected";
   type: "application_access" | "change_role";
+  requestor_name: string;
   application_name: string;
   application_role_mode: "static" | "dynamic";
   old_role_name: string | null;
@@ -138,11 +140,11 @@ export default function ApprovalTable() {
   const statusLabel = React.useMemo(() => {
     if (!statusParam) return "Filter Status";
     switch (statusParam) {
-      case "pending":   return "Pending";
-      case "approved":  return "Approved";
-      case "rejected":  return "Rejected";
-      case "history":   return "All History";
-      default:          return "Filter Status";
+      case "pending": return "Pending";
+      case "approved": return "Approved";
+      case "rejected": return "Rejected";
+      case "history": return "All History";
+      default: return "Filter Status";
     }
   }, [statusParam]);
 
@@ -180,8 +182,8 @@ export default function ApprovalTable() {
       setData(res.data);
 
       apiFetch("/notifications/uar/read-all", { method: "PATCH" })
-      .then(() => window.dispatchEvent(new Event("notifications:read-all")))
-      .catch(() => {});
+        .then(() => window.dispatchEvent(new Event("notifications:read-all")))
+        .catch(() => { });
     } catch (err: any) {
       console.error("LOAD DATA ERROR:", err);
       Swal.fire({
@@ -303,6 +305,10 @@ export default function ApprovalTable() {
       cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString(),
     },
     {
+      accessorKey: "requestor_name",
+      header: "Requestor",
+    },
+    {
       accessorKey: "application_name",
       header: "Application",
     },
@@ -371,56 +377,51 @@ export default function ApprovalTable() {
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="border-border/40 hover:border-border transition-colors">
-          <CardContent className="p-5">
-            <p className="text-xs font-medium text-muted-foreground mb-1">Total Requests</p>
-            <h3 className="text-2xl font-bold">
-              {loading ? <Skeleton className="h-8 w-16" /> : summary.total}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-primary" />
-              <span>{loading ? "..." : summary.total} Request</span>
-            </p>
-          </CardContent>
-        </Card>
-        <Card onClick={() => filterByStatus("pending")} className="cursor-pointer border-border/40 hover:border-border transition-colors">
-          <CardContent className="p-5">
-            <p className="text-xs font-medium text-muted-foreground mb-1">Pending Approval</p>
-            <h3 className="text-2xl font-bold text-warning">
-              {loading ? <Skeleton className="h-8 w-16" /> : summary.pending}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-primary" />
-              <span>{loading ? "..." : summary.pending} Request</span>
-            </p>
-          </CardContent>
-        </Card>
-        <Card onClick={() => filterByStatus("approved")} className="cursor-pointer border-border/40 hover:border-border transition-colors">
-          <CardContent className="p-5">
-            <p className="text-xs font-medium text-muted-foreground mb-1">Approved</p>
-            <h3 className="text-2xl font-bold text-success">
-              {loading ? <Skeleton className="h-8 w-16" /> : summary.approved}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-primary" />
-              <span>{loading ? "..." : summary.approved} Request</span>
-            </p>
-          </CardContent>
-        </Card>
-        <Card onClick={() => filterByStatus("rejected")} className="cursor-pointer border-border/40 hover:border-border transition-colors">
-          <CardContent className="p-5">
-            <p className="text-xs font-medium text-muted-foreground mb-1">Rejected</p>
-            <h3 className="text-2xl font-bold text-destructive">
-              {loading ? <Skeleton className="h-8 w-16" /> : summary.rejected}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-primary" />
-              <span>{loading ? "..." : summary.rejected} Request</span>
-            </p>
-          </CardContent>
-        </Card>
+        <InsightCard
+          layout="icon-stacked"
+          icon={<ListChecks className="h-5 w-5 text-white" />}
+          gradient="linear-gradient(135deg, #1a237e 0%, #3949ab 100%)"
+          label="Total Requests"
+          value={`${summary.total} Requests`}
+          subLabel="All submitted requests"
+          subIcon={<ListChecks className="h-3 w-3" />}
+          loading={loading}
+        />
+        <InsightCard
+          layout="icon-stacked"
+          variant="gradient"
+          gradient="linear-gradient(135deg, #1a237e 0%, #3949ab 100%)"
+          icon={<Clock className="h-5 w-5 text-white" />}
+          label="Pending Approval"
+          value={`${summary.pending} Requests`}
+          subLabel="Needs your review"
+          subIcon={<Clock className="h-3 w-3" />}
+          loading={loading}
+          onClick={() => filterByStatus("pending")}
+        />
+        <InsightCard
+          layout="icon-stacked"
+          icon={<CheckCircle2 className="h-5 w-5 text-white" />}
+          gradient="linear-gradient(135deg, #0f6e56 0%, #1d9e75 100%)"
+          label="Approved"
+          value={`${summary.approved} Requests`}
+          subLabel="Successfully approved"
+          subIcon={<CheckCircle2 className="h-3 w-3" />}
+          loading={loading}
+          onClick={() => filterByStatus("approved")}
+        />
+        <InsightCard
+          layout="icon-stacked"
+          icon={<XCircle className="h-5 w-5 text-white" />}
+          gradient="linear-gradient(135deg, #993c1d 0%, #d85a30 100%)"
+          label="Rejected"
+          value={`${summary.rejected} Requests`}
+          subLabel="Not approved"
+          subIcon={<XCircle className="h-3 w-3" />}
+          loading={loading}
+          onClick={() => filterByStatus("rejected")}
+        />
       </div>
-
       <Card>
         <CardHeader className="flex flex-row justify-between">
           <div>
@@ -542,6 +543,10 @@ export default function ApprovalTable() {
           {selectedRequest && (
             <div className="space-y-4 text-sm">
               <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-muted-foreground">Requestor</p>
+                    <p className="font-medium">{selectedRequest.requestor_name}</p>
+                </div>
                 <div>
                   <p className="text-muted-foreground">Application</p>
                   <p className="font-medium">{selectedRequest.application_name}</p>

@@ -1,9 +1,9 @@
 export const serviceAuthMiddleware = (req, res, next) => {
   const appKey = req.headers["x-app-key"];
-
+  
+  console.log("HIT serviceAuthMiddleware");
   console.log("ENV KEY =", process.env.PORTAL_APP_KEY);
   console.log("HEADER KEY =", appKey);
-
 
   if (!appKey) {
     return res.status(401).json({ message: "Missing X-APP-KEY" });

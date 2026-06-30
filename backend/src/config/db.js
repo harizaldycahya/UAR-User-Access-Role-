@@ -11,3 +11,7 @@ export const db = mysql.createPool({
   timezone: "+07:00", // ← tambahkan ini
 });
 
+// tambahkan ini:
+db.on("connection", (connection) => {
+  connection.query("SET sql_mode = 'ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'");
+});
