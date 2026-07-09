@@ -1,8 +1,6 @@
 import jwt from "jsonwebtoken";
 
 export const authMiddleware = async (req, res, next) => {
-
-  // console.log("HIT authMiddleware");
   // ✅ Baca dari cookie, bukan Authorization header
   const token = req.cookies?.token;
 
