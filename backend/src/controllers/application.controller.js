@@ -329,6 +329,32 @@ export const getCmsRoles = async (req, res) => {
   }
 };
 
+export const getSonarRoles = async (req, res) => {
+  try {
+    const response = await axios.get(
+      "https://sonar.triasmitra.com/api/public/roles",
+      {
+        headers: {
+          Authorization: `Bearer sonar-portal-sso-20260623-1c6a9f87c3b24d90`,
+          "Accept": "application/json",
+        },
+      }
+    );
+
+    res.json({
+      success: true,
+      data: response.data,
+    });
+
+  } catch (err) {
+    console.error("GET SONAR ROLES ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch SONAR roles",
+    });
+  }
+};
+
 export const getDmsRoles = async (req, res) => {
   try {
     const token = req.headers['authorization'];
@@ -577,7 +603,7 @@ export const redirectToApplication = async (req, res) => {
       baseUrl = "http://devdms.triasmitra.com";
       token = "7e316e87289439e98139ef8d0a0c11ea3a611032d40f4876df9e237b0e385e59";
     } else if (code === "sonar") {
-      baseUrl = "http://supra.triasmitra.com";
+      baseUrl = "http://sonar.triasmitra.com";
       token = "sonar-portal-sso-20260623-1c6a9f87c3b24d90";
     } else {
       return res.status(404).json({

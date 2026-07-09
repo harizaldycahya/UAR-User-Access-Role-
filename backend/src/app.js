@@ -2,6 +2,10 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
+
 import authRoutes from "./routes/auth.routes.js";
 import applicationRoutes from "./routes/application.routes.js";
 import applicationRoleRoutes from "./routes/applicationRole.routes.js";
@@ -14,6 +18,10 @@ import googleAuthRouter from "./routes/auth.google.route.js";
 import cookieParser from "cookie-parser"; 
 
 dotenv.config();
+
+// karena ESM, __dirname harus di-generate manual
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -43,18 +51,25 @@ app.use("/api/requests", requestRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/users", usersRoutes);
 
-// TEST SEMENTARA — hapus setelah selesai debug
-app.get("/test-hr", async (req, res) => {
-  try {
-    const axios = (await import("axios")).default;
-    const result = await axios.get(
-      "https://personasys.triasmitra.com/api/auth/get-profile-uar",
-      { params: { nik: "KT-23071336" }, timeout: 10000 }
-    );
-    res.json(result.data);
-  } catch (err) {
-    res.json({ error: err.message, code: err.code });
+app.get("/api/download/manual-book", (req, res) => {
+  const filePath = path.join(__dirname, "..", "public", "files", "Manual_Book_Portal.pdf");
+  
+  console.log("Mencari file di:", filePath);
+  console.log("__dirname saat ini:", __dirname);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ message: "File tidak ditemukan" });
   }
+
+  res.download(filePath, "Manual_Book_Portal.pdf", (err) => {
+    if (err) {
+      console.error("Gagal download:", err);
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Gagal mengunduh file" });
+      }
+    }
+  });
 });
+
 
 export default app;

@@ -70,6 +70,7 @@ export default function ReviseRequestPage() {
                     if (code === "IMS") rolesRes = await apiFetch("/applications/integrations/ims/roles");
                     else if (code === "AMS") rolesRes = await apiFetch("/applications/integrations/ams/roles");
                     else if (code === "CMS") rolesRes = await apiFetch("/applications/integrations/cms/roles");
+                    else if (code === "CMS") rolesRes = await apiFetch("/applications/integrations/sonar/roles");
                     else rolesRes = await apiFetch(`/applications/${req.application.id}/roles`);
 
                     setRoles(

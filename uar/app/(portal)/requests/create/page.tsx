@@ -168,8 +168,16 @@ export default function CreateRequestsPage() {
           setRoles(res?.data?.result?.data ?? []);
         } else if (selectedApp.code === "DMS") {
           res = await apiFetch("/applications/integrations/dms/roles");
-          setRoles(res?.data?.result?.data ?? []);
-        } else {
+        } else if (selectedApp.code === "SONAR") {
+          res = await apiFetch("/applications/integrations/sonar/roles");
+          const sonarRoles = res?.data?.result?.roles ?? [];
+          setRoles(
+            sonarRoles.map((r: { key: string; label: string }) => ({
+              id: r.key,      // ← ini yang dipakai sebagai value/id (bukan label)
+              name: r.label,  // ← dipakai untuk ditampilkan ke user
+            }))
+          );
+        }else {
           res = await apiFetch(`/applications/${form.application}/roles`);
           setRoles(res?.data ?? []);
         }

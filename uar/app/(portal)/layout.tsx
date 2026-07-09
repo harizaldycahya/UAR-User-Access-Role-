@@ -66,6 +66,8 @@ type MenuGroup = {
 };
 
 function PortalLayoutInner({ children }: { children: React.ReactNode }) {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    
     const [user, setUser] = React.useState<any>(null);
     const [profile, setProfile] = React.useState<any>(null);
     const [foto, setFoto] = React.useState<any>(null);
@@ -151,7 +153,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                 label: "Account",
                 items: [
                     { label: "My Profile", icon: <User className="h-4.5 w-4.5" />, href: "/profile" },
-                    { label: "Guide Book", icon: <Book className="h-4.5 w-4.5" />, href: "/guide" },
+                    { label: "Guide Book", icon: <Book className="h-4.5 w-4.5" />, href: `${API_URL}/download/manual-book` },
                 ],
             },
         ],

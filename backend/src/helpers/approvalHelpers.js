@@ -437,7 +437,6 @@ const createCmsUser = async (request) => {
     throw new Error(`CMS create-user error: ${response.status} - ${errBody}`);
   }
 };
-
 const updateCmsUser = async (request) => {
   const profile = await getPersonasysProfile(request.username);
 
@@ -457,6 +456,50 @@ const updateCmsUser = async (request) => {
   if (!response.ok) {
     const errBody = await response.text();
     throw new Error(`CMS update-user error: ${response.status} - ${errBody}`);
+  }
+};
+
+// SONAR HELPER
+const SONAR_TOKEN = 'sonar-portal-sso-20260623-1c6a9f87c3b24d90';
+const SONAR_BASE_URL = 'https://sonar.triasmitra.com/api/public'; // sesuaikan base url-nya
+
+const sonarHeaders = {
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${SONAR_TOKEN}`,
+};
+
+const createSonarUser = async (request) => {
+  const payload = {
+    nik: request.username,
+    role: request.new_role_name,
+  };
+
+  const response = await fetch(`${SONAR_BASE_URL}/users`, {
+    method: 'POST',
+    headers: sonarHeaders,
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errBody = await response.text();
+    throw new Error(`SONAR create-user error: ${response.status} - ${errBody}`);
+  }
+};
+
+const updateSonarUser = async (request) => {
+  const payload = {
+    role: request.new_role_name,
+  };
+
+  const response = await fetch(`${SONAR_BASE_URL}/users/${request.username}`, {
+    method: 'PUT',
+    headers: sonarHeaders,
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errBody = await response.text();
+    throw new Error(`SONAR update-user error: ${response.status} - ${errBody}`);
   }
 };
 
@@ -480,6 +523,7 @@ export const notifyExternalApp = async (request) => {
     }
   }
 
+
   if (appCode === 'cms') {
     const userExists = await checkCmsUserExists(request.username);
     if (userExists) {
@@ -488,4 +532,12 @@ export const notifyExternalApp = async (request) => {
       await createCmsUser(request);
     }
   }
+
+    if (appCode === 'sonar') {
+      if (request.type === 'change_role') {
+        await updateSonarUser(request);
+      } else {
+        await createSonarUser(request);
+      }
+    }
 };
