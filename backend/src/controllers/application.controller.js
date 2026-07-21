@@ -264,9 +264,21 @@ export const getAmsRoles = async (req, res) => {
       }
     );
 
+    const EXCLUDED_ROLES = ["CFO", "EXECUTIVE"];
+
+    const filteredData = {
+      ...response.data,
+      result: {
+        ...response.data.result,
+        data: (response.data.result?.data ?? []).filter(
+          (role) => !EXCLUDED_ROLES.includes(role.name?.toUpperCase())
+        ),
+      },
+    };
+
     res.json({
       success: true,
-      data: response.data,
+      data: filteredData,
     });
 
   } catch (err) {
@@ -441,124 +453,9 @@ export const getQmsRoles = async (req, res) => {
   }
 };
 
-// export const redirectToApplication = async (req, res) => {
-//   try {
-//     const userId = req.user.id;
-//     const { code } = req.params;
-
-//     const [[app]] = await db.query(
-//       `
-//       SELECT a.url
-//       FROM applications a
-//       JOIN user_applications ua
-//         ON ua.application_id = a.id
-//       WHERE ua.username = ?
-//         AND a.code = ?
-//       LIMIT 1
-//       `,
-//       [userId, code]
-//     );
-
-//     if (!app) {
-//       return res.status(403).json({
-//         success: false,
-//         message: "Akses aplikasi ditolak",
-//       });
-//     }
-
-//     return res.json({
-//       success: true,
-//       redirect_url: app.url,
-//     });
-//   } catch (err) {
-//     console.error("REDIRECT ERROR:", err);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Gagal melakukan redirect",
-//     });
-//   }
-// };
-
-// export const redirectToApplication = async (req, res) => {
-//   try {
-//     const userId = req.user.id;
-//     const nik = req.user.nik;
-//     const { code } = req.params;
-
-//     const config = APP_CONFIG[code];
-
-//     if (!config) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Application not supported",
-//       });
-//     }
-
-//     // cek akses + ambil role
-//     const [[access]] = await db.query(
-//       `
-//       SELECT ar.id AS role_id, ar.name AS role_name
-//       FROM user_applications ua
-//       JOIN application_roles ar 
-//         ON ar.id = ua.application_roles_id
-//       JOIN applications a 
-//         ON a.id = ua.application_id
-//       WHERE ua.username = ?
-//         AND a.code = ?
-//       LIMIT 1
-//       `,
-//       [userId, code]
-//     );
-
-//     if (!access) {
-//       return res.status(403).json({
-//         success: false,
-//         message: "Akses aplikasi ditolak",
-//       });
-//     }
-
-//     // call external SSO API
-//     const response = await axios.get(
-//       `${config.base_url}/api/public/get-token/${nik}`,
-//       {
-//         headers: {
-//           Authorization: `Bearer ${config.token}`,
-//         },
-//       }
-//     );
-
-//     const accessToken = response.data?.result?.access_token;
-
-//     if (!accessToken) {
-//       return res.status(403).json({
-//         success: false,
-//         message: "User tidak memiliki akun di aplikasi tujuan",
-//       });
-//     }
-
-//     return res.json({
-//       success: true,
-//       data: {
-//         redirect_url: `${config.base_url}/sso/${accessToken}`,
-//         application: code.toUpperCase(),
-//         role: {
-//           id: access.role_id,
-//           name: access.role_name,
-//         },
-//       },
-//     });
-//   } catch (err) {
-//     console.error("SSO REDIRECT ERROR:", err.message);
-
-//     return res.status(500).json({
-//       success: false,
-//       message: "Gagal melakukan redirect SSO",
-//     });
-//   }
-// };
+const AUTO_ACCESS_CODES = ["hris", "shocart", "helpdesk"];
 
 export const redirectToApplication = async (req, res) => {
-  // ✅ Deklarasi di luar try agar bisa diakses di catch
   let baseUrl = "";
   let token = "";
   let targetIdentifier = "";
@@ -616,27 +513,36 @@ export const redirectToApplication = async (req, res) => {
     console.log("username from token:", username);
     console.log("code from params:", code);
 
-    const [[access]] = await db.query(
-      `
-        SELECT ua.id, ua.role_name
-        FROM user_applications ua
-        JOIN applications a 
-          ON a.id = ua.application_id
-        WHERE TRIM(LOWER(ua.username)) = TRIM(LOWER(?))
-          AND TRIM(LOWER(a.code)) = TRIM(LOWER(?))
-        LIMIT 1
-      `,
-      [username, code]
-    );
+    let access;
+
+    if (AUTO_ACCESS_CODES.includes(code)) {
+      // Auto access — skip pengecekan user_applications
+      access = { id: null, role_name: null };
+    } else {
+      const [[found]] = await db.query(
+        `
+          SELECT ua.id, ua.role_name
+          FROM user_applications ua
+          JOIN applications a 
+            ON a.id = ua.application_id
+          WHERE TRIM(LOWER(ua.username)) = TRIM(LOWER(?))
+            AND TRIM(LOWER(a.code)) = TRIM(LOWER(?))
+          LIMIT 1
+        `,
+        [username, code]
+      );
+
+      if (!found) {
+        return res.status(403).json({
+          success: false,
+          message: "Akses aplikasi ditolak",
+        });
+      }
+
+      access = found;
+    }
 
     console.log("access result:", access);
-
-    if (!access) {
-      return res.status(403).json({
-        success: false,
-        message: "Akses aplikasi ditolak",
-      });
-    }
 
     // ✅ QMS pakai role_name sebagai identifier, lainnya pakai NIK
     targetIdentifier = (code === "qms" || code === "dms") ? access.role_name : nik;
@@ -689,8 +595,8 @@ export const redirectToApplication = async (req, res) => {
         error_status: err.response?.status ?? null,
         error_url: err.config?.url ?? null,
         error_response: err.response?.data ?? null,
-        target_identifier: targetIdentifier, // ✅ sekarang accessible
-        base_url: baseUrl,                   // ✅ sekarang accessible
+        target_identifier: targetIdentifier,
+        base_url: baseUrl,
       }
     });
   }

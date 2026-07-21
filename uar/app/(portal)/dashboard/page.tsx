@@ -90,6 +90,8 @@ interface MyApproval {
 
 export default function DashboardPage() {
   const [lastLoginAt, setlastLoginAt] = React.useState<string | null>(null);
+  const [username, setUsername] = React.useState<string | null>(null);
+  const [isKasieOrBelow, setIsKasieOrBelow] = React.useState(false);
   const [applications, setApplications] = React.useState<Application[]>([]);
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [markingId, setMarkingId] = React.useState<number | null>(null);
@@ -161,8 +163,10 @@ export default function DashboardPage() {
         const res = await apiAxios.get("/auth/me");
 
         const last_login_at = res.data.user?.last_login_at;
+        const uname = res.data.user?.username;
 
         setlastLoginAt(last_login_at);
+        setUsername(uname);
       } catch (err) {
         console.error(err);
         setlastLoginAt(null);
@@ -173,6 +177,30 @@ export default function DashboardPage() {
 
     load();
   }, []);
+
+  // Tentukan level jabatan user (unit / subsi) untuk sembunyikan/mengubah tampilan card
+  React.useEffect(() => {
+    if (!username) return;
+    const fetchLevel = async () => {
+      try {
+        const res = await fetch(`https://personasys.triasmitra.com/api/auth/get-atasan-uar?nik=${username}`);
+        const result = await res.json();
+        if (result.Success) {
+          const data = result.data;
+          const nik = String(username).trim().toUpperCase();
+
+          const isUnitOrSubsi =
+            (data.unit_approval && String(data.unit_approval).trim().toUpperCase() === nik) ||
+            (data.subsi_approval && String(data.subsi_approval).trim().toUpperCase() === nik);
+
+          setIsKasieOrBelow(isUnitOrSubsi);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchLevel();
+  }, [username]);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -200,7 +228,7 @@ export default function DashboardPage() {
       const redirectUrl = res.data?.data?.redirect_url;
 
       if (redirectUrl) {
-        window.open(redirectUrl, "_blank", "noopener,noreferrer");
+        window.location.href = redirectUrl; // <-- buka di tab yang sama
       } else {
         console.error("Redirect URL tidak ditemukan:", res.data);
       }
@@ -306,10 +334,10 @@ export default function DashboardPage() {
       const redirectUrl = res.data?.data?.redirect_url;
 
       if (redirectUrl) {
-        window.open(redirectUrl, "_blank", "noopener,noreferrer");
+        window.location.href = redirectUrl; // <-- buka di tab yang sama
       } else {
         console.error("Redirect URL tidak ditemukan:", res.data);
-        if (fallbackUrl) window.open(normalizeUrl(fallbackUrl), "_blank", "noopener,noreferrer");
+        if (fallbackUrl) window.location.href = normalizeUrl(fallbackUrl);
       }
     } catch (err: any) {
       console.error("SSO redirect error", err);
@@ -317,7 +345,7 @@ export default function DashboardPage() {
       if (err.response?.status === 403) {
         alert("Anda tidak memiliki akses ke aplikasi ini");
       } else if (fallbackUrl) {
-        window.open(normalizeUrl(fallbackUrl), "_blank", "noopener,noreferrer");
+        window.location.href = normalizeUrl(fallbackUrl);
       }
     }
   };
@@ -495,7 +523,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-4 gap-4 mb-6">
+      <div className={`grid grid-cols-1 md:grid-cols-1 ${isKasieOrBelow ? "xl:grid-cols-3" : "xl:grid-cols-4"} gap-4 mb-6`}>
         <InsightCard
           layout="icon-stacked"
           icon={<LayoutGrid className="h-5 w-5 text-white" />}
@@ -506,27 +534,33 @@ export default function DashboardPage() {
           subIcon={<LayoutGrid className="h-3 w-3" />}
           loading={loading}
         />
+
+        {!isKasieOrBelow && (
+          <InsightCard
+            layout="icon-stacked"
+            variant="gradient"
+            icon={<Clock className="h-5 w-5 text-white" />}
+            gradient="linear-gradient(135deg, #1a237e 0%, #3949ab 100%)"
+            label="My Pending Approval"
+            value={`${myPendingApprovals} Approval`}
+            subLabel="Waiting for your action"
+            subIcon={<Clock className="h-3 w-3" />}
+            loading={loading}
+          />
+        )}
+
         <InsightCard
           layout="icon-stacked"
-          variant="gradient"
-          icon={<Clock className="h-5 w-5 text-white" />}
-          gradient="linear-gradient(135deg, #1a237e 0%, #3949ab 100%)"
-          label="My Pending Approval"
-          value={`${myPendingApprovals} Approval`}
-          subLabel="Waiting for your action"
-          subIcon={<Clock className="h-3 w-3" />}
-          loading={loading}
-        />
-        <InsightCard
-          layout="icon-stacked"
+          variant={isKasieOrBelow ? "gradient" : undefined}
           icon={<RefreshCw className="h-5 w-5 text-white" />}
-          gradient="linear-gradient(135deg, #0f6e56 0%, #1d9e75 100%)"
+          gradient="linear-gradient(135deg, #1a237e 0%, #3949ab 100%)"
           label="My On Going Requests"
           value={`${myPendingRequests} Requests`}
           subLabel="Currently in progress"
           subIcon={<RefreshCw className="h-3 w-3" />}
           loading={loading}
         />
+
         <InsightCard
           layout="icon-stacked"
           icon={<Clock className="h-5 w-5 text-white" />}

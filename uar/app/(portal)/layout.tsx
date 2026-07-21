@@ -72,6 +72,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
     const [profile, setProfile] = React.useState<any>(null);
     const [foto, setFoto] = React.useState<any>(null);
     const [mounted, setMounted] = React.useState(false);
+    const [isKasieOrBelow, setIsKasieOrBelow] = React.useState(false);
 
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -116,6 +117,30 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
         };
         fetchPhoto();
     }, [profile]);
+
+    // Tentukan level jabatan user (unit / subsi) untuk sembunyikan menu "Request Approval"
+    React.useEffect(() => {
+        if (!user?.username) return;
+        const fetchLevel = async () => {
+            try {
+                const res = await fetch(`https://personasys.triasmitra.com/api/auth/get-atasan-uar?nik=${user.username}`);
+                const result = await res.json();
+                if (result.Success) {
+                    const data = result.data;
+                    const nik = String(user.username).trim().toUpperCase();
+
+                    const isUnitOrSubsi =
+                        (data.unit_approval && String(data.unit_approval).trim().toUpperCase() === nik) ||
+                        (data.subsi_approval && String(data.subsi_approval).trim().toUpperCase() === nik);
+
+                    setIsKasieOrBelow(isUnitOrSubsi);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+        fetchLevel();
+    }, [user]);
 
     const segments = React.useMemo(() => pathname?.split("/").filter(Boolean) || [], [pathname]);
 
@@ -202,7 +227,15 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
 
     const renderMenu = () => {
         if (!user) return null;
-        const groups = menuByRole[user.role_name] || [];
+        const allGroups = menuByRole[user.role_name] || [];
+
+        // Sembunyikan grup "Request Approval" kalau level jabatan unit/subsi
+        const groups = allGroups.filter((group) => {
+            if (group.label === "Request Approval" && isKasieOrBelow) {
+                return false;
+            }
+            return true;
+        });
 
         return groups.map((group, idx) => (
             <SidebarGroup key={idx} className="mb-2">

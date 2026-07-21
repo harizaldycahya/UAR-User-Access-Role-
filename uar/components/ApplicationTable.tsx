@@ -114,8 +114,6 @@ export default function ApplicationTable() {
         return (
           <a
             href={safe}
-            target="_blank"
-            rel="noopener noreferrer"
             className="text-primary underline underline-offset-2"
           >
             {url}

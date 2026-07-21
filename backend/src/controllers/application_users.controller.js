@@ -1,9 +1,11 @@
 import { db } from "../config/db.js";
 
+const AUTO_ACCESS_CODES = ["HRIS", "SHOCART", "HELPDESK"];
+
 export const getApplicationsByUser = async (req, res) => {
   try {
     const username = req.user.username;
-    
+
     const [rows] = await db.query(
       `
     SELECT
@@ -34,6 +36,8 @@ export const getApplicationsByUser = async (req, res) => {
     );
 
     const result = rows.map((app) => {
+      const isAutoAccess = AUTO_ACCESS_CODES.includes(app.code);
+
       return {
         id: app.id,
         code: app.code,
@@ -43,7 +47,7 @@ export const getApplicationsByUser = async (req, res) => {
         icon: app.icon,
         role_mode: app.role_mode,
 
-        has_access: Boolean(app.user_app_id),
+        has_access: isAutoAccess ? true : Boolean(app.user_app_id),
         granted_at: app.granted_at,
 
         role: app.ua_role_name

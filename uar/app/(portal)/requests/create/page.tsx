@@ -120,12 +120,18 @@ export default function CreateRequestsPage() {
     }
   }
 
+  const EXCLUDED_FROM_REQUEST = ["HRIS", "SHOCART", "HELPDESK"];
+
   // load applications
   useEffect(() => {
     const load = async () => {
       try {
         const res = await apiFetch("/application-users");
-        setApplications(Array.isArray(res) ? res : []);
+        const apps = Array.isArray(res) ? res : [];
+        const filtered = apps.filter(
+          (a: Application) => !EXCLUDED_FROM_REQUEST.includes(a.code)
+        );
+        setApplications(filtered);
       } catch {
         setApplications([]);
       } finally {
@@ -134,7 +140,7 @@ export default function CreateRequestsPage() {
     };
     load();
   }, []);
-
+  
   // load roles by application
   useEffect(() => {
     if (!form.application) {

@@ -200,18 +200,36 @@ export const createRequest = async (req, res) => {
       });
     }
 
+    // ===== [DIUBAH] mulai =====
+    // Helper: anggap "", "-", null, undefined sebagai kosong/tidak valid
+    const cleanApprover = (val) => {
+      if (!val) return null;
+      const trimmed = String(val).trim();
+      if (trimmed === "" || trimmed === "-") return null;
+      return trimmed;
+    };
+
     const {
-      unit_approval,
-      subsi_approval,
-      kasie_approval,
-      kadept_approval,
-      kadiv_approval,
-      direktorat_approval,
+      unit_approval: rawUnit,
+      subsi_approval: rawSubsi,
+      kasie_approval: rawKasie,
+      kadept_approval: rawKadept,
+      kadiv_approval: rawKadiv,
+      direktorat_approval: rawDirektorat,
     } = personaRes.data.data;
+
+    // Normalisasi: "-" dan "" sekarang sama-sama dianggap null
+    const unit_approval = cleanApprover(rawUnit);
+    const subsi_approval = cleanApprover(rawSubsi);
+    const kasie_approval = cleanApprover(rawKasie);
+    const kadept_approval = cleanApprover(rawKadept);
+    const kadiv_approval = cleanApprover(rawKadiv);
+    const direktorat_approval = cleanApprover(rawDirektorat);
+    // ===== [DIUBAH] selesai =====
 
     // Cek apakah user adalah Manager ke atas (kasie, kadept, kadiv, direktorat)
     const isManagerOrAbove = [kasie_approval, kadept_approval, kadiv_approval, direktorat_approval]
-      .filter(Boolean)           // buang string kosong / null
+      .filter(Boolean)           // buang string kosong / null / "-"
       .includes(nik);
 
     const [[hrd]] = await conn.query(
@@ -1045,9 +1063,6 @@ export const approvalAction = async (req, res) => {
 //     conn.release();
 //   }
 // };
-
-
-
 
 export const reviseRequest = async (req, res) => {
   const conn = await db.getConnection();
