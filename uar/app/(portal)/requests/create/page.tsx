@@ -377,8 +377,8 @@ export default function CreateRequestsPage() {
                   <div className="flex flex-col items-center">
                     <div
                       className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${isCompleted || isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
                         }`}
                     >
                       {isCompleted ? (
@@ -438,8 +438,8 @@ export default function CreateRequestsPage() {
                       setForm((prev) => ({ ...prev, requestType: "application_access" }))
                     }
                     className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${form.requestType === "application_access"
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-muted-foreground/30 bg-card"
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-muted-foreground/30 bg-card"
                       }`}
                   >
                     <RadioGroupItem
@@ -460,8 +460,8 @@ export default function CreateRequestsPage() {
                       setForm((prev) => ({ ...prev, requestType: "change_role" }))
                     }
                     className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${form.requestType === "change_role"
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-muted-foreground/30 bg-card"
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-muted-foreground/30 bg-card"
                       }`}
                   >
                     <RadioGroupItem
@@ -769,7 +769,7 @@ export default function CreateRequestsPage() {
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
-                <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                   <Button
                     variant="outline"
                     onClick={() => setStep(1)}

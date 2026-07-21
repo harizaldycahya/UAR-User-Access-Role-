@@ -311,27 +311,34 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const submit = async () => {
-    setIsLoading(true);
-    setError("");
-    try {
-      await apiFetch("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ username, password }),
-      });
-      const meRes = await apiAxios.get("/auth/me");
-      const role_name = meRes.data?.user?.role_name;
-      const roleRedirectMap: Record<string, string> = {
-        admin: "/applications",
-        hrd: "/approvals",
-      };
-      router.push(roleRedirectMap[role_name] || "/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Login gagal");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+const submit = async () => {
+  setIsLoading(true);
+  setError("");
+
+  try {
+    // Login — backend set httpOnly cookie otomatis
+    await apiFetch("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    });
+
+    // Cookie sudah aktif, langsung ambil user info
+    const meRes = await apiAxios.get("/auth/me");
+    const role_name = meRes.data?.user?.role_name;
+
+    const roleRedirectMap: Record<string, string> = {
+      admin: "/applications",
+      hrd: "/approvals",
+    };
+
+    router.push(roleRedirectMap[role_name] || "/dashboard");
+
+  } catch (err: any) {
+    setError(err.message || "Login gagal");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && username && password) submit();
@@ -363,21 +370,35 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-16 grid grid-cols-1 gap-6">
-            {[
-              { icon: Layers, label: "Centralized System Access", desc: "One portal to access internal applications and platforms." },
-              { icon: ShieldCheck, label: "Secure Authentication", desc: "Protected access aligned with company security policies." },
-              { icon: Briefcase, label: "Operational Efficiency", desc: "Designed to support daily tasks and enterprise workflows." },
-            ].map(({ icon: Icon, label, desc }) => (
-              <div key={label} className="flex gap-4">
-                <div className="w-8 h-8 bg-blue-600/20 text-blue-500 flex items-center justify-center">
-                  <Icon className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="text-white text-sm font-medium">{label}</div>
-                  <div className="text-gray-500 text-xs mt-1">{desc}</div>
-                </div>
+            <div className="flex gap-4">
+              <div className="w-8 h-8 bg-blue-600/20 text-blue-500 flex items-center justify-center">
+                <Layers className="w-4 h-4" />
               </div>
-            ))}
+              <div>
+                <div className="text-white text-sm font-medium">Centralized System Access</div>
+                <div className="text-gray-500 text-xs mt-1">One portal to access internal applications and platforms.</div>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="w-8 h-8 bg-blue-600/20 text-blue-500 flex items-center justify-center">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-white text-sm font-medium">Secure Authentication</div>
+                <div className="text-gray-500 text-xs mt-1">Protected access aligned with company security policies.</div>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="w-8 h-8 bg-blue-600/20 text-blue-500 flex items-center justify-center">
+                <Briefcase className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-white text-sm font-medium">Operational Efficiency</div>
+                <div className="text-gray-500 text-xs mt-1">Designed to support daily tasks and enterprise workflows.</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -433,7 +454,9 @@ export default function LoginPage() {
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-sm font-medium text-blue-100/70">NIK</Label>
+                <Label htmlFor="username" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  NIK
+                </Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-300/40" />
                   <Input
@@ -449,8 +472,10 @@ export default function LoginPage() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-sm font-medium text-blue-100/70">Password</Label>
-                  <a href="/forgot-password" className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors">
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Password
+                  </Label>
+                  <a href="/forgot-password" className="text-xs text-blue-600 dark:text-blue-500 hover:underline font-medium">
                     Forgot password?
                   </a>
                 </div>
@@ -483,7 +508,7 @@ export default function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 border-white/20 rounded text-blue-500 focus:ring-blue-500 cursor-pointer bg-white/5"
                 />
-                <label htmlFor="remember" className="ml-2 text-sm text-blue-100/50 cursor-pointer">
+                <label htmlFor="remember" className="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
                   Remember me for 30 days
                 </label>
               </div>

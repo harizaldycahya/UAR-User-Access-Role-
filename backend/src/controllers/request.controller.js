@@ -246,7 +246,7 @@ export const createRequest = async (req, res) => {
         { level: 1, approver_id: hrd?.approver_id },
       ];
     } else {
-      // Staff: cari atasan langsung, naik bertahap sampai ketemu yang tidak kosong
+      // Staff: cari atasan langsung
       let atasanId = null;
 
       if (nik === kadiv_approval && direktorat_approval) {
@@ -256,9 +256,9 @@ export const createRequest = async (req, res) => {
       } else if (nik === kasie_approval && kadept_approval) {
         atasanId = kadept_approval;
       } else if (nik === subsi_approval) {
-        atasanId = kasie_approval || kadept_approval || kadiv_approval || direktorat_approval || null;
+        atasanId = kasie_approval || kadept_approval || null;
       } else if (nik === unit_approval) {
-        atasanId = kasie_approval || kadept_approval || kadiv_approval || direktorat_approval || null;
+        atasanId = kasie_approval || kadept_approval || null;
       }
 
       if (!atasanId) {
@@ -325,12 +325,12 @@ export const createRequest = async (req, res) => {
 
     try {
       await triggerApprovalNotification({
-        username: firstApprover,
-        type: "approval",
-        title: "New Request Awaiting Your Approval",
-        content: `${username} has submitted a ${requestTypeLabel} request (${requestCode}) that requires your approval.`,
-        url: `/approvals?request_code=${requestCode}`,
-        reference_id: requestCode,
+        username      : firstApprover,
+        type          : "approval",
+        title         : "New Request Awaiting Your Approval",
+        content       : `${username} has submitted a ${requestTypeLabel} request (${requestCode}) that requires your approval.`,
+        url           : `/approvals?request_code=${requestCode}`,
+        reference_id  : requestCode,
         reference_type: "request",
       });
     } catch (notifErr) {
@@ -784,7 +784,7 @@ export const approvalAction = async (req, res) => {
 
       try {
         await triggerApprovalNotification({
-          username: rejectedRequest.username,
+          username: rejectedRequest.username,   // ← dari requests.username
           type: "rejection",
           title: "Your Request Was Rejected",
           content: reason

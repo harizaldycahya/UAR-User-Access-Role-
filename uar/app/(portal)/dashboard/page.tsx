@@ -392,6 +392,33 @@ export default function DashboardPage() {
         Overview of request status, approvals, and system activity
       </p>
       <div className="min-h-8"></div>
+      {/* Quick Insights */}
+      <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-4 gap-4 mb-6">
+        {/* Total Applications */}
+        <Card className="border-border/40 hover:border-border transition-colors">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Accessable Application</p>
+                <h3 className="text-2xl font-bold text-foreground">
+                  {loading ? <Skeleton className="h-8 w-16" /> : accessibleCount}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                  <Clock className="h-3 w-3 text-primary" />
+                  <span>
+                    Applications
+                  </span>
+                </p>
+
+              </div>
+              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
       <div className="xl:hidden mb-6">
         <Card className="flex-1 border-border/40">
@@ -788,23 +815,38 @@ export default function DashboardPage() {
                           />
                         )}
 
-                        <div className="relative flex items-start gap-3 mb-4">
-                          <div
-                            className="h-12 w-12 rounded-lg flex items-center justify-center shrink-0
-                      transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
-                            style={{ backgroundColor: app.color }}
-                          >
-                            {Icon ? (
-                              <Icon className="h-6 w-6 text-white" />
-                            ) : (
-                              <span className="text-white font-semibold">
-                                {app.code}
-                              </span>
-                            )}
-                          </div>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-3 gap-4">
+              {loading ? (
+                Array.from({ length: 6 }).map((_, idx) => (
+                  <div key={idx} className="rounded-lg border border-border/40 p-4">
+                    <Skeleton className="h-12 w-12 rounded-lg mb-3" />
+                    <Skeleton className="h-4 w-3/4 mb-2" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
+                ))
+              ) : filteredApplications.length > 0 ? (
+                filteredApplications.map((app) => {
+                  const Icon = (Icons as unknown as Record<string, LucideIcon>)[
+                    app.icon?.charAt(0).toUpperCase() + app.icon?.slice(1)
+                  ];
 
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-semibold truncate transition-colors duration-300 group-hover:text-[var(--app-color)]">
+                  return (
+                    <div
+                      key={app.id}
+                      className={`rounded-lg border border-border/40 transition p-4 bg-card
+                        ${!app.has_access ? "opacity-60 grayscale cursor-not-allowed" : "hover:border-border hover:shadow-lg"}
+                      `}
+                    >
+                      <div className="flex items-start gap-3 mb-4">
+                        <div
+                          className="h-12 w-12 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: app.color }}
+                        >
+                          {Icon ? (
+                            <Icon className="h-6 w-6 text-white" />
+                          ) : (
+                            <span className="text-white font-semibold">
                               {app.code}
                             </h3>
                             <p className="text-xs text-muted-foreground truncate">
