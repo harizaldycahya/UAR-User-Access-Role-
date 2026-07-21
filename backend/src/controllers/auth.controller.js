@@ -49,11 +49,10 @@ export const login = async (req, res) => {
   res.cookie("token", token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: false,
+    secure: process.env.NODE_ENV === "production", // ✅ FIX: dynamic, bukan hardcoded false
   });
 
   return res.json({
-    token,
     user: {
       id: user.id,
       username: user.username,
@@ -89,7 +88,11 @@ export const logout = async (req, res) => {
       return res.status(400).json({ message: "User tidak ditemukan saat logout" });
     }
 
-    res.clearCookie("token");
+    res.clearCookie("token", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
 
     return res.json({ message: "Logout berhasil" });
   } catch (err) {
@@ -97,8 +100,6 @@ export const logout = async (req, res) => {
     return res.status(500).json({ message: "Gagal logout" });
   }
 };
-
-
 
 export const me = async (req, res) => {
   try {
@@ -144,7 +145,6 @@ export const me = async (req, res) => {
       if (hrRes.data?.Success) {
         hrProfile = hrRes.data.data;
 
-        // ambil foto kalau HR profile sukses
         try {
           const photoRes = await axios.get(
             "https://personasys.triasmitra.com/api/aas-gateway/get-photo-url",
@@ -192,7 +192,6 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    // ambil password lama dari DB
     const [[user]] = await db.query(
       `SELECT password FROM users WHERE id = ? LIMIT 1`,
       [userId]
@@ -204,7 +203,6 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    // cek password lama
     const match = await bcrypt.compare(oldPassword, user.password);
     if (!match) {
       return res.status(401).json({
@@ -212,10 +210,8 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    // hash password baru
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // update password
     await db.query(
       `UPDATE users 
       SET password = ?, 
@@ -224,7 +220,6 @@ export const changePassword = async (req, res) => {
       WHERE id = ?`,
       [hashedPassword, userId]
     );
-
 
     return res.json({
       success: true,
@@ -238,27 +233,17 @@ export const changePassword = async (req, res) => {
   }
 };
 
-// ================================================================
-// TAMBAHKAN ke bagian paling bawah auth.controller.js kamu
-//
-// Tambahkan import ini di bagian ATAS file (yang belum ada):
-//   import crypto from "crypto";
-//   import nodemailer from "nodemailer";
-//
-// axios sudah ada, tidak perlu import lagi.
-// ================================================================
-
 // ─── Konfigurasi nodemailer ────────────────────────────────────
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT) || 587,
-  secure: false, // false untuk port 587 (STARTTLS)
+  secure: false,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
   tls: {
-    rejectUnauthorized: false, // ← tambahkan ini untuk mail server internal
+    rejectUnauthorized: false,
   },
 });
 
@@ -286,8 +271,6 @@ const getEmailFromHR = async (nik) => {
 // ================================================================
 export const forgotPassword = async (req, res) => {
   const { username } = req.body;
-  console.log("=== FORGOT PASSWORD DEBUG ===");
-  console.log("1. username diterima:", username);
 
   if (!username) {
     return res.status(400).json({ message: "Username wajib diisi." });
@@ -298,18 +281,14 @@ export const forgotPassword = async (req, res) => {
       `SELECT username FROM users WHERE username = ? AND is_active = 1 LIMIT 1`,
       [username]
     );
-    console.log("2. hasil query DB:", rows);
 
     if (rows.length === 0) {
-      console.log("3. STOP — user tidak ditemukan di DB atau is_active = 0");
       return res.status(200).json({
         message: "Jika username terdaftar, link reset akan dikirimkan ke email kamu.",
       });
     }
 
-    console.log("4. user ditemukan, ambil email dari HR API...");
     const email = await getEmailFromHR(username);
-    console.log("5. email dari HR API:", email);
 
     if (!email) {
       return res.status(503).json({
@@ -317,24 +296,18 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    console.log("7. generate token...");
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-    console.log("8. token:", token);
 
-    console.log("9. DELETE token lama...");
     await db.query(`DELETE FROM password_reset_tokens WHERE username = ?`, [username]);
 
-    console.log("10. INSERT token baru...");
     await db.query(
       `INSERT INTO password_reset_tokens (username, token, expires_at) VALUES (?, ?, ?)`,
       [username, token, expiresAt]
     );
-    console.log("11. INSERT berhasil!");
 
-    // const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`; prod buka ini 
-    const resetLink = `http://localhost:3000/reset-password?token=${token}`;
-    console.log("12. kirim email ke:", email);
+    // ✅ FIX: pakai env variable, bukan hardcoded localhost
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
 
     await transporter.sendMail({
       from: `"Portal Triasmitra" <${process.env.SMTP_USER}>`,
@@ -365,18 +338,15 @@ export const forgotPassword = async (req, res) => {
       `,
     });
 
-    console.log("13. email terkirim!");
-
+    // ✅ FIX: hapus field "email" dari response
     return res.status(200).json({
       message: "Jika username terdaftar, link reset akan dikirimkan ke email kamu.",
-      email: email,
     });
   } catch (err) {
     console.error("FORGOT PASSWORD ERROR:", err);
-    return res.status(500).json({ 
+    // ✅ FIX: hapus debug_error dan debug_stack
+    return res.status(500).json({
       message: "Terjadi kesalahan server.",
-      debug_error: err.message,  // ← tambah ini sementara
-      debug_stack: err.stack     // ← dan ini
     });
   }
 };
@@ -449,10 +419,8 @@ export const resetPassword = async (req, res) => {
 
     const { username } = rows[0];
 
-    // Hash password baru
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update password di tabel users — lookup by username
     await db.query(
       `UPDATE users
        SET password = ?,
@@ -462,7 +430,6 @@ export const resetPassword = async (req, res) => {
       [hashedPassword, username]
     );
 
-    // Hapus token
     await db.query(`DELETE FROM password_reset_tokens WHERE token = ?`, [token]);
 
     return res.status(200).json({ message: "Password berhasil diperbarui." });

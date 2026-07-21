@@ -106,10 +106,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = React.useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) router.replace("/login");
-  }, []);
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -311,7 +307,7 @@ export default function DashboardPage() {
       </p>
       <div className="min-h-8"></div>
       {/* Quick Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-4 gap-4 mb-6">
         {/* Total Applications */}
         <Card className="border-border/40 hover:border-border transition-colors">
           <CardContent className="p-5">
@@ -478,7 +474,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[30%_1fr] gap-6">
         {/* NOTIFICATIONS */}
         <Card className="flex flex-col border-border/40">
           <CardHeader className="border-b border-border/40">
@@ -658,7 +654,7 @@ export default function DashboardPage() {
           </CardHeader>
 
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-3 gap-4">
               {loading ? (
                 Array.from({ length: 6 }).map((_, idx) => (
                   <div key={idx} className="rounded-lg border border-border/40 p-4">
