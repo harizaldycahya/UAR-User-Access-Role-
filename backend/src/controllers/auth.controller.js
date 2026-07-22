@@ -3,7 +3,7 @@ import { db } from "../config/db.js";
 import { signToken } from "../utils/jwt.js";
 import axios from "axios";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
+import { transporter } from "../config/mailer.js";
 
 
 export const login = async (req, res) => {
@@ -46,10 +46,12 @@ export const login = async (req, res) => {
     role_id: user.role_id,
   });
 
+  const isProd = process.env.NODE_ENV === "production";
+
   res.cookie("token", token, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production", // ✅ FIX: dynamic, bukan hardcoded false
+    sameSite: isProd ? "none" : "lax",  // none di prod, lax di local
+    secure: isProd,                      // true di prod, false di local
   });
 
   return res.json({
@@ -233,20 +235,6 @@ export const changePassword = async (req, res) => {
   }
 };
 
-// ─── Konfigurasi nodemailer ────────────────────────────────────
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false,
-  },
-});
-
 // ─── Helper: ambil email dari HR API ──────────────────────────
 const getEmailFromHR = async (nik) => {
   try {
@@ -269,8 +257,11 @@ const getEmailFromHR = async (nik) => {
 //    POST /api/auth/forgot-password
 //    Body: { username }
 // ================================================================
+
+
 export const forgotPassword = async (req, res) => {
   const { username } = req.body;
+  console.log("[ForgotPW] request masuk untuk username:", username);
 
   if (!username) {
     return res.status(400).json({ message: "Username wajib diisi." });
@@ -281,16 +272,20 @@ export const forgotPassword = async (req, res) => {
       `SELECT username FROM users WHERE username = ? AND is_active = 1 LIMIT 1`,
       [username]
     );
+    console.log("[ForgotPW] rows ditemukan:", rows.length, rows);
 
     if (rows.length === 0) {
+      console.log("[ForgotPW] ⚠️ user tidak ditemukan / tidak aktif, stop di sini");
       return res.status(200).json({
         message: "Jika username terdaftar, link reset akan dikirimkan ke email kamu.",
       });
     }
 
     const email = await getEmailFromHR(username);
+    console.log("[ForgotPW] email dari HR:", email);
 
     if (!email) {
+      console.log("[ForgotPW] ⚠️ email kosong dari HR API, stop di sini");
       return res.status(503).json({
         message: "Gagal mengambil data email dari sistem HR. Silakan hubungi IT Support.",
       });
@@ -298,6 +293,7 @@ export const forgotPassword = async (req, res) => {
 
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    console.log("[ForgotPW] token dibuat:", token, "expiresAt:", expiresAt);
 
     await db.query(`DELETE FROM password_reset_tokens WHERE username = ?`, [username]);
 
@@ -306,9 +302,10 @@ export const forgotPassword = async (req, res) => {
       [username, token, expiresAt]
     );
 
-    // ✅ FIX: pakai env variable, bukan hardcoded localhost
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    console.log("[ForgotPW] resetLink:", resetLink);
 
+    console.log("[ForgotPW] mencoba sendMail ke:", email);
     await transporter.sendMail({
       from: `"Portal Triasmitra" <${process.env.SMTP_USER}>`,
       to: email,
@@ -337,14 +334,13 @@ export const forgotPassword = async (req, res) => {
         </div>
       `,
     });
+    console.log("[ForgotPW] ✅ email berhasil dikirim ke", email);
 
-    // ✅ FIX: hapus field "email" dari response
     return res.status(200).json({
       message: "Jika username terdaftar, link reset akan dikirimkan ke email kamu.",
     });
   } catch (err) {
     console.error("FORGOT PASSWORD ERROR:", err);
-    // ✅ FIX: hapus debug_error dan debug_stack
     return res.status(500).json({
       message: "Terjadi kesalahan server.",
     });

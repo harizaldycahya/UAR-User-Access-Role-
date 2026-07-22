@@ -46,15 +46,69 @@ export default function ReviseRequestPage() {
         justification: "",
     });
 
+    // ── helper: normalisasi response roles per-integrasi jadi bentuk {id, name} ──
+    const fetchRolesForApp = async (code: string, applicationId: string | number) => {
+        try {
+            setLoadingRoles(true);
+
+            let rawRoles: unknown;
+
+            if (code === "SONAR") {
+                // SONAR punya struktur beda: { key, label } bukan { id, name }
+                const rolesRes = await apiFetch("/applications/integrations/sonar/roles");
+                const sonarRoles = rolesRes?.data?.result?.roles;
+                rawRoles = Array.isArray(sonarRoles)
+                    ? sonarRoles.map((r: { key: string; label: string }) => ({
+                        id: r.key,
+                        name: r.label,
+                    }))
+                    : [];
+            } else if (["IMS", "AMS", "CMS"].includes(code)) {
+                const endpointMap: Record<string, string> = { IMS: "ims", AMS: "ams", CMS: "cms" };
+                const rolesRes = await apiFetch(`/applications/integrations/${endpointMap[code]}/roles`);
+                rawRoles = rolesRes?.data?.result?.data;
+            } else {
+                const rolesRes = await apiFetch(`/applications/${applicationId}/roles`);
+                rawRoles = rolesRes?.data;
+            }
+
+            // ✅ Guard: apapun bentuk response-nya, pastikan yang masuk state selalu array
+            setRoles(Array.isArray(rawRoles) ? (rawRoles as ApplicationRole[]) : []);
+        } catch (err) {
+            console.error(err);
+            setRoles([]);
+        } finally {
+            setLoadingRoles(false);
+        }
+    };
+
+    const fetchAmsLocations = async () => {
+        try {
+            setLoadingLocations(true);
+            const locRes = await apiFetch("/applications/integrations/ams/locations");
+            const rawLocations = locRes?.data?.result?.data;
+            setLocations(Array.isArray(rawLocations) ? (rawLocations as ApplicationLocation[]) : []);
+        } catch (err) {
+            console.error(err);
+            setLocations([]);
+        } finally {
+            setLoadingLocations(false);
+        }
+    };
+
     useEffect(() => {
         const load = async () => {
             try {
                 const res = await apiFetch(`/requests/${request_code}`);
-                const req = res.data;
-                setRequest(req);
+                const req = res?.data;
 
-                // ✅ Langsung dari request detail, tidak perlu fetch /application-users
-                setApp(req.application);
+                if (!req) {
+                    setRequest(null);
+                    return;
+                }
+
+                setRequest(req);
+                setApp(req.application ?? null);
 
                 setForm({
                     newRole: req.new_role_id ?? "",
@@ -64,30 +118,19 @@ export default function ReviseRequestPage() {
                 });
 
                 if (req.application) {
-                    setLoadingRoles(true);
-                    let rolesRes;
                     const code = req.application.code;
-                    if (code === "IMS") rolesRes = await apiFetch("/applications/integrations/ims/roles");
-                    else if (code === "AMS") rolesRes = await apiFetch("/applications/integrations/ams/roles");
-                    else if (code === "CMS") rolesRes = await apiFetch("/applications/integrations/cms/roles");
-                    else rolesRes = await apiFetch(`/applications/${req.application.id}/roles`);
 
-                    setRoles(
-                        ["IMS", "AMS", "CMS"].includes(code)
-                            ? rolesRes?.data?.result?.data ?? []
-                            : rolesRes?.data ?? []
-                    );
-                    setLoadingRoles(false);
+                    // fetch roles & locations independen, error di salah satu
+                    // nggak bikin seluruh halaman gagal load
+                    await fetchRolesForApp(code, req.application.id);
 
                     if (code === "AMS") {
-                        setLoadingLocations(true);
-                        const locRes = await apiFetch("/applications/integrations/ams/locations");
-                        setLocations(locRes?.data?.result?.data ?? []);
-                        setLoadingLocations(false);
+                        await fetchAmsLocations();
                     }
                 }
             } catch (err) {
                 console.error(err);
+                setRequest(null);
             } finally {
                 setPageLoading(false);
             }
@@ -171,7 +214,7 @@ export default function ReviseRequestPage() {
             <div className="max-w-7xl">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-semibold text-foreground mb-2">Revise Request</h1>
+                    <h1 className="text-5xl font-semibold text-foreground mb-2">Revise Request</h1>
                     <p className="text-muted-foreground text-sm">
                         Update your request details and resubmit for approval.
                     </p>

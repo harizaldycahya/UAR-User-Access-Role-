@@ -257,7 +257,7 @@ export default function ProfilePage() {
       <div className="max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-semibold text-foreground mb-2">
+          <h1 className="text-5xl font-semibold text-foreground mb-2">
             My Profile
           </h1>
           <p className="text-muted-foreground text-sm">

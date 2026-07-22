@@ -200,18 +200,36 @@ export const createRequest = async (req, res) => {
       });
     }
 
+    // ===== [DIUBAH] mulai =====
+    // Helper: anggap "", "-", null, undefined sebagai kosong/tidak valid
+    const cleanApprover = (val) => {
+      if (!val) return null;
+      const trimmed = String(val).trim();
+      if (trimmed === "" || trimmed === "-") return null;
+      return trimmed;
+    };
+
     const {
-      unit_approval,
-      subsi_approval,
-      kasie_approval,
-      kadept_approval,
-      kadiv_approval,
-      direktorat_approval,
+      unit_approval: rawUnit,
+      subsi_approval: rawSubsi,
+      kasie_approval: rawKasie,
+      kadept_approval: rawKadept,
+      kadiv_approval: rawKadiv,
+      direktorat_approval: rawDirektorat,
     } = personaRes.data.data;
+
+    // Normalisasi: "-" dan "" sekarang sama-sama dianggap null
+    const unit_approval = cleanApprover(rawUnit);
+    const subsi_approval = cleanApprover(rawSubsi);
+    const kasie_approval = cleanApprover(rawKasie);
+    const kadept_approval = cleanApprover(rawKadept);
+    const kadiv_approval = cleanApprover(rawKadiv);
+    const direktorat_approval = cleanApprover(rawDirektorat);
+    // ===== [DIUBAH] selesai =====
 
     // Cek apakah user adalah Manager ke atas (kasie, kadept, kadiv, direktorat)
     const isManagerOrAbove = [kasie_approval, kadept_approval, kadiv_approval, direktorat_approval]
-      .filter(Boolean)           // buang string kosong / null
+      .filter(Boolean)           // buang string kosong / null / "-"
       .includes(nik);
 
     const [[hrd]] = await conn.query(
@@ -228,7 +246,7 @@ export const createRequest = async (req, res) => {
         { level: 1, approver_id: hrd?.approver_id },
       ];
     } else {
-      // Staff: cari atasan langsung
+      // Staff: cari atasan langsung, naik bertahap sampai ketemu yang tidak kosong
       let atasanId = null;
 
       if (nik === kadiv_approval && direktorat_approval) {
@@ -238,9 +256,9 @@ export const createRequest = async (req, res) => {
       } else if (nik === kasie_approval && kadept_approval) {
         atasanId = kadept_approval;
       } else if (nik === subsi_approval) {
-        atasanId = kasie_approval || kadept_approval || null;
+        atasanId = kasie_approval || kadept_approval || kadiv_approval || direktorat_approval || null;
       } else if (nik === unit_approval) {
-        atasanId = kasie_approval || kadept_approval || null;
+        atasanId = kasie_approval || kadept_approval || kadiv_approval || direktorat_approval || null;
       }
 
       if (!atasanId) {
@@ -307,12 +325,12 @@ export const createRequest = async (req, res) => {
 
     try {
       await triggerApprovalNotification({
-        username      : firstApprover,
-        type          : "approval",
-        title         : "New Request Awaiting Your Approval",
-        content       : `${username} has submitted a ${requestTypeLabel} request (${requestCode}) that requires your approval.`,
-        url           : `/approvals?request_code=${requestCode}`,
-        reference_id  : requestCode,
+        username: firstApprover,
+        type: "approval",
+        title: "New Request Awaiting Your Approval",
+        content: `${username} has submitted a ${requestTypeLabel} request (${requestCode}) that requires your approval.`,
+        url: `/approvals?request_code=${requestCode}`,
+        reference_id: requestCode,
         reference_type: "request",
       });
     } catch (notifErr) {
@@ -612,7 +630,9 @@ export const getMyApprovals = async (req, res) => {
           r.old_role_name,
 
           r.new_role_id,
-          r.new_role_name
+          r.new_role_name,
+
+          requestor.nama_user AS requestor_name
 
         FROM approvals ap
 
@@ -621,6 +641,9 @@ export const getMyApprovals = async (req, res) => {
 
         JOIN applications a
           ON a.id = r.application_id
+
+        LEFT JOIN users requestor
+          ON requestor.username COLLATE utf8mb4_unicode_ci = r.username COLLATE utf8mb4_unicode_ci
 
         WHERE ap.approver_id = ?
         AND ap.status = 'pending'
@@ -647,6 +670,73 @@ export const getMyApprovals = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch approvals",
+    });
+  }
+};
+
+
+export const getMyApprovalHistory = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const [[user]] = await db.query(
+      `SELECT username FROM users WHERE id = ?`,
+      [userId]
+    );
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User tidak ditemukan",
+      });
+    }
+
+    const [rows] = await db.query(
+      `
+        SELECT
+          ap.id AS approval_id,
+          ap.level,
+          ap.status AS approval_status,
+          ap.approved_at,
+          ap.reason,
+
+          r.request_code,
+          r.type,
+          r.justification,
+          r.notes,
+          r.created_at,
+
+          a.name AS application_name,
+          a.role_mode AS application_role_mode,
+
+          r.old_role_id,
+          r.old_role_name,
+
+          r.new_role_id,
+          r.new_role_name,
+
+          requestor.nama_user AS requestor_name
+
+        FROM approvals ap
+        JOIN requests r ON r.request_code = ap.request_code
+        JOIN applications a ON a.id = r.application_id
+        LEFT JOIN users requestor
+          ON requestor.username COLLATE utf8mb4_unicode_ci = r.username COLLATE utf8mb4_unicode_ci
+
+        WHERE ap.approver_id = ?
+          AND ap.status IN ('approved', 'rejected')
+
+        ORDER BY ap.approved_at DESC
+      `,
+      [user.username]
+    );
+
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch approval history",
     });
   }
 };
@@ -683,11 +773,18 @@ export const approvalAction = async (req, res) => {
 
     if (action === "reject") {
       await handleReject(conn, approval, reason || null);
+
+      // ✅ FIX: ambil username requester dari DB sebelum commit
+      const [[rejectedRequest]] = await conn.query(
+        `SELECT username FROM requests WHERE request_code = ? LIMIT 1`,
+        [approval.request_code]
+      );
+
       await conn.commit();
 
       try {
         await triggerApprovalNotification({
-          username: rejectedRequest.username,   // ← dari requests.username
+          username: rejectedRequest.username,
           type: "rejection",
           title: "Your Request Was Rejected",
           content: reason
@@ -696,6 +793,7 @@ export const approvalAction = async (req, res) => {
           url: `/requests?request_code=${approval.request_code}`,
           reference_id: String(approval.request_code),
           reference_type: "request",
+          send_email: true,   // ✅ kirim email
         });
       } catch (notifErr) {
         console.error("Failed to send rejection notification:", notifErr);
@@ -704,14 +802,16 @@ export const approvalAction = async (req, res) => {
       return res.json({ success: true, message: "Request ditolak" });
     }
 
-    // approve
+    // ── approve ──────────────────────────────────────────────────────
     await conn.query(
       `UPDATE approvals SET status = 'approved', approved_at = NOW() WHERE id = ?`,
       [approval.id]
     );
 
     const pendingCount = await getPendingCount(conn, approval.request_code);
+
     if (pendingCount === 0) {
+      // Semua level approved — request selesai
       await conn.query(
         `UPDATE requests SET status = 'approved' WHERE request_code = ?`,
         [approval.request_code]
@@ -719,9 +819,7 @@ export const approvalAction = async (req, res) => {
 
       const request = await getRequestInfo(conn, approval.request_code);
       await applyRoleChanges(conn, request);
-
       await notifyExternalApp(request);
-
       await conn.commit();
 
       try {
@@ -733,17 +831,16 @@ export const approvalAction = async (req, res) => {
           url: `/requests?request_code=${approval.request_code}`,
           reference_id: String(approval.request_code),
           reference_type: "request",
+          send_email: true,   // ✅ kirim email
         });
       } catch (notifErr) {
         console.error("Failed to send approval notification:", notifErr);
       }
 
-
     } else {
-
+      // Masih ada level berikutnya — notif ke approver selanjutnya
       const [[nextApproval]] = await conn.query(
-        `SELECT approver_id, level
-         FROM approvals
+        `SELECT approver_id, level FROM approvals
          WHERE request_code = ? AND level = ? AND status = 'pending'
          LIMIT 1`,
         [approval.request_code, approval.level + 1]
@@ -761,6 +858,7 @@ export const approvalAction = async (req, res) => {
             url: `/approvals?request_code=${approval.request_code}`,
             reference_id: String(approval.request_code),
             reference_type: "request",
+            send_email: true,   // ✅ kirim email
           });
         } catch (notifErr) {
           console.error("Failed to send next approver notification:", notifErr);
@@ -966,67 +1064,7 @@ export const approvalAction = async (req, res) => {
 //   }
 // };
 
-export const getMyApprovalHistory = async (req, res) => {
-  try {
-    const userId = req.user.id;
 
-    const [[user]] = await db.query(
-      `SELECT username FROM users WHERE id = ?`,
-      [userId]
-    );
-
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "User tidak ditemukan",
-      });
-    }
-
-    const [rows] = await db.query(
-      `
-      SELECT
-        ap.id AS approval_id,
-        ap.level,
-        ap.status AS approval_status,
-        ap.approved_at,
-        ap.reason,
-
-        r.request_code,
-        r.type,
-        r.justification,
-        r.notes,
-        r.created_at,
-
-        a.name AS application_name,
-        a.role_mode AS application_role_mode,
-
-        r.old_role_id,
-        r.old_role_name,     -- ← snapshot langsung dari requests
-
-        r.new_role_id,
-        r.new_role_name      -- ← snapshot langsung dari requests
-
-      FROM approvals ap
-      JOIN requests r ON r.request_code = ap.request_code
-      JOIN applications a ON a.id = r.application_id
-
-      WHERE ap.approver_id = ?
-        AND ap.status IN ('approved', 'rejected')
-
-      ORDER BY ap.approved_at DESC
-      `,
-      [user.username]
-    );
-
-    res.json({ success: true, data: rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch approval history",
-    });
-  }
-};
 
 
 export const reviseRequest = async (req, res) => {

@@ -13,7 +13,9 @@ import {
 import {
   MoreVertical, Calendar, ExternalLink,
   Bell, CheckCircle2, Lock, Clock,
-  ChevronRight
+  ChevronRight,
+  LayoutGrid,
+  RefreshCw
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,6 +28,8 @@ import * as Icons from "lucide-react";
 import { LucideIcon } from "lucide-react";
 import { apiAxios } from "@/lib/api";
 import Link from "next/link";
+
+import { InsightCard } from "@/components/ui/insight-card";
 
 interface Role {
   id: number;
@@ -84,10 +88,10 @@ interface MyApproval {
   new_role_name: string | null;
 }
 
-
-
 export default function DashboardPage() {
   const [lastLoginAt, setlastLoginAt] = React.useState<string | null>(null);
+  const [username, setUsername] = React.useState<string | null>(null);
+  const [isKasieOrBelow, setIsKasieOrBelow] = React.useState(false);
   const [applications, setApplications] = React.useState<Application[]>([]);
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [markingId, setMarkingId] = React.useState<number | null>(null);
@@ -159,8 +163,10 @@ export default function DashboardPage() {
         const res = await apiAxios.get("/auth/me");
 
         const last_login_at = res.data.user?.last_login_at;
+        const uname = res.data.user?.username;
 
         setlastLoginAt(last_login_at);
+        setUsername(uname);
       } catch (err) {
         console.error(err);
         setlastLoginAt(null);
@@ -171,6 +177,30 @@ export default function DashboardPage() {
 
     load();
   }, []);
+
+  // Tentukan level jabatan user (unit / subsi) untuk sembunyikan/mengubah tampilan card
+  React.useEffect(() => {
+    if (!username) return;
+    const fetchLevel = async () => {
+      try {
+        const res = await fetch(`https://personasys.triasmitra.com/api/auth/get-atasan-uar?nik=${username}`);
+        const result = await res.json();
+        if (result.Success) {
+          const data = result.data;
+          const nik = String(username).trim().toUpperCase();
+
+          const isUnitOrSubsi =
+            (data.unit_approval && String(data.unit_approval).trim().toUpperCase() === nik) ||
+            (data.subsi_approval && String(data.subsi_approval).trim().toUpperCase() === nik);
+
+          setIsKasieOrBelow(isUnitOrSubsi);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchLevel();
+  }, [username]);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -198,7 +228,7 @@ export default function DashboardPage() {
       const redirectUrl = res.data?.data?.redirect_url;
 
       if (redirectUrl) {
-        window.open(redirectUrl, "_blank", "noopener,noreferrer");
+        window.location.href = redirectUrl; // <-- buka di tab yang sama
       } else {
         console.error("Redirect URL tidak ditemukan:", res.data);
       }
@@ -296,181 +326,242 @@ export default function DashboardPage() {
     return "Just now";
   }
 
+  // Notifications
+  const redirectViaSSO = async (code: string, fallbackUrl?: string | null) => {
+    try {
+      const res = await apiAxios.get(`/applications/${code.toLowerCase()}/redirect`);
+
+      const redirectUrl = res.data?.data?.redirect_url;
+
+      if (redirectUrl) {
+        window.location.href = redirectUrl; // <-- buka di tab yang sama
+      } else {
+        console.error("Redirect URL tidak ditemukan:", res.data);
+        if (fallbackUrl) window.location.href = normalizeUrl(fallbackUrl);
+      }
+    } catch (err: any) {
+      console.error("SSO redirect error", err);
+
+      if (err.response?.status === 403) {
+        alert("Anda tidak memiliki akses ke aplikasi ini");
+      } else if (fallbackUrl) {
+        window.location.href = normalizeUrl(fallbackUrl);
+      }
+    }
+  };
+
+  const handleNotificationClick = async (notification: Notification) => {
+    if (markingId === notification.id) return;
+
+    const hasAccess = getAppAccess(notification.app_code);
+    if (!hasAccess) return; // langsung stop, nggak bisa diklik
+
+    setMarkingId(notification.id);
+
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.id === notification.id ? { ...n, is_read: 1 } : n
+      )
+    );
+
+    try {
+      await markAsRead(notification.id);
+    } catch (err) {
+      console.error("Failed to mark as read", err);
+    } finally {
+      setMarkingId(null);
+    }
+
+    await redirectViaSSO(notification.app_code, notification.url);
+  };
+
+  const getAppAccess = (appCode: string) => {
+    const app = applications.find(
+      (a) => a.code?.toLowerCase() === appCode?.toLowerCase()
+    );
+    return app?.has_access ?? false;
+  };
+
   return (
     <main className="min-h-screen bg-background p-6">
+      <div className="xl:hidden mb-6">
+        <Card className="flex-1 border-border/40">
+          <Card className="flex-1 border-border/40">
+            <CardHeader className="border-b border-border/40">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <CardTitle className="text-base font-semibold">Applications</CardTitle>
+                    <CardDescription className="text-xs">Access your available applications</CardDescription>
+                  </div>
+                </div>
 
-      <h1 className="text-3xl font-semibold text-foreground mb-2">
-        Dashboard
-      </h1>
-      <p className="text-muted-foreground text-sm">
-        Overview of request status, approvals, and system activity
-      </p>
-      <div className="min-h-8"></div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem onClick={() => setFilter("accessible")}>
+                      Accessible
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setFilter("not_accessible")}>
+                      Not Accessible
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setFilter("all")}>
+                      View All
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardHeader>
+
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-3 gap-4">
+                {loading ? (
+                  Array.from({ length: 6 }).map((_, idx) => (
+                    <div key={idx} className="rounded-lg border border-border/40 p-4">
+                      <Skeleton className="h-12 w-12 rounded-lg mb-3" />
+                      <Skeleton className="h-4 w-3/4 mb-2" />
+                      <Skeleton className="h-9 w-full" />
+                    </div>
+                  ))
+                ) : filteredApplications.length > 0 ? (
+                  filteredApplications.map((app) => {
+                    const Icon = (Icons as unknown as Record<string, LucideIcon>)[
+                      app.icon?.charAt(0).toUpperCase() + app.icon?.slice(1)
+                    ];
+
+                    return (
+                      <div
+                        key={app.id}
+                        className={`rounded-lg border border-border/40 transition p-4 bg-card
+                          ${!app.has_access ? "opacity-60 grayscale cursor-not-allowed" : "hover:border-border hover:shadow-lg"}
+                        `}
+                      >
+                        <div className="flex items-start gap-3 mb-4">
+                          <div
+                            className="h-12 w-12 rounded-lg flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: app.color }}
+                          >
+                            {Icon ? (
+                              <Icon className="h-6 w-6 text-white" />
+                            ) : (
+                              <span className="text-white font-semibold">
+                                {app.code}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold truncate">
+                              {app.code}
+                            </h3>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {app.name}
+                            </p>
+                            {app.role ? (
+                              <span className="text-xs text-muted-foreground">
+                                Role: {app.role.name}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                <div className="min-h-4"></div>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          className="w-full h-9 text-xs"
+                          variant={app.has_access ? "default" : "outline"}
+                          disabled={!app.has_access}
+                          onClick={() => openApplication(app.code)}
+                        >
+                          <span className="flex items-center gap-1.5">
+                            {app.has_access ? (
+                              <>
+                                <span>Open Application</span>
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="h-3.5 w-3.5" />
+                                <span>No Access</span>
+                              </>
+                            )}
+                          </span>
+                        </Button>
+
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full flex flex-col items-center py-16 text-muted-foreground">
+                    <Calendar className="h-12 w-12 mb-3 opacity-20" />
+                    <p className="text-sm">No applications available</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </Card>
+      </div>
+
       {/* Quick Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-4 gap-4 mb-6">
-        {/* Total Applications */}
-        <Card className="border-border/40 hover:border-border transition-colors">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-1">Accessable Application</p>
-                <h3 className="text-2xl font-bold text-foreground">
-                  {loading ? <Skeleton className="h-8 w-16" /> : accessibleCount}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                  <Clock className="h-3 w-3 text-primary" />
-                  <span>
-                    Applications
-                  </span>
-                </p>
+      <div className={`grid grid-cols-1 md:grid-cols-1 ${isKasieOrBelow ? "xl:grid-cols-3" : "xl:grid-cols-4"} gap-4 mb-6`}>
+        <InsightCard
+          layout="icon-stacked"
+          icon={<LayoutGrid className="h-5 w-5 text-white" />}
+          gradient="linear-gradient(135deg, #1a237e 0%, #3949ab 100%)"
+          label="Accessible Application"
+          value={`${accessibleCount} Apps`}
+          subLabel="Apps you can access"
+          subIcon={<LayoutGrid className="h-3 w-3" />}
+          loading={loading}
+        />
 
-              </div>
-              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                </svg>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {!isKasieOrBelow && (
+          <InsightCard
+            layout="icon-stacked"
+            variant="gradient"
+            icon={<Clock className="h-5 w-5 text-white" />}
+            gradient="linear-gradient(135deg, #1a237e 0%, #3949ab 100%)"
+            label="My Pending Approval"
+            value={`${myPendingApprovals} Approval`}
+            subLabel="Waiting for your action"
+            subIcon={<Clock className="h-3 w-3" />}
+            loading={loading}
+          />
+        )}
 
-        {/* My Pending Approval */}
-        <Link href="/approvals" className="block">
-          <Card
-            className="
-                border-border/40 
-                hover:border-border 
-                hover:shadow-sm 
-                transition-all
-                cursor-pointer
-                focus-within:ring-2 
-                focus-within:ring-primary
-                group
-              "
-          >
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">
-                    My Pending Approval
-                  </p>
+        <InsightCard
+          layout="icon-stacked"
+          variant={isKasieOrBelow ? "gradient" : undefined}
+          icon={<RefreshCw className="h-5 w-5 text-white" />}
+          gradient="linear-gradient(135deg, #1a237e 0%, #3949ab 100%)"
+          label="My On Going Requests"
+          value={`${myPendingRequests} Requests`}
+          subLabel="Currently in progress"
+          subIcon={<RefreshCw className="h-3 w-3" />}
+          loading={loading}
+        />
 
-                  <h3 className="text-2xl font-bold text-foreground">
-                    {loading ? <Skeleton className="h-8 w-16" /> : myPendingApprovals}
-                  </h3>
-
-                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                    <Clock className="h-3 w-3 text-primary" />
-                    <span>Approvals</span>
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Clock className="h-6 w-6 text-primary" />
-                  </div>
-
-                  {/* Visual hint kalau ini navigasi */}
-                  <ChevronRight
-                    className="
-                        h-5 w-5 
-                        text-muted-foreground
-                        opacity-0 
-                        -translate-x-1
-                        group-hover:opacity-100 
-                        group-hover:translate-x-0
-                        transition-all
-                      "
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* My Pending Requests */}
-        <Link href="/requests" className="block">
-          <Card
-            className="
-                border-border/40 
-                hover:border-border 
-                hover:shadow-sm 
-                transition-all
-                cursor-pointer
-                focus-within:ring-2 
-                focus-within:ring-primary
-                group
-              "
-          >
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">
-                    My On Going Requests
-                  </p>
-
-                  <h3 className="text-2xl font-bold text-foreground">
-                    {loading ? <Skeleton className="h-8 w-16" /> : myPendingRequests}
-                  </h3>
-
-                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                    <Clock className="h-3 w-3 text-primary" />
-                    <span>Requests</span>
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Clock className="h-6 w-6 text-primary" />
-                  </div>
-
-                  <ChevronRight
-                    className="
-                      h-5 w-5 
-                      text-muted-foreground
-                      opacity-0 
-                      -translate-x-1
-                      group-hover:opacity-100 
-                      group-hover:translate-x-0
-                      transition-all
-                    "
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* Last Activity */}
-        <Card className="border-border/40 hover:border-border transition-colors">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-xs font-medium text-muted-foreground mb-1">Last Activity</p>
-                <h3 className="text-2xl font-bold text-foreground">
-                  {loading ? (
-                    <Skeleton className="h-8 w-24" />
-                  ) : (
-                    timeAgo(lastLoginAt)
-                  )}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                  <Clock className="h-3 w-3 text-primary" />
-                  <span>
-                    {loading
-                      ? "..."
-                      : lastLoginAt
-                        ? "Previous login"
-                        : "No previous activity"}
-                  </span>
-                </p>
-              </div>
-              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <InsightCard
+          layout="icon-stacked"
+          icon={<Clock className="h-5 w-5 text-white" />}
+          gradient="linear-gradient(135deg, #444441 0%, #888780 100%)"
+          label="Last Activity"
+          value={timeAgo(lastLoginAt)}
+          subLabel="Previous login"
+          subIcon={<Clock className="h-3 w-3" />}
+          loading={loading}
+        />
       </div>
 
       {/* Main Content */}
@@ -528,85 +619,67 @@ export default function DashboardPage() {
                 </div>
               ))
             ) : filteredNotifications && filteredNotifications.length > 0 ? (
-              filteredNotifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`
-                    group rounded-lg border border-border/40 transition-all duration-200 p-3 cursor-pointer
-                    hover:border-border hover:bg-accent/50
-                    ${notification.is_read === 0 ? "bg-accent/30" : "opacity-70"}
-                  `}
-                  onClick={async () => {
-                    if (markingId === notification.id) return; // prevent double click
+              filteredNotifications.map((notification) => {
+                const hasAccess = getAppAccess(notification.app_code);
 
-                    setMarkingId(notification.id);
-
-                    // Optimistic UI
-                    setNotifications((prev) =>
-                      prev.map((n) =>
-                        n.id === notification.id
-                          ? { ...n, is_read: 1 }
-                          : n
-                      )
-                    );
-
-                    try {
-                      await markAsRead(notification.id);
-                    } catch (err) {
-                      console.error("Failed to mark as read", err);
-                      // Optional: revert UI kalau mau super strict
-                    } finally {
-                      setMarkingId(null);
-                    }
-
-                    // Redirect
-                    if (notification.url) {
-                      window.location.href = normalizeUrl(notification.url);
-                    }
-                  }}
-
-
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center text-primary text-xs font-semibold shrink-0">
-                      {notification.app_code}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <p
-                          className={`text-sm truncate ${notification.is_read === 0
-                            ? "font-semibold text-foreground"
-                            : "font-normal text-muted-foreground"
-                            }`}
-                        >
-                          {notification.app_code}
-                        </p>
-
-                        {notification.is_read === 0 && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
-                        )}
+                return (
+                  <div
+                    key={notification.id}
+                    className={`
+                      group rounded-lg border border-border/40 transition-all duration-200 p-3
+                      ${hasAccess ? "cursor-pointer hover:border-border hover:bg-accent/50" : "opacity-60 grayscale cursor-not-allowed"}
+                      ${notification.is_read === 0 ? "bg-accent/30" : "opacity-70"}
+                    `}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center text-primary text-xs font-semibold shrink-0">
+                        {notification.app_code}
                       </div>
 
-                      <p
-                        className={`text-xs line-clamp-2 mb-2 ${notification.is_read === 0
-                          ? "text-muted-foreground"
-                          : "text-muted-foreground/70"
-                          }`}
-                      >
-                        {notification.content}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <p
+                            className={`text-sm truncate ${notification.is_read === 0
+                              ? "font-semibold text-foreground"
+                              : "font-normal text-muted-foreground"
+                              }`}
+                          >
+                            {notification.app_code}
+                          </p>
 
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        <span>
-                          {new Date(notification.notification_date).toLocaleString()}
-                        </span>
+                          {notification.is_read === 0 && (
+                            <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
+                          )}
+                        </div>
+
+                        <p
+                          className={`text-xs line-clamp-2 mb-2 ${notification.is_read === 0
+                            ? "text-muted-foreground"
+                            : "text-muted-foreground/70"
+                            }`}
+                        >
+                          {notification.content}
+                        </p>
+
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          <span>
+                            {new Date(notification.notification_date).toLocaleString()}
+                          </span>
+                        </div>
+
+                        {!hasAccess && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                            <Lock className="h-3 w-3" />
+                            <span>No Access</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                 <Bell className="h-12 w-12 mb-3 opacity-20" />
@@ -617,130 +690,157 @@ export default function DashboardPage() {
         </Card>
 
         {/* APPLICATIONS */}
-        <Card className="flex-1 border-border/40">
-          <CardHeader className="border-b border-border/40">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                  </svg>
-                </div>
-                <div>
-                  <CardTitle className="text-base font-semibold">Applications</CardTitle>
-                  <CardDescription className="text-xs">Access your available applications</CardDescription>
-                </div>
-              </div>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem onClick={() => setFilter("accessible")}>
-                    Accessible
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilter("not_accessible")}>
-                    Not Accessible
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilter("all")}>
-                    View All
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </CardHeader>
-
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-3 gap-4">
-              {loading ? (
-                Array.from({ length: 6 }).map((_, idx) => (
-                  <div key={idx} className="rounded-lg border border-border/40 p-4">
-                    <Skeleton className="h-12 w-12 rounded-lg mb-3" />
-                    <Skeleton className="h-4 w-3/4 mb-2" />
-                    <Skeleton className="h-9 w-full" />
+        <div className="hidden xl:block">
+          <Card className="flex-1 border-border/40">
+            <CardHeader className="border-b border-border/40">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
                   </div>
-                ))
-              ) : filteredApplications.length > 0 ? (
-                filteredApplications.map((app) => {
-                  const Icon = (Icons as unknown as Record<string, LucideIcon>)[
-                    app.icon?.charAt(0).toUpperCase() + app.icon?.slice(1)
-                  ];
+                  <div>
+                    <CardTitle className="text-base font-semibold">Applications</CardTitle>
+                    <CardDescription className="text-xs">Access your available applications</CardDescription>
+                  </div>
+                </div>
 
-                  return (
-                    <div
-                      key={app.id}
-                      className={`rounded-lg border border-border/40 transition p-4 bg-card
-                        ${!app.has_access ? "opacity-60 grayscale cursor-not-allowed" : "hover:border-border hover:shadow-lg"}
-                      `}
-                    >
-                      <div className="flex items-start gap-3 mb-4">
-                        <div
-                          className="h-12 w-12 rounded-lg flex items-center justify-center shrink-0"
-                          style={{ backgroundColor: app.color }}
-                        >
-                          {Icon ? (
-                            <Icon className="h-6 w-6 text-white" />
-                          ) : (
-                            <span className="text-white font-semibold">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem onClick={() => setFilter("accessible")}>
+                      Accessible
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setFilter("not_accessible")}>
+                      Not Accessible
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setFilter("all")}>
+                      View All
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardHeader>
+
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-3 gap-4">
+                {loading ? (
+                  Array.from({ length: 6 }).map((_, idx) => (
+                    <div key={idx} className="rounded-lg border border-border/40 p-4">
+                      <Skeleton className="h-12 w-12 rounded-lg mb-3" />
+                      <Skeleton className="h-4 w-3/4 mb-2" />
+                      <Skeleton className="h-9 w-full" />
+                    </div>
+                  ))
+                ) : filteredApplications.length > 0 ? (
+                  filteredApplications.map((app) => {
+                    const Icon = (Icons as unknown as Record<string, LucideIcon>)[
+                      app.icon?.charAt(0).toUpperCase() + app.icon?.slice(1)
+                    ];
+
+                    return (
+                      <div
+                        key={app.id}
+                        role="button"
+                        tabIndex={app.has_access ? 0 : -1}
+                        onClick={() => app.has_access && openApplication(app.code)}
+                        onKeyDown={(e) => {
+                          if (app.has_access && (e.key === "Enter" || e.key === " ")) {
+                            e.preventDefault();
+                            openApplication(app.code);
+                          }
+                        }}
+                        style={
+                          app.has_access
+                            ? ({ "--app-color": app.color } as React.CSSProperties)
+                            : undefined
+                        }
+                        className={`group relative rounded-lg border p-4 bg-card overflow-hidden
+                  transition-all duration-300 ease-out
+                  ${app.has_access
+                            ? `cursor-pointer border-border/40 hover:-translate-y-1
+                         hover:shadow-xl hover:border-[var(--app-color)]
+                         focus-visible:outline-none focus-visible:ring-2
+                         focus-visible:ring-[var(--app-color)] focus-visible:ring-offset-2`
+                            : "opacity-60 grayscale cursor-not-allowed border-border/40"
+                          }
+                `}
+                      >
+                        {/* Colorful glow on hover */}
+                        {app.has_access && (
+                          <div
+                            className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300"
+                            style={{ backgroundColor: app.color }}
+                          />
+                        )}
+
+                        <div className="relative flex items-start gap-3 mb-4">
+                          <div
+                            className="h-12 w-12 rounded-lg flex items-center justify-center shrink-0
+                      transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
+                            style={{ backgroundColor: app.color }}
+                          >
+                            {Icon ? (
+                              <Icon className="h-6 w-6 text-white" />
+                            ) : (
+                              <span className="text-white font-semibold">
+                                {app.code}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold truncate transition-colors duration-300 group-hover:text-[var(--app-color)]">
                               {app.code}
-                            </span>
-                          )}
+                            </h3>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {app.name}
+                            </p>
+                            {app.role ? (
+                              <span className="text-xs text-muted-foreground">
+                                Role: {app.role.name}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                <div className="min-h-4"></div>
+                              </span>
+                            )}
+                          </div>
                         </div>
 
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold truncate">
-                            {app.code}
-                          </h3>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {app.name}
-                          </p>
-                          {app.role ? (
-                            <span className="text-xs text-muted-foreground">
-                              Role: {app.role.name}
+                        <div className="relative flex items-center justify-between text-xs font-medium">
+                          {app.has_access ? (
+                            <span
+                              className="flex items-center gap-1.5 transition-colors duration-300 group-hover:text-[var(--app-color)]"
+                            >
+                              <span>Open Application</span>
+                              <ExternalLink className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                             </span>
                           ) : (
-                            <span className="text-xs text-muted-foreground">
-                              <div className="min-h-4"></div>
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                              <Lock className="h-3.5 w-3.5" />
+                              <span>No Access</span>
                             </span>
                           )}
                         </div>
                       </div>
-                      <Button
-                        className="w-full h-9 text-xs"
-                        variant={app.has_access ? "default" : "outline"}
-                        disabled={!app.has_access}
-                        onClick={() => openApplication(app.code)}
-                      >
-                        <span className="flex items-center gap-1.5">
-                          {app.has_access ? (
-                            <>
-                              <span>Open Application</span>
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </>
-                          ) : (
-                            <>
-                              <Lock className="h-3.5 w-3.5" />
-                              <span>No Access</span>
-                            </>
-                          )}
-                        </span>
-                      </Button>
-
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="col-span-full flex flex-col items-center py-16 text-muted-foreground">
-                  <Calendar className="h-12 w-12 mb-3 opacity-20" />
-                  <p className="text-sm">No applications available</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full flex flex-col items-center py-16 text-muted-foreground">
+                    <Calendar className="h-12 w-12 mb-3 opacity-20" />
+                    <p className="text-sm">No applications available</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </main>
   );

@@ -14,7 +14,7 @@ const router = express.Router();
 | GET ALL ROLES BY APPLICATION
 |--------------------------------------------------------------------------
 | Method : GET
-| URL    : http://localhost:3000/api/applications/1/roles
+| URL    : https://devuar.triasmitra.com/api/applications/1/roles
 | Desc   : Ambil semua role milik satu aplikasi
 */
 router.get("/applications/:applicationId/roles", getApplicationRoles);
@@ -24,7 +24,7 @@ router.get("/applications/:applicationId/roles", getApplicationRoles);
 | GET ROLE BY ID
 |--------------------------------------------------------------------------
 | Method : GET
-| URL    : http://localhost:3000/api/application-roles/5
+| URL    : https://devuar.triasmitra.com/api/application-roles/5
 | Desc   : Ambil detail satu role berdasarkan ID
 */
 router.get("/application-roles/:id", getApplicationRoleById);
@@ -34,7 +34,7 @@ router.get("/application-roles/:id", getApplicationRoleById);
 | CREATE ROLE FOR APPLICATION
 |--------------------------------------------------------------------------
 | Method : POST
-| URL    : http://localhost:3000/api/applications/1/roles
+| URL    : https://devuar.triasmitra.com/api/applications/1/roles
 | Headers:
 |   Content-Type: application/json
 | Body (JSON):
@@ -50,7 +50,7 @@ router.post("/applications/:applicationId/roles", createApplicationRole);
 | UPDATE ROLE
 |--------------------------------------------------------------------------
 | Method : PUT
-| URL    : http://localhost:3000/api/application-roles/5
+| URL    : https://devuar.triasmitra.com/api/application-roles/5
 | Headers:
 |   Content-Type: application/json
 | Body (JSON):
@@ -66,7 +66,7 @@ router.put("/application-roles/:id", updateApplicationRole);
 | DELETE ROLE (SOFT DELETE)
 |--------------------------------------------------------------------------
 | Method : DELETE
-| URL    : http://localhost:3000/api/application-roles/5
+| URL    : https://devuar.triasmitra.com/api/application-roles/5
 | Desc   : Soft delete role (set deleted_at)
 */
 router.delete("/application-roles/:id", deleteApplicationRole);

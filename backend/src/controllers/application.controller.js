@@ -264,9 +264,21 @@ export const getAmsRoles = async (req, res) => {
       }
     );
 
+    const EXCLUDED_ROLES = ["CFO", "EXECUTIVE"];
+
+    const filteredData = {
+      ...response.data,
+      result: {
+        ...response.data.result,
+        data: (response.data.result?.data ?? []).filter(
+          (role) => !EXCLUDED_ROLES.includes(role.name?.toUpperCase())
+        ),
+      },
+    };
+
     res.json({
       success: true,
-      data: response.data,
+      data: filteredData,
     });
 
   } catch (err) {
@@ -325,6 +337,32 @@ export const getCmsRoles = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch CMS roles",
+    });
+  }
+};
+
+export const getSonarRoles = async (req, res) => {
+  try {
+    const response = await axios.get(
+      "https://sonar.triasmitra.com/api/public/roles",
+      {
+        headers: {
+          Authorization: `Bearer sonar-portal-sso-20260623-1c6a9f87c3b24d90`,
+          "Accept": "application/json",
+        },
+      }
+    );
+
+    res.json({
+      success: true,
+      data: response.data,
+    });
+
+  } catch (err) {
+    console.error("GET SONAR ROLES ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch SONAR roles",
     });
   }
 };
@@ -415,252 +453,151 @@ export const getQmsRoles = async (req, res) => {
   }
 };
 
-// export const redirectToApplication = async (req, res) => {
-//   try {
-//     const userId = req.user.id;
-//     const { code } = req.params;
+  const AUTO_ACCESS_CODES = ["hris", "shocart", "helpdesk"];
 
-//     const [[app]] = await db.query(
-//       `
-//       SELECT a.url
-//       FROM applications a
-//       JOIN user_applications ua
-//         ON ua.application_id = a.id
-//       WHERE ua.username = ?
-//         AND a.code = ?
-//       LIMIT 1
-//       `,
-//       [userId, code]
-//     );
+  export const redirectToApplication = async (req, res) => {
+    let baseUrl = "";
+    let token = "";
+    let targetIdentifier = "";
 
-//     if (!app) {
-//       return res.status(403).json({
-//         success: false,
-//         message: "Akses aplikasi ditolak",
-//       });
-//     }
+    try {
+      const username = String(req.user.username).trim();
+      const nik = username;
+      const rawCode = req.params.code;
+      const code = rawCode.trim().toLowerCase();
 
-//     return res.json({
-//       success: true,
-//       redirect_url: app.url,
-//     });
-//   } catch (err) {
-//     console.error("REDIRECT ERROR:", err);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Gagal melakukan redirect",
-//     });
-//   }
-// };
-
-// export const redirectToApplication = async (req, res) => {
-//   try {
-//     const userId = req.user.id;
-//     const nik = req.user.nik;
-//     const { code } = req.params;
-
-//     const config = APP_CONFIG[code];
-
-//     if (!config) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Application not supported",
-//       });
-//     }
-
-//     // cek akses + ambil role
-//     const [[access]] = await db.query(
-//       `
-//       SELECT ar.id AS role_id, ar.name AS role_name
-//       FROM user_applications ua
-//       JOIN application_roles ar 
-//         ON ar.id = ua.application_roles_id
-//       JOIN applications a 
-//         ON a.id = ua.application_id
-//       WHERE ua.username = ?
-//         AND a.code = ?
-//       LIMIT 1
-//       `,
-//       [userId, code]
-//     );
-
-//     if (!access) {
-//       return res.status(403).json({
-//         success: false,
-//         message: "Akses aplikasi ditolak",
-//       });
-//     }
-
-//     // call external SSO API
-//     const response = await axios.get(
-//       `${config.base_url}/api/public/get-token/${nik}`,
-//       {
-//         headers: {
-//           Authorization: `Bearer ${config.token}`,
-//         },
-//       }
-//     );
-
-//     const accessToken = response.data?.result?.access_token;
-
-//     if (!accessToken) {
-//       return res.status(403).json({
-//         success: false,
-//         message: "User tidak memiliki akun di aplikasi tujuan",
-//       });
-//     }
-
-//     return res.json({
-//       success: true,
-//       data: {
-//         redirect_url: `${config.base_url}/sso/${accessToken}`,
-//         application: code.toUpperCase(),
-//         role: {
-//           id: access.role_id,
-//           name: access.role_name,
-//         },
-//       },
-//     });
-//   } catch (err) {
-//     console.error("SSO REDIRECT ERROR:", err.message);
-
-//     return res.status(500).json({
-//       success: false,
-//       message: "Gagal melakukan redirect SSO",
-//     });
-//   }
-// };
-
-export const redirectToApplication = async (req, res) => {
-  // ✅ Deklarasi di luar try agar bisa diakses di catch
-  let baseUrl = "";
-  let token = "";
-  let targetIdentifier = "";
-
-  try {
-    const username = String(req.user.username).trim();
-    const nik = username;
-    const rawCode = req.params.code;
-    const code = rawCode.trim().toLowerCase();
-
-    if (code === "hris" || code === "hrisnew") {
-      baseUrl = "https://personasys.triasmitra.com";
-      token = "9592fabb0d0a7f63c913c3828ba0c895472e14668720a5018662390829c085c9";
-    } else if (code === "ams") {
-      baseUrl = "https://ams.triasmitra.com";
-      token = "iCI0YUAb0hu+2HF62lR_xs9FUsguF3OI6BqU2O33vP46fq$AO42UAE647vCeu4Shxfw";
-    } else if (code === "ims") {
-      baseUrl = "https://ims.triasmitra.com";
-      token = "KFhNebzV8EvLWTyWYZ0XPKafNGDwtANTN7WzZtka_TfGTqPQtmANLiRfMtCI8JKyxg9";
-    } else if (code === "cms") {
-      baseUrl = "https://devcms.triasmitra.com";
-      token = "9e6d3c1f7a4b8d2e5f1c9a7b3e6d4f8a2c1e7b9d5f3a6c8e4b1d7a2f9c6e3b5";
-    } else if (code === "aas") {
-      baseUrl = "https://aas.triasmitra.com";
-      token = "a3f9d2b4c1e6f7890a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef";
-    } else if (code === "qms") {
-      baseUrl = "https://qms.triasmitra.com";
-      token = "9f3c8a1d7e4b2f5a6c0d1e8b3a9f7c24e5d6b8a1c3f9e0d7a2b4c6e8f1a3d5b7";
-    } else if (code === "shocart") {
-      baseUrl = "https://shocart.triasmitra.com";
-      token = "c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e8f9012345678901";
-    } else if (code === "helpdesk") {
-      baseUrl = "https://helpdesk.triasmitra.com";
-      token = "9fA7kLm2QxP8vZr4Tn6YwB1cHdE5uJ0s";
-    } else if (code === "campers") {
-      baseUrl = "https://campers.triasmitra.com";
-      token = "ddMhiXpxw0pAEuX2FXSzsaC5kN9yZM2qz8eBGby6oL3gYFh4WWM8ZEnNVHFNRHOr";
-    } else if (code === "das") {
-      baseUrl = "https://das.triasmitra.com";
-      token = "8f8cba9716432668d1c4c5c660e3254ab44cf2064ea7c2bb0904cce6654661b0";
-    } else {
-      return res.status(404).json({
-        success: false,
-        message: "Application not supported",
-      });
-    }
-
-    console.log("=== DEBUG SSO ===");
-    console.log("username from token:", username);
-    console.log("code from params:", code);
-
-    const [[access]] = await db.query(
-      `
-        SELECT ua.id, ua.role_name
-        FROM user_applications ua
-        JOIN applications a 
-          ON a.id = ua.application_id
-        WHERE TRIM(LOWER(ua.username)) = TRIM(LOWER(?))
-          AND TRIM(LOWER(a.code)) = TRIM(LOWER(?))
-        LIMIT 1
-      `,
-      [username, code]
-    );
-
-    console.log("access result:", access);
-
-    if (!access) {
-      return res.status(403).json({
-        success: false,
-        message: "Akses aplikasi ditolak",
-      });
-    }
-
-    // ✅ QMS pakai role_name sebagai identifier, lainnya pakai NIK
-    targetIdentifier = code === "qms" ? access.role_name : nik;
-
-    console.log("Calling API:", `${baseUrl}/api/public/get-token/${targetIdentifier}`);
-    console.log("With token:", token);
-
-    const response = await axios.get(
-      `${baseUrl}/api/public/get-token/${targetIdentifier}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      if (code === "hris" || code === "hrisnew") {
+        baseUrl = "https://personasys.triasmitra.com";
+        token = "9592fabb0d0a7f63c913c3828ba0c895472e14668720a5018662390829c085c9";
+      } else if (code === "ams") {
+        baseUrl = "https://ams.triasmitra.com";
+        token = "iCI0YUAb0hu+2HF62lR_xs9FUsguF3OI6BqU2O33vP46fq$AO42UAE647vCeu4Shxfw";
+      } else if (code === "ims") {
+        baseUrl = "https://ims.triasmitra.com";
+        token = "KFhNebzV8EvLWTyWYZ0XPKafNGDwtANTN7WzZtka_TfGTqPQtmANLiRfMtCI8JKyxg9";
+      } else if (code === "cms") {
+        baseUrl = "https://cms.triasmitra.com";
+        token = "9e6d3c1f7a4b8d2e5f1c9a7b3e6d4f8a2c1e7b9d5f3a6c8e4b1d7a2f9c6e3b5";
+      } else if (code === "aas") {
+        baseUrl = "https://aas.triasmitra.com";
+        token = "a3f9d2b4c1e6f7890a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef";
+      } else if (code === "qms") {
+        baseUrl = "https://qms.triasmitra.com";
+        token = "9f3c8a1d7e4b2f5a6c0d1e8b3a9f7c24e5d6b8a1c3f9e0d7a2b4c6e8f1a3d5b7";
+      } else if (code === "shocart") {
+        baseUrl = "https://shocart.triasmitra.com";
+        token = "c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e8f9012345678901";
+      } else if (code === "helpdesk") {
+        baseUrl = "https://helpdesk.triasmitra.com";
+        token = "9fA7kLm2QxP8vZr4Tn6YwB1cHdE5uJ0s";
+      } else if (code === "campers") {
+        baseUrl = "https://campers.triasmitra.com";
+        token = "ddMhiXpxw0pAEuX2FXSzsaC5kN9yZM2qz8eBGby6oL3gYFh4WWM8ZEnNVHFNRHOr";
+      } else if (code === "das") {
+        baseUrl = "https://das.triasmitra.com";
+        token = "8f8cba9716432668d1c4c5c660e3254ab44cf2064ea7c2bb0904cce6654661b0";
+      } else if (code === "dms") {
+        baseUrl = "http://devdms.triasmitra.com";
+        token = "7e316e87289439e98139ef8d0a0c11ea3a611032d40f4876df9e237b0e385e59";
+      } else if (code === "sonar") {
+        baseUrl = "http://sonar.triasmitra.com";
+        token = "sonar-portal-sso-20260623-1c6a9f87c3b24d90";
+      } else {
+        return res.status(404).json({
+          success: false,
+          message: "Application not supported",
+        });
       }
-    );
 
-    console.log("API status:", response.status);
-    console.log("API response:", JSON.stringify(response.data));
+      console.log("=== DEBUG SSO ===");
+      console.log("username from token:", username);
+      console.log("code from params:", code);
 
-    const accessToken = response.data?.result?.access_token;
+      let access;
 
-    if (!accessToken) {
-      return res.status(403).json({
+      if (AUTO_ACCESS_CODES.includes(code)) {
+        // Auto access — skip pengecekan user_applications
+        access = { id: null, role_name: null };
+      } else {
+        const [[found]] = await db.query(
+          `
+            SELECT ua.id, ua.role_name
+            FROM user_applications ua
+            JOIN applications a 
+              ON a.id = ua.application_id
+            WHERE TRIM(LOWER(ua.username)) = TRIM(LOWER(?))
+              AND TRIM(LOWER(a.code)) = TRIM(LOWER(?))
+            LIMIT 1
+          `,
+          [username, code]
+        );
+
+        if (!found) {
+          return res.status(403).json({
+            success: false,
+            message: "Akses aplikasi ditolak",
+          });
+        }
+
+        access = found;
+      }
+
+      console.log("access result:", access);
+
+      // ✅ QMS pakai role_name sebagai identifier, lainnya pakai NIK
+      targetIdentifier = (code === "qms" || code === "dms") ? access.role_name : nik;
+
+      console.log("Calling API:", `${baseUrl}/api/public/get-token/${targetIdentifier}`);
+      console.log("With token:", token);
+
+      const response = await axios.get(
+        `${baseUrl}/api/public/get-token/${targetIdentifier}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log("API status:", response.status);
+      console.log("API response:", JSON.stringify(response.data));
+
+      const accessToken = response.data?.result?.access_token;
+
+      if (!accessToken) {
+        return res.status(403).json({
+          success: false,
+          message: "User tidak memiliki akun di aplikasi tujuan",
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          redirect_url: `${baseUrl}/sso/${accessToken}`,
+          application: code.toUpperCase(),
+          role: {
+            id: access.role_id ?? null,
+            name: access.role_name ?? username,
+          },
+        },
+      });
+    } catch (err) {
+      console.error("SSO REDIRECT ERROR:", err.response?.data || err.message);
+      console.error("SSO REDIRECT STATUS:", err.response?.status);
+      console.error("SSO REDIRECT URL:", err.config?.url);
+
+      return res.status(500).json({
         success: false,
-        message: "User tidak memiliki akun di aplikasi tujuan",
+        message: "Gagal melakukan redirect SSO",
+        _debug: {
+          error_message: err.message,
+          error_status: err.response?.status ?? null,
+          error_url: err.config?.url ?? null,
+          error_response: err.response?.data ?? null,
+          target_identifier: targetIdentifier,
+          base_url: baseUrl,
+        }
       });
     }
-
-    return res.json({
-      success: true,
-      data: {
-        redirect_url: `${baseUrl}/sso/${accessToken}`,
-        application: code.toUpperCase(),
-        role: {
-          id: access.role_id ?? null,
-          name: access.role_name ?? username,
-        },
-      },
-    });
-  } catch (err) {
-    console.error("SSO REDIRECT ERROR:", err.response?.data || err.message);
-    console.error("SSO REDIRECT STATUS:", err.response?.status);
-    console.error("SSO REDIRECT URL:", err.config?.url);
-
-    return res.status(500).json({
-      success: false,
-      message: "Gagal melakukan redirect SSO",
-      _debug: {
-        error_message: err.message,
-        error_status: err.response?.status ?? null,
-        error_url: err.config?.url ?? null,
-        error_response: err.response?.data ?? null,
-        target_identifier: targetIdentifier, // ✅ sekarang accessible
-        base_url: baseUrl,                   // ✅ sekarang accessible
-      }
-    });
-  }
-};
-
+  };

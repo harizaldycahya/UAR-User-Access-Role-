@@ -5,7 +5,12 @@ export const authMiddleware = async (req, res, next) => {
   const token = req.cookies?.token;
 
   if (!token) {
-    return res.status(401).json({ message: "Token tidak ada" });
+      return res.status(401).json({ 
+        message: "Token tidak ada",
+        debug_path: req.path,
+        debug_method: req.method,
+        debug_original_url: req.originalUrl
+      });
   }
 
   try {

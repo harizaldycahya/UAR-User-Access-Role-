@@ -66,10 +66,13 @@ type MenuGroup = {
 };
 
 function PortalLayoutInner({ children }: { children: React.ReactNode }) {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    
     const [user, setUser] = React.useState<any>(null);
     const [profile, setProfile] = React.useState<any>(null);
     const [foto, setFoto] = React.useState<any>(null);
     const [mounted, setMounted] = React.useState(false);
+    const [isKasieOrBelow, setIsKasieOrBelow] = React.useState(false);
 
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -115,6 +118,30 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
         fetchPhoto();
     }, [profile]);
 
+    // Tentukan level jabatan user (unit / subsi) untuk sembunyikan menu "Request Approval"
+    React.useEffect(() => {
+        if (!user?.username) return;
+        const fetchLevel = async () => {
+            try {
+                const res = await fetch(`https://personasys.triasmitra.com/api/auth/get-atasan-uar?nik=${user.username}`);
+                const result = await res.json();
+                if (result.Success) {
+                    const data = result.data;
+                    const nik = String(user.username).trim().toUpperCase();
+
+                    const isUnitOrSubsi =
+                        (data.unit_approval && String(data.unit_approval).trim().toUpperCase() === nik) ||
+                        (data.subsi_approval && String(data.subsi_approval).trim().toUpperCase() === nik);
+
+                    setIsKasieOrBelow(isUnitOrSubsi);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+        fetchLevel();
+    }, [user]);
+
     const segments = React.useMemo(() => pathname?.split("/").filter(Boolean) || [], [pathname]);
 
     const logout = async () => {
@@ -151,7 +178,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                 label: "Account",
                 items: [
                     { label: "My Profile", icon: <User className="h-4.5 w-4.5" />, href: "/profile" },
-                    { label: "Guide Book", icon: <Book className="h-4.5 w-4.5" />, href: "/guide" },
+                    { label: "Guide Book", icon: <Book className="h-4.5 w-4.5" />, href: "__GUIDE_BOOK__" },
                 ],
             },
         ],
@@ -200,7 +227,15 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
 
     const renderMenu = () => {
         if (!user) return null;
-        const groups = menuByRole[user.role_name] || [];
+        const allGroups = menuByRole[user.role_name] || [];
+        const isApprover = !isKasieOrBelow; // approver kalau grup Request Approval tampil
+
+        const groups = allGroups.filter((group) => {
+            if (group.label === "Request Approval" && isKasieOrBelow) {
+                return false;
+            }
+            return true;
+        });
 
         return groups.map((group, idx) => (
             <SidebarGroup key={idx} className="mb-2">
@@ -211,7 +246,15 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                 )}
                 <SidebarMenu className="space-y-0.5">
                     {group.items.map((item, i) => {
-                        const active = mounted && isItemActive(item.href);
+                        const resolvedHref =
+                            item.href === "__GUIDE_BOOK__"
+                                ? isApprover
+                                    ? `${API_URL}/download/manual-book-approver`
+                                    : `${API_URL}/download/manual-book-user`
+                                : item.href;
+
+                        const active = mounted && isItemActive(resolvedHref);
+
                         return (
                             <SidebarMenuItem key={i}>
                                 <SidebarMenuButton
@@ -220,13 +263,11 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                                     tooltip={item.label}
                                     className={cn(
                                         "h-10 rounded-lg text-sm font-medium transition-colors duration-150",
-                                        // Inactive: pakai sidebar-foreground dari CSS var (putih)
                                         "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent",
-                                        // Active: pill putih dengan teks biru (sidebar-primary)
                                         active && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary hover:text-sidebar-primary-foreground font-semibold",
                                     )}
                                 >
-                                    <Link href={item.href} className="flex items-center gap-3 w-full px-3">
+                                    <Link href={resolvedHref} className="flex items-center gap-3 w-full px-3">
                                         <span className="shrink-0">{item.icon}</span>
                                         <span className="truncate">{item.label}</span>
                                     </Link>
@@ -256,7 +297,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-bold tracking-wide text-sidebar-foreground">TRIASMITRA</p>
-                                    <p className="text-[10px] font-semibold tracking-widest uppercase text-sidebar-foreground/50">User Access Role</p>
+                                    <p className="text-[10px] font-semibold tracking-widest uppercase text-sidebar-foreground/50">Applications Portal</p>
                                 </div>
                             </div>
                         </div>
@@ -287,7 +328,7 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
 
                 {/* ===== MAIN ===== */}
                 <SidebarInset className="flex flex-col flex-1 min-h-screen">
-                    <header className="shrink-0 flex h-20 items-center gap-6 border-b border-border/60 dark:border-white/5 px-6 bg-card/80 dark:bg-card/50 backdrop-blur-sm">
+                    <header className="z-30 shrink-0 flex h-20 items-center gap-6 border-b border-border/60 dark:border-white/5 px-6 bg-card/80 dark:bg-card/50 backdrop-blur-sm">
                         <SidebarTrigger className="h-10 w-10 rounded-lg hover:bg-accent transition-colors" />
 
                         {mounted && segments.length > 0 && (
@@ -393,10 +434,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                     {/* Brand text */}
                     <div className="flex flex-col items-center gap-1">
                         <p className="text-sm font-bold tracking-[0.2em] uppercase text-foreground">
-                            Triasmitra
+                            Ketrosden Triasmitra
                         </p>
                         <p className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground">
-                            User Access Role
+                            Applications Portal
                         </p>
                     </div>
 

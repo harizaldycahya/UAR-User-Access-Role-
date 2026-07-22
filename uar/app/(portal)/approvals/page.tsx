@@ -5,7 +5,7 @@ import ApprovalTableSkeleton from "@/components/RequestTableSkeleton";
 export default function ApprovalsPage() {
   return (
     <main className="min-h-screen bg-background p-6">
-      <h1 className="text-3xl font-semibold text-foreground mb-2">
+      <h1 className="text-5xl font-semibold text-foreground mb-2">
         My Approvals
       </h1>
       <p className="text-muted-foreground text-sm">

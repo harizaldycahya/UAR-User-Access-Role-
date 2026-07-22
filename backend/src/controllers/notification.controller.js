@@ -2,6 +2,8 @@
 
 import { db } from "../config/db.js";
 import axios from "axios";
+import { transporter } from "../config/mailer.js";
+import { approvalEmailTemplate } from "../utils/notificationTemplates.js";
 
 // ─────────────────────────────────────────────────────────────────
 //  EXISTING — notifications (aplikasi lain)
@@ -100,27 +102,67 @@ export const markNotificationRead = async (req, res) => {
 
 export const triggerApprovalNotification = async ({
   username,
-  type,             // "approval" | "rejection"
+  type,
   title,
   content,
   url = null,
   reference_id = null,
   reference_type = null,
+  send_email = true,
 }) => {
   if (!username || !type || !title || !content) {
-    throw new Error(
-      "triggerApprovalNotification: username, type, title, dan content wajib diisi"
-    );
+    throw new Error("username, type, title, dan content wajib diisi");
   }
 
+  // 1. Simpan notifikasi in-app
   await db.query(
-    `
-    INSERT INTO uar_notifications
+    `INSERT INTO uar_notifications
       (username, type, title, content, url, reference_id, reference_type, notification_date, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-    `,
+     VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
     [username, type, title, content, url, reference_id, reference_type]
   );
+
+  console.log("[triggerApprovalNotification] notif in-app berhasil disimpan");
+
+  // 2. Kirim email kalau diminta
+  if (send_email) {
+    console.log("[Email] masuk blok send_email");
+
+    const [[user]] = await db.query(
+      `SELECT email FROM users WHERE username = ? LIMIT 1`,
+      [username]
+    );
+
+    console.log("[Email] user dari DB:", user);
+    console.log("[Email] NODE_ENV:", process.env.NODE_ENV);
+    console.log("[Email] DEV_EMAIL:", process.env.DEV_EMAIL);
+
+    const targetEmail = process.env.NODE_ENV === "development"
+      ? process.env.DEV_EMAIL
+      : user?.email;
+
+    console.log("[Email] targetEmail:", targetEmail);
+
+    if (targetEmail) {
+      const { subject, html } = approvalEmailTemplate({ username, type, title, content, url });
+      console.log("[Email] subject:", subject);
+
+      try {
+        await transporter.sendMail({  // ← pakai await bukan fire-and-forget dulu
+          from: `"Portal Triasmitra" <${process.env.SMTP_USER}>`,
+          to: targetEmail,
+          subject,
+          html,
+        });
+        console.log("[Email] ✅ berhasil kirim ke", targetEmail);
+      } catch (err) {
+        console.error("[Email] ❌ error sendMail:", err.message);
+        console.error("[Email] error detail:", err);
+      }
+    } else {
+      console.warn("[Email] ⚠️ targetEmail kosong");
+    }
+  }
 };
 
 // GET /api/notifications/uar

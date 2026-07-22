@@ -120,12 +120,18 @@ export default function CreateRequestsPage() {
     }
   }
 
+  const EXCLUDED_FROM_REQUEST = ["HRIS", "SHOCART", "HELPDESK"];
+
   // load applications
   useEffect(() => {
     const load = async () => {
       try {
         const res = await apiFetch("/application-users");
-        setApplications(Array.isArray(res) ? res : []);
+        const apps = Array.isArray(res) ? res : [];
+        const filtered = apps.filter(
+          (a: Application) => !EXCLUDED_FROM_REQUEST.includes(a.code)
+        );
+        setApplications(filtered);
       } catch {
         setApplications([]);
       } finally {
@@ -168,8 +174,16 @@ export default function CreateRequestsPage() {
           setRoles(res?.data?.result?.data ?? []);
         } else if (selectedApp.code === "DMS") {
           res = await apiFetch("/applications/integrations/dms/roles");
-          setRoles(res?.data?.result?.data ?? []);
-        } else {
+        } else if (selectedApp.code === "SONAR") {
+          res = await apiFetch("/applications/integrations/sonar/roles");
+          const sonarRoles = res?.data?.result?.roles ?? [];
+          setRoles(
+            sonarRoles.map((r: { key: string; label: string }) => ({
+              id: r.key,      // ← ini yang dipakai sebagai value/id (bukan label)
+              name: r.label,  // ← dipakai untuk ditampilkan ke user
+            }))
+          );
+        }else {
           res = await apiFetch(`/applications/${form.application}/roles`);
           setRoles(res?.data ?? []);
         }
@@ -342,7 +356,7 @@ export default function CreateRequestsPage() {
       <div className="max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-semibold text-foreground mb-2">
+          <h1 className="text-5xl font-semibold text-foreground mb-2">
             Create Request
           </h1>
           <p className="text-muted-foreground text-sm">
@@ -363,8 +377,8 @@ export default function CreateRequestsPage() {
                   <div className="flex flex-col items-center">
                     <div
                       className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${isCompleted || isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
                         }`}
                     >
                       {isCompleted ? (
@@ -424,8 +438,8 @@ export default function CreateRequestsPage() {
                       setForm((prev) => ({ ...prev, requestType: "application_access" }))
                     }
                     className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${form.requestType === "application_access"
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-muted-foreground/30 bg-card"
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-muted-foreground/30 bg-card"
                       }`}
                   >
                     <RadioGroupItem
@@ -446,8 +460,8 @@ export default function CreateRequestsPage() {
                       setForm((prev) => ({ ...prev, requestType: "change_role" }))
                     }
                     className={`flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all ${form.requestType === "change_role"
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-muted-foreground/30 bg-card"
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-muted-foreground/30 bg-card"
                       }`}
                   >
                     <RadioGroupItem
@@ -755,7 +769,7 @@ export default function CreateRequestsPage() {
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                   <Button
                     variant="outline"
                     onClick={() => setStep(1)}
