@@ -453,6 +453,52 @@ export const getQmsRoles = async (req, res) => {
   }
 };
 
+export const getAasRoles = async (req, res) => {
+  try {
+    const response = await axios.get(
+      'https://aas.triasmitra.com/api/public/roles',
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.AAS_API_KEY}`,
+          Accept: "application/json",
+        },
+      }
+    );
+
+    const rawRoles = response.data?.result?.roles ?? [];
+
+    const EXCLUDED_ROLES = ["ceo", "coo", "cfo"];
+
+    const transformedData = rawRoles
+      .filter((item) => !EXCLUDED_ROLES.includes(item.role?.toLowerCase()))
+      .map((item) => ({
+        id: item.id_role,
+        name: item.label,
+      }));
+
+    res.json({
+      success: true,
+      data: {
+        success: true,
+        code: 200,
+        result: {
+          data: transformedData,
+        },
+      },
+    });
+
+  } catch (err) {
+    console.error("GET AAS ROLES ERROR STATUS:", err.response?.status);
+    console.error("GET AAS ROLES ERROR DATA:", err.response?.data);
+    console.error("GET AAS ROLES ERROR MESSAGE:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch AAS roles",
+      error: err.message,
+    });
+  }
+};
+
   const AUTO_ACCESS_CODES = ["hris", "shocart", "helpdesk"];
 
   export const redirectToApplication = async (req, res) => {

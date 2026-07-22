@@ -504,6 +504,50 @@ const updateSonarUser = async (request) => {
   }
 };
 
+// AAS HELPER
+const AAS_TOKEN = 'a3f9d2b4c1e6f7890a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef';
+const AAS_BASE_URL = 'https://aas.triasmitra.com/api/public';
+
+const aasHeaders = {
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${AAS_TOKEN}`,
+};
+
+const createAasUser = async (request) => {
+  const payload = {
+    nik: request.username,
+    role: request.new_role_name,
+  };
+
+  const response = await fetch(`${AAS_BASE_URL}/users`, {
+    method: 'POST',
+    headers: aasHeaders,
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errBody = await response.text();
+    throw new Error(`AAS create-user error: ${response.status} - ${errBody}`);
+  }
+};
+
+const updateAasUser = async (request) => {
+  const payload = {
+    role: request.new_role_name,
+  };
+
+  const response = await fetch(`${AAS_BASE_URL}/users/${request.username}`, {
+    method: 'PUT',
+    headers: aasHeaders,
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errBody = await response.text();
+    throw new Error(`AAS update-user error: ${response.status} - ${errBody}`);
+  }
+};
+
 export const notifyExternalApp = async (request) => {
   const appCode = request.app_code?.toLowerCase();
 
@@ -539,6 +583,14 @@ export const notifyExternalApp = async (request) => {
         await updateSonarUser(request);
       } else {
         await createSonarUser(request);
+      }
+    }
+
+    if (appCode === 'aas') {
+      if (request.type === 'change_role') {
+        await updateAasUser(request);
+      } else {
+        await createAasUser(request);
       }
     }
 };

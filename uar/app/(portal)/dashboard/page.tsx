@@ -421,7 +421,6 @@ export default function DashboardPage() {
                 </DropdownMenu>
               </div>
             </CardHeader>
-
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-3 gap-4">
                 {loading ? (

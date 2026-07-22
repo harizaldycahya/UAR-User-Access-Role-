@@ -174,6 +174,9 @@ export default function CreateRequestsPage() {
           setRoles(res?.data?.result?.data ?? []);
         } else if (selectedApp.code === "DMS") {
           res = await apiFetch("/applications/integrations/dms/roles");
+        } else if (selectedApp.code === "AAS") {
+          res = await apiFetch("/applications/integrations/aas/roles");
+          setRoles(res?.data?.result?.data ?? []);
         } else if (selectedApp.code === "SONAR") {
           res = await apiFetch("/applications/integrations/sonar/roles");
           const sonarRoles = res?.data?.result?.roles ?? [];

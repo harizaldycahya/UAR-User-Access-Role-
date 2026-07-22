@@ -13,6 +13,7 @@ import {
   getDmsRoles,
   getQmsRoles,
   getSonarRoles,
+  getAasRoles,
   redirectToApplication,
 } from "../controllers/application.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
@@ -34,6 +35,7 @@ router.get("/integrations/dms/roles", getDmsRoles);
 router.get("/integrations/qms/roles", getQmsRoles);
 router.get("/integrations/ams/locations", getAmsLocations);
 router.get("/integrations/sonar/roles", getSonarRoles);
+router.get("/integrations/aas/roles", getAasRoles);
 
 router.get("/:id", getApplicationById);
 
