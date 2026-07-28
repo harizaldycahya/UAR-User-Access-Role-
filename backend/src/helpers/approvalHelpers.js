@@ -510,6 +510,7 @@ const AAS_BASE_URL = 'https://aas.triasmitra.com/api/public';
 
 const aasHeaders = {
   'Content-Type': 'application/json',
+  'Accept': 'application/json',
   'Authorization': `Bearer ${AAS_TOKEN}`,
 };
 
@@ -578,19 +579,19 @@ export const notifyExternalApp = async (request) => {
     }
   }
 
-    if (appCode === 'sonar') {
-      if (request.type === 'change_role') {
-        await updateSonarUser(request);
-      } else {
-        await createSonarUser(request);
-      }
+  if (appCode === 'sonar') {
+    if (request.type === 'change_role') {
+      await updateSonarUser(request);
+    } else {
+      await createSonarUser(request);
     }
+  }
 
-    if (appCode === 'aas') {
-      if (request.type === 'change_role') {
-        await updateAasUser(request);
-      } else {
-        await createAasUser(request);
-      }
+  if (appCode === 'aas') {
+    if (request.type === 'change_role') {
+      await updateAasUser(request);
+    } else {
+      await createAasUser(request);
     }
+  }
 };

@@ -27,7 +27,7 @@ router.get("/", getApplications);
 router.get("/by-code/:code", getApplicationByCode);
 
 router.get("/:code/redirect", redirectToApplication);
-
+ 
 router.get("/integrations/cms/roles", getCmsRoles);
 router.get("/integrations/ims/roles", getImsRoles);
 router.get("/integrations/ams/roles", getAmsRoles);

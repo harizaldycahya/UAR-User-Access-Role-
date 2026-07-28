@@ -99,12 +99,21 @@ export default function DashboardPage() {
   const [myApprovals, setMyApprovals] = React.useState<MyApproval[]>([]);
   const [notifFilter, setNotifFilter] = React.useState<"all" | "read" | "unread">("all");
   const [filter, setFilter] = React.useState("all");
+  const [roleName, setRoleName] = React.useState<string | null>(null);
 
-  const filteredApplications = applications.filter((app) => {
-    if (filter === "accessible") return app.has_access;
-    if (filter === "not_accessible") return !app.has_access;
-    return true; // "all"
-  });
+  const filteredApplications = applications
+    .map((app) => {
+      // HRD hanya boleh akses HRIS, aplikasi lain ditampilkan tapi terkunci
+      if (roleName === "hrd" && app.code?.toUpperCase() !== "HRIS") {
+        return { ...app, has_access: false };
+      }
+      return app;
+    })
+    .filter((app) => {
+      if (filter === "accessible") return app.has_access;
+      if (filter === "not_accessible") return !app.has_access;
+      return true; // "all"
+    });
 
 
   const [loading, setLoading] = React.useState(true);
@@ -164,9 +173,11 @@ export default function DashboardPage() {
 
         const last_login_at = res.data.user?.last_login_at;
         const uname = res.data.user?.username;
+        const role = res.data.user?.role_name;
 
         setlastLoginAt(last_login_at);
         setUsername(uname);
+        setRoleName(role);
       } catch (err) {
         console.error(err);
         setlastLoginAt(null);

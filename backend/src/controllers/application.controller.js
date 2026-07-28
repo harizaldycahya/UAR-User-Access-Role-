@@ -1,5 +1,6 @@
 import { db } from "../config/db.js";
 import axios from "axios";
+import crypto from "crypto";
 
 const APP_CONFIG = {
   HRIS: {
@@ -14,6 +15,21 @@ const APP_CONFIG = {
     token: process.env.IMS_TOKEN,
     base_url: "https://ims.triasmitra.com",
   },
+};
+
+// ✅ Buat generate URL SSO khusus login via NIK ke QMS.
+// Sama dengan bearer_token yang ada di Sso.php (QMS), dipakai buat bikin signature
+// biar link ini tidak bisa dipalsukan orang lain.
+const QMS_SHARED_SECRET = "9f3c8a1d7e4b2f5a6c0d1e8b3a9f7c24e5d6b8a1c3f9e0d7a2b4c6e8f1a3d5b7";
+
+const buildQmsNikLoginUrl = (nik) => {
+  const exp = Math.floor(Date.now() / 1000) + 60; // link berlaku 60 detik
+  const sig = crypto
+    .createHmac("sha256", QMS_SHARED_SECRET)
+    .update(`${nik}|${exp}`)
+    .digest("hex");
+
+  return `https://qms.triasmitra.com/sso/nik_login/${encodeURIComponent(nik)}?exp=${exp}&sig=${sig}`;
 };
 
 /* ================= GET ALL ================= */
@@ -499,151 +515,172 @@ export const getAasRoles = async (req, res) => {
   }
 };
 
-  const AUTO_ACCESS_CODES = ["hris", "shocart", "helpdesk"];
+const AUTO_ACCESS_CODES = ["hris", "shocart", "helpdesk"];
 
-  export const redirectToApplication = async (req, res) => {
-    let baseUrl = "";
-    let token = "";
-    let targetIdentifier = "";
+export const redirectToApplication = async (req, res) => {
+  let baseUrl = "";
+  let token = "";
+  let targetIdentifier = "";
 
-    try {
-      const username = String(req.user.username).trim();
-      const nik = username;
-      const rawCode = req.params.code;
-      const code = rawCode.trim().toLowerCase();
+  try {
+    const username = String(req.user.username).trim();
+    const nik = username;
+    const rawCode = req.params.code;
+    const code = rawCode.trim().toLowerCase();
 
-      if (code === "hris" || code === "hrisnew") {
-        baseUrl = "https://personasys.triasmitra.com";
-        token = "9592fabb0d0a7f63c913c3828ba0c895472e14668720a5018662390829c085c9";
-      } else if (code === "ams") {
-        baseUrl = "https://ams.triasmitra.com";
-        token = "iCI0YUAb0hu+2HF62lR_xs9FUsguF3OI6BqU2O33vP46fq$AO42UAE647vCeu4Shxfw";
-      } else if (code === "ims") {
-        baseUrl = "https://ims.triasmitra.com";
-        token = "KFhNebzV8EvLWTyWYZ0XPKafNGDwtANTN7WzZtka_TfGTqPQtmANLiRfMtCI8JKyxg9";
-      } else if (code === "cms") {
-        baseUrl = "https://cms.triasmitra.com";
-        token = "9e6d3c1f7a4b8d2e5f1c9a7b3e6d4f8a2c1e7b9d5f3a6c8e4b1d7a2f9c6e3b5";
-      } else if (code === "aas") {
-        baseUrl = "https://aas.triasmitra.com";
-        token = "a3f9d2b4c1e6f7890a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef";
-      } else if (code === "qms") {
-        baseUrl = "https://qms.triasmitra.com";
-        token = "9f3c8a1d7e4b2f5a6c0d1e8b3a9f7c24e5d6b8a1c3f9e0d7a2b4c6e8f1a3d5b7";
-      } else if (code === "shocart") {
-        baseUrl = "https://shocart.triasmitra.com";
-        token = "c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e8f9012345678901";
-      } else if (code === "helpdesk") {
-        baseUrl = "https://helpdesk.triasmitra.com";
-        token = "9fA7kLm2QxP8vZr4Tn6YwB1cHdE5uJ0s";
-      } else if (code === "campers") {
-        baseUrl = "https://campers.triasmitra.com";
-        token = "ddMhiXpxw0pAEuX2FXSzsaC5kN9yZM2qz8eBGby6oL3gYFh4WWM8ZEnNVHFNRHOr";
-      } else if (code === "das") {
-        baseUrl = "https://das.triasmitra.com";
-        token = "8f8cba9716432668d1c4c5c660e3254ab44cf2064ea7c2bb0904cce6654661b0";
-      } else if (code === "dms") {
-        baseUrl = "http://devdms.triasmitra.com";
-        token = "7e316e87289439e98139ef8d0a0c11ea3a611032d40f4876df9e237b0e385e59";
-      } else if (code === "sonar") {
-        baseUrl = "http://sonar.triasmitra.com";
-        token = "sonar-portal-sso-20260623-1c6a9f87c3b24d90";
-      } else {
-        return res.status(404).json({
-          success: false,
-          message: "Application not supported",
+    // ✅ QMS via NIK: langsung kasih URL bertanda-tangan (signed URL) ke browser,
+    // TIDAK manggil get-token API. Browser sendiri yang nanti navigasi ke QMS,
+    // supaya cookie yang di-set di sana beneran nempel di browser user.
+    if (code === "qms") {
+      const isNik = /^KT-\d+$/.test(nik) || /^FKT-\d+$/.test(nik);
+      if (isNik) {
+        return res.json({
+          success: true,
+          data: {
+            redirect_url: buildQmsNikLoginUrl(nik),
+            application: "QMS",
+            role: {
+              id: null,
+              name: nik,
+            },
+          },
         });
       }
+      // Bukan format NIK -> lanjut ke bawah, pakai jalur role_name/token seperti biasa.
+    }
 
-      console.log("=== DEBUG SSO ===");
-      console.log("username from token:", username);
-      console.log("code from params:", code);
-
-      let access;
-
-      if (AUTO_ACCESS_CODES.includes(code)) {
-        // Auto access — skip pengecekan user_applications
-        access = { id: null, role_name: null };
-      } else {
-        const [[found]] = await db.query(
-          `
-            SELECT ua.id, ua.role_name
-            FROM user_applications ua
-            JOIN applications a 
-              ON a.id = ua.application_id
-            WHERE TRIM(LOWER(ua.username)) = TRIM(LOWER(?))
-              AND TRIM(LOWER(a.code)) = TRIM(LOWER(?))
-            LIMIT 1
-          `,
-          [username, code]
-        );
-
-        if (!found) {
-          return res.status(403).json({
-            success: false,
-            message: "Akses aplikasi ditolak",
-          });
-        }
-
-        access = found;
-      }
-
-      console.log("access result:", access);
-
-      // ✅ QMS pakai role_name sebagai identifier, lainnya pakai NIK
-      targetIdentifier = (code === "qms" || code === "dms") ? access.role_name : nik;
-
-      console.log("Calling API:", `${baseUrl}/api/public/get-token/${targetIdentifier}`);
-      console.log("With token:", token);
-
-      const response = await axios.get(
-        `${baseUrl}/api/public/get-token/${targetIdentifier}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      console.log("API status:", response.status);
-      console.log("API response:", JSON.stringify(response.data));
-
-      const accessToken = response.data?.result?.access_token;
-
-      if (!accessToken) {
-        return res.status(403).json({
-          success: false,
-          message: "User tidak memiliki akun di aplikasi tujuan",
-        });
-      }
-
-      return res.json({
-        success: true,
-        data: {
-          redirect_url: `${baseUrl}/sso/${accessToken}`,
-          application: code.toUpperCase(),
-          role: {
-            id: access.role_id ?? null,
-            name: access.role_name ?? username,
-          },
-        },
-      });
-    } catch (err) {
-      console.error("SSO REDIRECT ERROR:", err.response?.data || err.message);
-      console.error("SSO REDIRECT STATUS:", err.response?.status);
-      console.error("SSO REDIRECT URL:", err.config?.url);
-
-      return res.status(500).json({
+    if (code === "hris" || code === "hrisnew") {
+      baseUrl = "https://personasys.triasmitra.com";
+      token = "9592fabb0d0a7f63c913c3828ba0c895472e14668720a5018662390829c085c9";
+    } else if (code === "ams") {
+      baseUrl = "https://ams.triasmitra.com";
+      token = "iCI0YUAb0hu+2HF62lR_xs9FUsguF3OI6BqU2O33vP46fq$AO42UAE647vCeu4Shxfw";
+    } else if (code === "ims") {
+      baseUrl = "https://ims.triasmitra.com";
+      token = "KFhNebzV8EvLWTyWYZ0XPKafNGDwtANTN7WzZtka_TfGTqPQtmANLiRfMtCI8JKyxg9";
+    } else if (code === "cms") {
+      baseUrl = "https://cms.triasmitra.com";
+      token = "9e6d3c1f7a4b8d2e5f1c9a7b3e6d4f8a2c1e7b9d5f3a6c8e4b1d7a2f9c6e3b5";
+    } else if (code === "aas") {
+      baseUrl = "https://aas.triasmitra.com";
+      token = "a3f9d2b4c1e6f7890a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef";
+    } else if (code === "qms") {
+      baseUrl = "https://qms.triasmitra.com";
+      token = "9f3c8a1d7e4b2f5a6c0d1e8b3a9f7c24e5d6b8a1c3f9e0d7a2b4c6e8f1a3d5b7";
+    } else if (code === "shocart") {
+      baseUrl = "https://shocart.triasmitra.com";
+      token = "c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e8f9012345678901";
+    } else if (code === "helpdesk") {
+      baseUrl = "https://helpdesk.triasmitra.com";
+      token = "9fA7kLm2QxP8vZr4Tn6YwB1cHdE5uJ0s";
+    } else if (code === "campers") {
+      baseUrl = "https://campers.triasmitra.com";
+      token = "ddMhiXpxw0pAEuX2FXSzsaC5kN9yZM2qz8eBGby6oL3gYFh4WWM8ZEnNVHFNRHOr";
+    } else if (code === "das") {
+      baseUrl = "https://das.triasmitra.com";
+      token = "8f8cba9716432668d1c4c5c660e3254ab44cf2064ea7c2bb0904cce6654661b0";
+    } else if (code === "dms") {
+      baseUrl = "http://devdms.triasmitra.com";
+      token = "7e316e87289439e98139ef8d0a0c11ea3a611032d40f4876df9e237b0e385e59";
+    } else if (code === "sonar") {
+      baseUrl = "http://sonar.triasmitra.com";
+      token = "sonar-portal-sso-20260623-1c6a9f87c3b24d90";
+    } else {
+      return res.status(404).json({
         success: false,
-        message: "Gagal melakukan redirect SSO",
-        _debug: {
-          error_message: err.message,
-          error_status: err.response?.status ?? null,
-          error_url: err.config?.url ?? null,
-          error_response: err.response?.data ?? null,
-          target_identifier: targetIdentifier,
-          base_url: baseUrl,
-        }
+        message: "Application not supported",
       });
     }
-  };
+
+    console.log("=== DEBUG SSO ===");
+    console.log("username from token:", username);
+    console.log("code from params:", code);
+
+    let access;
+
+    if (AUTO_ACCESS_CODES.includes(code)) {
+      // Auto access — skip pengecekan user_applications
+      access = { id: null, role_name: null };
+    } else {
+      const [[found]] = await db.query(
+        `
+          SELECT ua.id, ua.role_name
+          FROM user_applications ua
+          JOIN applications a 
+            ON a.id = ua.application_id
+          WHERE TRIM(LOWER(ua.username)) = TRIM(LOWER(?))
+            AND TRIM(LOWER(a.code)) = TRIM(LOWER(?))
+          LIMIT 1
+        `,
+        [username, code]
+      );
+
+      if (!found) {
+        return res.status(403).json({
+          success: false,
+          message: "Akses aplikasi ditolak",
+        });
+      }
+
+      access = found;
+    }
+
+    console.log("access result:", access);
+
+    // ✅ QMS pakai role_name sebagai identifier, lainnya pakai NIK
+    targetIdentifier = (code === "qms" || code === "dms") ? access.role_name : nik;
+
+    console.log("Calling API:", `${baseUrl}/api/public/get-token/${targetIdentifier}`);
+    console.log("With token:", token);
+
+    const response = await axios.get(
+      `${baseUrl}/api/public/get-token/${targetIdentifier}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    console.log("API status:", response.status);
+    console.log("API response:", JSON.stringify(response.data));
+
+    const accessToken = response.data?.result?.access_token;
+
+    if (!accessToken) {
+      return res.status(403).json({
+        success: false,
+        message: "User tidak memiliki akun di aplikasi tujuan",
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        redirect_url: `${baseUrl}/sso/${accessToken}`,
+        application: code.toUpperCase(),
+        role: {
+          id: access.role_id ?? null,
+          name: access.role_name ?? username,
+        },
+      },
+    });
+  } catch (err) {
+    console.error("SSO REDIRECT ERROR:", err.response?.data || err.message);
+    console.error("SSO REDIRECT STATUS:", err.response?.status);
+    console.error("SSO REDIRECT URL:", err.config?.url);
+
+    return res.status(500).json({
+      success: false,
+      message: "Gagal melakukan redirect SSO",
+      _debug: {
+        error_message: err.message,
+        error_status: err.response?.status ?? null,
+        error_url: err.config?.url ?? null,
+        error_response: err.response?.data ?? null,
+        target_identifier: targetIdentifier,
+        base_url: baseUrl,
+      }
+    });
+  }
+};

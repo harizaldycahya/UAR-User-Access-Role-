@@ -67,12 +67,13 @@ type MenuGroup = {
 
 function PortalLayoutInner({ children }: { children: React.ReactNode }) {
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
-    
+
     const [user, setUser] = React.useState<any>(null);
     const [profile, setProfile] = React.useState<any>(null);
     const [foto, setFoto] = React.useState<any>(null);
     const [mounted, setMounted] = React.useState(false);
     const [isKasieOrBelow, setIsKasieOrBelow] = React.useState(false);
+    const [isAppOwner, setIsAppOwner] = React.useState(false);
 
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -142,6 +143,27 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
         fetchLevel();
     }, [user]);
 
+    // Cek apakah user adalah owner salah satu aplikasi (tetap bisa approve meski unit/subsi)
+    React.useEffect(() => {
+        if (!user?.username) return;
+        const fetchOwnedApps = async () => {
+            try {
+                const res = await apiAxios.get("/applications"); // sesuaikan endpoint kalau beda
+                const apps = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+                const nik = String(user.username).trim().toUpperCase();
+
+                const owns = apps.some(
+                    (app: any) => String(app.owner || "").trim().toUpperCase() === nik
+                );
+
+                setIsAppOwner(owns);
+            } catch (e) {
+                console.error(e);
+            }
+        };
+        fetchOwnedApps();
+    }, [user]);
+
     const segments = React.useMemo(() => pathname?.split("/").filter(Boolean) || [], [pathname]);
 
     const logout = async () => {
@@ -153,8 +175,8 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const menuByRole: Record<string, MenuGroup[]> = {
-        user: [
+    const menuByRole: Record<string, MenuGroup[]> = (() => {
+        const userMenuGroups: MenuGroup[] = [
             {
                 items: [
                     { label: "Dashboard", icon: <LayoutDashboard className="h-4.5 w-4.5" />, href: "/dashboard" },
@@ -181,32 +203,28 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
                     { label: "Guide Book", icon: <Book className="h-4.5 w-4.5" />, href: "__GUIDE_BOOK__" },
                 ],
             },
-        ],
-        admin: [
-            {
-                label: "Applications",
-                items: [
-                    { label: "Applications", icon: <FilePlus className="h-4.5 w-4.5" />, href: "/applications" },
-                    { label: "Create Application", icon: <ClipboardList className="h-4.5 w-4.5" />, href: "/applications/create" },
-                ],
-            },
-            {
-                label: "Users",
-                items: [
-                    { label: "Users", icon: <FilePlus className="h-4.5 w-4.5" />, href: "/users" },
-                ],
-            },
-        ],
-        hrd: [
-            {
-                label: "Request Approval",
-                items: [
-                    { label: "Approval Pending", icon: <Clock className="h-4.5 w-4.5" />, href: "/approvals?status=pending" },
-                    { label: "History Approvals", icon: <CheckCircle className="h-4.5 w-4.5" />, href: "/approvals?status=history" },
-                ],
-            },
-        ],
-    };
+        ];
+
+        return {
+            user: userMenuGroups,
+            admin: [
+                {
+                    label: "Applications",
+                    items: [
+                        { label: "Applications", icon: <FilePlus className="h-4.5 w-4.5" />, href: "/applications" },
+                        { label: "Create Application", icon: <ClipboardList className="h-4.5 w-4.5" />, href: "/applications/create" },
+                    ],
+                },
+                {
+                    label: "Users",
+                    items: [
+                        { label: "Users", icon: <FilePlus className="h-4.5 w-4.5" />, href: "/users" },
+                    ],
+                },
+            ],
+            hrd: userMenuGroups.filter((group) => group.label !== "Application Request"),
+        };
+    })();
 
     const isItemActive = (href: string): boolean => {
         const [hrefPath, hrefQuery] = href.split("?");
@@ -228,10 +246,12 @@ function PortalLayoutInner({ children }: { children: React.ReactNode }) {
     const renderMenu = () => {
         if (!user) return null;
         const allGroups = menuByRole[user.role_name] || [];
-        const isApprover = !isKasieOrBelow; // approver kalau grup Request Approval tampil
+
+        // Approver kalau bukan unit/subsi, ATAU dia owner aplikasi meskipun unit/subsi
+        const isApprover = !isKasieOrBelow || isAppOwner;
 
         const groups = allGroups.filter((group) => {
-            if (group.label === "Request Approval" && isKasieOrBelow) {
+            if (group.label === "Request Approval" && isKasieOrBelow && !isAppOwner) {
                 return false;
             }
             return true;
